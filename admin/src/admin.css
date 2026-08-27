@@ -519,6 +519,15 @@ code {
 
 .toolbar__select {
   min-width: 160px;
+  /* Inputs are width:100% globally for form layouts, which in the flex toolbar
+     made every select claim a full row and wrap. Toolbar controls size to their
+     content instead so the filters sit on one line. */
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.toolbar .btn {
+  flex: 0 0 auto;
 }
 
 /* ---------- Tables ---------- */

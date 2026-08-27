@@ -35,6 +35,11 @@ public static class SeedData
             SeedMembershipRoleAccounts(db, config);
         }
 
+        // Memberships approved before the term/stage columns existed carry no
+        // expiry and a default stage, so they would never lapse and the console
+        // would show them stuck at stage 1. Backfill once, idempotently.
+        BackfillMembershipTerms(db, logger);
+
         if (!db.Results.Any())
         {
             SeedResults(db, env);
@@ -112,6 +117,58 @@ public static class SeedData
             s.ValueAr = ar;
             s.ValueEn = en;
         }
+    }
+
+    /// <summary>
+    /// Gives already-approved memberships the three-year term and final stage
+    /// the Phase 2 model expects (§1).
+    ///
+    /// <see cref="SqliteSchemaGuard"/> adds a missing column but cannot know what
+    /// the rows should contain, so an approval recorded before the column
+    /// existed has a null <c>ExpiresAt</c> — meaning it never appears in the
+    /// expiry sweep and never lapses. The term is dated from whatever approval
+    /// evidence the row actually has, falling back to its creation date.
+    ///
+    /// Idempotent: only rows still missing the value are touched, so this does
+    /// nothing on an up-to-date database.
+    /// </summary>
+    private static void BackfillMembershipTerms(SmfDbContext db, ILogger? logger)
+    {
+        var pending = db.Registrations
+            .Where(r => r.Status == RegistrationStatuses.Approved && r.ExpiresAt == null)
+            .ToList();
+
+        foreach (var registration in pending)
+        {
+            var approvedAt = registration.ApprovedAt
+                             ?? registration.StatusChangedAt
+                             ?? registration.CreatedAt;
+
+            registration.ApprovedAt ??= approvedAt;
+            registration.ExpiresAt = approvedAt.AddYears(MembershipTracks.TermYears(registration.Type));
+        }
+
+        // The stage is derived from the status, so any row still sitting at the
+        // default while its status says otherwise is corrected too.
+        var stages = db.Registrations
+            .Where(r => r.StageOrder <= 1 && r.Status != RegistrationStatuses.New)
+            .ToList();
+
+        foreach (var registration in stages)
+        {
+            var track = MembershipTracks.Get(registration.Type);
+            if (track is null) continue;
+
+            var stage = track.Stages.FirstOrDefault(x => x.Status == registration.Status);
+            registration.StageOrder = stage?.Order ?? track.Stages.Count;
+        }
+
+        if (pending.Count == 0 && stages.Count == 0) return;
+
+        db.SaveChanges();
+        logger?.LogInformation(
+            "Backfilled membership terms for {Terms} approved registration(s) and stages for {Stages}.",
+            pending.Count, stages.Count);
     }
 
     private static void SeedAdminUser(SmfDbContext db)
