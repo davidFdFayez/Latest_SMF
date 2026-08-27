@@ -18,10 +18,23 @@ public static class AuthEndpoints
                 return Results.Unauthorized();
             }
 
+            // A deactivated account kept working because IsActive was stored but
+            // never consulted, so revoking access had no effect. Checked after
+            // the password so a wrong password and a disabled account are
+            // indistinguishable to the caller.
+            if (!user.IsActive) return Results.Unauthorized();
+
             var token = jwt.GenerateToken(user);
             var expiryMinutes = int.Parse(config["Jwt:ExpiryMinutes"] ?? "480");
 
-            return Results.Ok(new LoginResponse(token, DateTime.UtcNow.AddMinutes(expiryMinutes), user.Username, user.DisplayName));
+            return Results.Ok(new LoginResponse(
+                token,
+                DateTime.UtcNow.AddMinutes(expiryMinutes),
+                user.Username,
+                user.DisplayName,
+                user.Role,
+                user.MembershipRole,
+                MembershipRoles.GrantsFor(user.MembershipRole, user.Role)));
         });
     }
 }

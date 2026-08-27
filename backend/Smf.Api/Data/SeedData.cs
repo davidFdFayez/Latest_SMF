@@ -25,6 +25,16 @@ public static class SeedData
             SeedAdminUser(db);
         }
 
+        // One account per §6 membership role, so role-based access can actually
+        // be exercised. Phase 1 compliance cases P1–P3 need an account per role
+        // to test against, and the federation's testing note asks for exactly
+        // that. Development only — these are well-known credentials and must
+        // never exist on a deployed environment.
+        if (env.IsDevelopment())
+        {
+            SeedMembershipRoleAccounts(db, config);
+        }
+
         if (!db.Results.Any())
         {
             SeedResults(db, env);
@@ -113,8 +123,45 @@ public static class SeedData
             PasswordHash = hash,
             PasswordSalt = salt,
             DisplayName = "مدير النظام / System Administrator",
+            Role = AdminRoles.SuperAdmin,
             CreatedAt = DateTime.UtcNow
         });
+    }
+
+    /// <summary>
+    /// A test account for each membership role in §6. Each carries only that
+    /// role's grants, so the separation the document describes — reviewers who
+    /// cannot approve, a system administrator who cannot accept or reject — is
+    /// verifiable rather than theoretical.
+    /// </summary>
+    private static void SeedMembershipRoleAccounts(SmfDbContext db, IConfiguration? config)
+    {
+        // Overridable so a shared test environment need not use the default.
+        var password = config?["Seed:RoleAccountPassword"] ?? "Test@12345";
+
+        foreach (var role in MembershipRoles.Definitions)
+        {
+            var username = role.Key;
+            if (db.AdminUsers.Any(u => u.Username == username)) continue;
+
+            var (hash, salt) = PasswordHasher.HashPassword(password);
+            db.AdminUsers.Add(new AdminUser
+            {
+                Username = username,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                DisplayName = $"{role.NameAr} / {role.NameEn}",
+
+                // Deliberately not a site-area role: §6 permissions must come
+                // from the membership role alone, so these accounts prove the
+                // register cannot be reached through any other grant.
+                Role = AdminRoles.PeopleRegistry,
+                MembershipRole = role.Key,
+                CreatedAt = DateTime.UtcNow,
+            });
+        }
+
+        db.SaveChanges();
     }
 
     private static void SeedResults(SmfDbContext db, IWebHostEnvironment env)

@@ -28,6 +28,10 @@ public static class NotificationTemplates
     public const string RefereeGradeUpdated = "referee_grade_updated";
     public const string CompletionReminder = "completion_reminder";
     public const string MembershipSuspended = "membership_suspended";
+    public const string MembershipRenewed = "membership_renewed";
+    public const string MembershipExpired = "membership_expired";
+    public const string MembershipCancelled = "membership_cancelled";
+    public const string RenewalDue = "renewal_due";
 
     private static readonly Dictionary<string, Message> Templates = new()
     {
@@ -133,6 +137,48 @@ public static class NotificationTemplates
             "Registration suspended — {رقم_الطلب}",
             "We wish to inform you that registration {رقم_الطلب} has been temporarily suspended. Please contact the federation to learn the requirements or steps needed.",
             "Your registration has been temporarily suspended. Please check your email for details."),
+
+        // §6 — تجديد. The three-year term restarts, so the new expiry date is
+        // the piece of information the member actually needs.
+        [MembershipRenewed] = new(
+            MembershipRenewed,
+            "تم تجديد العضوية — {رقم_الطلب}",
+            "تم تجديد عضويتكم لدى الاتحاد السعودي للملاكمة التايلندية.\n\nرقم العضوية: {رقم_العضوية}\nتاريخ انتهاء العضوية: {تاريخ_الانتهاء}\n\nالاتحاد السعودي للملاكمة التايلندية | info@saudimuaythai.sa",
+            "تم تجديد عضويتك في الاتحاد السعودي للمواي تاي حتى {تاريخ_الانتهاء}.",
+            "Membership renewed — {رقم_الطلب}",
+            "Your membership with the Saudi Muaythai Federation has been renewed.\n\nMembership number: {رقم_العضوية}\nExpires: {تاريخ_الانتهاء}\n\nSaudi Muaythai Federation | info@saudimuaythai.sa",
+            "Your Saudi Muaythai Federation membership has been renewed until {تاريخ_الانتهاء}."),
+
+        // §6 — انتهاء. Sent once the term has elapsed without renewal.
+        [MembershipExpired] = new(
+            MembershipExpired,
+            "انتهاء العضوية — {رقم_الطلب}",
+            "نفيدكم بانتهاء مدة عضويتكم لدى الاتحاد السعودي للملاكمة التايلندية بتاريخ {تاريخ_الانتهاء}.\n\nلتجديد العضوية يرجى التواصل مع الاتحاد أو تقديم طلب تجديد.\n\nالاتحاد السعودي للملاكمة التايلندية | info@saudimuaythai.sa",
+            "انتهت مدة عضويتك في الاتحاد السعودي للمواي تاي بتاريخ {تاريخ_الانتهاء}. يرجى التجديد.",
+            "Membership expired — {رقم_الطلب}",
+            "Your membership with the Saudi Muaythai Federation expired on {تاريخ_الانتهاء}.\n\nTo renew, please contact the federation or submit a renewal request.\n\nSaudi Muaythai Federation | info@saudimuaythai.sa",
+            "Your Saudi Muaythai Federation membership expired on {تاريخ_الانتهاء}. Please renew."),
+
+        // §6 — تنبيه قبل الانتهاء، حتى لا تنتهي العضوية دون إشعار مسبق.
+        [RenewalDue] = new(
+            RenewalDue,
+            "قرب انتهاء العضوية — {رقم_الطلب}",
+            "نفيدكم بأن عضويتكم لدى الاتحاد السعودي للملاكمة التايلندية تنتهي بتاريخ {تاريخ_الانتهاء}.\n\nنأمل مباشرة إجراءات التجديد قبل هذا التاريخ لضمان استمرار العضوية.\n\nالاتحاد السعودي للملاكمة التايلندية | info@saudimuaythai.sa",
+            "عضويتك في الاتحاد السعودي للمواي تاي تنتهي بتاريخ {تاريخ_الانتهاء}. يرجى التجديد.",
+            "Membership renewal due — {رقم_الطلب}",
+            "Your membership with the Saudi Muaythai Federation expires on {تاريخ_الانتهاء}.\n\nPlease begin the renewal process before that date to keep the membership active.\n\nSaudi Muaythai Federation | info@saudimuaythai.sa",
+            "Your Saudi Muaythai Federation membership expires on {تاريخ_الانتهاء}. Please renew."),
+
+        // §6 — إلغاء. Unlike تعليق this is final, so the copy does not invite
+        // the member to wait for reinstatement.
+        [MembershipCancelled] = new(
+            MembershipCancelled,
+            "إلغاء العضوية — {رقم_الطلب}",
+            "نفيدكم بإلغاء العضوية رقم {رقم_الطلب}.\n\nالسبب: {سبب_التعليق}\n\nللاستفسار يرجى التواصل مع الاتحاد.\n\nالاتحاد السعودي للملاكمة التايلندية | info@saudimuaythai.sa",
+            "تم إلغاء عضويتك في الاتحاد السعودي للمواي تاي. يرجى مراجعة بريدك الإلكتروني للتفاصيل.",
+            "Membership cancelled — {رقم_الطلب}",
+            "We wish to inform you that membership {رقم_الطلب} has been cancelled.\n\nReason: {سبب_التعليق}\n\nFor any query, please contact the federation.\n\nSaudi Muaythai Federation | info@saudimuaythai.sa",
+            "Your Saudi Muaythai Federation membership has been cancelled. Please check your email for details."),
     };
 
     /// <summary>Template that fires when a request moves into the given status, if any.</summary>
@@ -143,6 +189,9 @@ public static class NotificationTemplates
         RegistrationStatuses.AwaitingCompletion => AwaitingCompletion,
         RegistrationStatuses.Approved => Approved,
         RegistrationStatuses.Rejected => Rejected,
+        RegistrationStatuses.Suspended => MembershipSuspended,
+        RegistrationStatuses.Cancelled => MembershipCancelled,
+        RegistrationStatuses.Expired => MembershipExpired,
         _ => null,
     };
 
@@ -178,5 +227,8 @@ public static class NotificationTemplates
         public const string RejectionReason = "سبب_الرفض";
         public const string ClubName = "اسم_النادي";
         public const string RefereeGrade = "تصنيف_الحكم";
+        public const string MembershipNumber = "رقم_العضوية";
+        public const string ExpiryDate = "تاريخ_الانتهاء";
+        public const string SuspensionReason = "سبب_التعليق";
     }
 }

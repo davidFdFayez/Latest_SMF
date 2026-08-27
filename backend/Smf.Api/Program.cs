@@ -30,6 +30,12 @@ builder.Services.AddSingleton<RegistrationAttachmentStore>();
 
 // Registration lifecycle notifications (REG-06).
 builder.Services.AddSingleton<EmailSender>();
+builder.Services.AddSingleton<SmsSender>();
+
+// Phase 2 membership lifecycle (§1–§6). Scoped: both share the request's
+// DbContext so a decision and its audit entry commit together.
+builder.Services.AddScoped<AuditLogger>();
+builder.Services.AddScoped<MembershipService>();
 
 // SEC-05 — behind Cloudflare the origin only ever sees the edge's address, so
 // the real client IP (used by the rate limiter and the logs) comes from the

@@ -1,7 +1,20 @@
 namespace Smf.Api.Endpoints;
 
 public record LoginRequest(string Username, string Password);
-public record LoginResponse(string Token, DateTime ExpiresAt, string Username, string DisplayName);
+/// <param name="Role">Site-area role — see <see cref="Smf.Api.Data.AdminRoles"/>.</param>
+/// <param name="MembershipRole">Membership-register role (§6), or null.</param>
+/// <param name="MembershipGrants">
+/// The §6 actions this user may perform, so the admin UI can hide controls the
+/// API would refuse. The API checks independently; this is presentation only.
+/// </param>
+public record LoginResponse(
+    string Token,
+    DateTime ExpiresAt,
+    string Username,
+    string DisplayName,
+    string Role,
+    string? MembershipRole,
+    string[] MembershipGrants);
 
 public record NewsUpsertRequest(
     string TitleAr, string TitleEn,

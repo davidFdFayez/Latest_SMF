@@ -14,6 +14,7 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<WhistleblowerReport> WhistleblowerReports => Set<WhistleblowerReport>();
     public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
+    public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,5 +39,17 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
         modelBuilder.Entity<WhistleblowerReport>()
             .HasIndex(r => r.ReferenceNumber)
             .IsUnique();
+
+        // The audit trail is read as "everything that happened to this record",
+        // and as a reverse-chronological feed, so both are indexed.
+        modelBuilder.Entity<AuditLogEntry>()
+            .HasIndex(e => new { e.EntityType, e.EntityId });
+
+        modelBuilder.Entity<AuditLogEntry>()
+            .HasIndex(e => e.CreatedAt);
+
+        // Membership expiry is swept on a schedule, so it is queried by date.
+        modelBuilder.Entity<Registration>()
+            .HasIndex(r => r.ExpiresAt);
     }
 }

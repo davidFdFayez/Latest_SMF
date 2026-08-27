@@ -16,13 +16,22 @@ public class JwtTokenService(IConfiguration configuration)
         var audience = jwtSection["Audience"]!;
         var expiryMinutes = int.Parse(jwtSection["ExpiryMinutes"] ?? "480");
 
-        var claims = new[]
+        // The role travels in the token because every permission decision the
+        // admin API makes needs it. Without these claims the API could not tell
+        // a membership reviewer from a final approver, so §6 could not be
+        // enforced at all and every authenticated caller was equally powerful.
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim("displayName", user.DisplayName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.UniqueName, user.Username),
+            new("displayName", user.DisplayName),
+            new(ClaimTypes.Role, user.Role),
+            new("role", user.Role),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (!string.IsNullOrWhiteSpace(user.MembershipRole))
+            claims.Add(new Claim("membershipRole", user.MembershipRole));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

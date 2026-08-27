@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Smf.Api.Data;
 using Smf.Api.Data.Models;
@@ -320,42 +321,128 @@ public static class AdminEndpoints
     {
         var group = admin.MapGroup("/registrations");
 
-        group.MapGet("/", async (string? type, string? status, SmfDbContext db) =>
+        // §6 — every read of the register needs عرض. Previously any
+        // authenticated admin account, whatever its role, could list and open
+        // every application and its attachments.
+        group.MapGet("/", async (
+            string? type,
+            string? status,
+            ClaimsPrincipal user,
+            SmfDbContext db) =>
         {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
             var query = db.Registrations.AsNoTracking().AsQueryable();
             if (!string.IsNullOrWhiteSpace(type)) query = query.Where(r => r.Type == type);
             if (!string.IsNullOrWhiteSpace(status)) query = query.Where(r => r.Status == status);
-            return Results.Ok(await query.OrderByDescending(r => r.CreatedAt).ToListAsync());
+
+            var items = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
+            return Results.Ok(items.Select(Summarise));
         });
 
-        group.MapGet("/{id:int}", async (int id, SmfDbContext db) =>
-            await db.Registrations.FindAsync(id) is { } item ? Results.Ok(item) : Results.NotFound());
-
-        group.MapPut("/{id:int}/status", async (int id, RegistrationStatusUpdateRequest request, SmfDbContext db) =>
+        group.MapGet("/{id:int}", async (int id, ClaimsPrincipal user, SmfDbContext db) =>
         {
-            var entity = await db.Registrations.FindAsync(id);
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            return await db.Registrations.FindAsync(id) is { } item
+                ? Results.Ok(Detail(item))
+                : Results.NotFound();
+        });
+
+        // Every lifecycle rule — permission, allowed transition, mandatory
+        // reason, expiry dates, audit entry, applicant notification — lives in
+        // MembershipService so none of them can be skipped here.
+        group.MapPut("/{id:int}/status", async (
+            int id,
+            RegistrationStatusUpdateRequest request,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            MembershipService memberships,
+            CancellationToken cancellationToken) =>
+        {
+            var entity = await db.Registrations.FindAsync([id], cancellationToken);
             if (entity is null) return Results.NotFound();
 
-            if (!RegistrationStatuses.IsValid(request.Status))
-                return Results.BadRequest(new { message = $"Unknown status '{request.Status}'." });
+            var outcome = await memberships.ChangeStatusAsync(
+                entity,
+                request.Status,
+                AdminIdentity.Current(user),
+                request.StatusReason,
+                request.InternalNotes,
+                request.MembershipNumber,
+                cancellationToken);
 
-            // Rejection and requests for missing data must tell the applicant why —
-            // both statuses drive a notification that quotes the reason back to them.
-            if (RegistrationStatuses.RequiresReason(request.Status) && string.IsNullOrWhiteSpace(request.StatusReason))
-                return Results.BadRequest(new { message = $"Status '{request.Status}' requires a reason." });
+            return outcome.Ok ? Results.Ok(Detail(entity)) : Problem(outcome);
+        });
 
-            entity.Status = request.Status;
-            entity.StatusReason = request.StatusReason;
-            entity.StatusChangedAt = DateTime.UtcNow;
+        // §1 — تجديد كل 3 سنوات.
+        group.MapPost("/{id:int}/renew", async (
+            int id,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            MembershipService memberships,
+            CancellationToken cancellationToken) =>
+        {
+            var entity = await db.Registrations.FindAsync([id], cancellationToken);
+            if (entity is null) return Results.NotFound();
 
-            if (request.InternalNotes is not null) entity.InternalNotes = request.InternalNotes;
-            if (request.MembershipNumber is not null) entity.MembershipNumber = request.MembershipNumber;
+            var outcome = await memberships.RenewAsync(entity, AdminIdentity.Current(user), cancellationToken);
+            return outcome.Ok ? Results.Ok(Detail(entity)) : Problem(outcome);
+        });
 
-            if (request.Status == RegistrationStatuses.Approved)
-                entity.ApprovedAt = DateTime.UtcNow;
+        // The per-request audit trail (P6). Read-only and append-only.
+        group.MapGet("/{id:int}/audit", async (int id, ClaimsPrincipal user, SmfDbContext db) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
 
-            await db.SaveChangesAsync();
-            return Results.Ok(entity);
+            var entries = await db.AuditLog.AsNoTracking()
+                .Where(e => e.EntityType == "registration" && e.EntityId == id)
+                .OrderByDescending(e => e.CreatedAt)
+                .ToListAsync();
+
+            return Results.Ok(entries);
+        });
+
+        // Requests whose completion window has run out (§6). Surfaced for the
+        // reviewer to chase; nothing is auto-rejected.
+        group.MapGet("/overdue", async (ClaimsPrincipal user, MembershipService memberships, CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var items = await memberships.OverdueCompletionsAsync(cancellationToken);
+            return Results.Ok(items.Select(Summarise));
+        });
+
+        group.MapGet("/due-for-renewal", async (
+            int? withinDays,
+            ClaimsPrincipal user,
+            MembershipService memberships,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var items = await memberships.DueForRenewalAsync(withinDays ?? 60, cancellationToken);
+            return Results.Ok(items.Select(Summarise));
+        });
+
+        // Retires memberships whose three-year term has elapsed. Exposed as an
+        // endpoint so it can be driven by a scheduler without the API needing
+        // one of its own.
+        group.MapPost("/expire-lapsed", async (
+            ClaimsPrincipal user,
+            MembershipService memberships,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.Suspend)) return Forbid(MembershipRoles.Actions.Suspend);
+
+            var count = await memberships.ExpireLapsedAsync(actor, cancellationToken);
+            return Results.Ok(new { expired = count });
         });
 
         // Serves a document the applicant uploaded with this request. The
@@ -364,10 +451,16 @@ public static class AdminEndpoints
         group.MapGet("/{id:int}/attachments/{attachmentId}", async (
             int id,
             string attachmentId,
+            ClaimsPrincipal user,
             SmfDbContext db,
-            RegistrationAttachmentStore store) =>
+            AuditLogger audit,
+            RegistrationAttachmentStore store,
+            CancellationToken cancellationToken) =>
         {
-            var entity = await db.Registrations.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var entity = await db.Registrations.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
             if (entity is null) return Results.NotFound();
 
             if (!RegistrationPayload.AttachmentIds(entity.PayloadJson).Contains(attachmentId))
@@ -375,6 +468,12 @@ public static class AdminEndpoints
 
             if (!store.TryResolve(attachmentId, out var path, out var meta))
                 return Results.NotFound();
+
+            // Applicant documents are personal data, so who opened which one is
+            // part of the audit trail rather than something only the web server
+            // log would know.
+            audit.Registration(actor, AuditActions.AttachmentViewed, entity, details: attachmentId);
+            await db.SaveChangesAsync(cancellationToken);
 
             return Results.File(path, meta.ContentType, meta.FileName);
         });
@@ -387,17 +486,166 @@ public static class AdminEndpoints
                 labelAr = RegistrationStatuses.Labels[s].Ar,
                 labelEn = RegistrationStatuses.Labels[s].En,
                 requiresReason = RegistrationStatuses.RequiresReason(s),
+                requiredAction = RegistrationStatuses.RequiredAction(s),
+                allowedNext = RegistrationStatuses.Transitions.TryGetValue(s, out var next) ? next : [],
             })));
 
-        group.MapDelete("/{id:int}", async (int id, SmfDbContext db) =>
+        // §2–§5 — the four tracks with their stages, terms, and fees, so the
+        // dashboard renders the federation's actual procedure rather than a
+        // copy of it that can drift.
+        group.MapGet("/tracks", () => Results.Ok(
+            MembershipTracks.All.Select(t => new
+            {
+                key = t.Key,
+                licenceNameAr = t.LicenceNameAr,
+                licenceNameEn = t.LicenceNameEn,
+                termYears = t.TermYears,
+                registrationFeeAr = t.RegistrationFeeAr,
+                registrationFeeEn = t.RegistrationFeeEn,
+                renewalFeeAr = t.RenewalFeeAr,
+                renewalFeeEn = t.RenewalFeeEn,
+                prerequisitesAr = t.PrerequisitesAr,
+                prerequisitesEn = t.PrerequisitesEn,
+                stages = t.Stages.Select(s => new
+                {
+                    order = s.Order,
+                    nameAr = s.NameAr,
+                    nameEn = s.NameEn,
+                    ownerAr = s.OwnerAr,
+                    ownerEn = s.OwnerEn,
+                    actionAr = s.ActionAr,
+                    actionEn = s.ActionEn,
+                    outcomeAr = s.OutcomeAr,
+                    outcomeEn = s.OutcomeEn,
+                    status = s.Status,
+                }),
+            })));
+
+        // What the signed-in user may do, so the UI can hide controls the API
+        // would refuse. Presentation only — the API always re-checks.
+        group.MapGet("/permissions", (ClaimsPrincipal user) =>
         {
-            var entity = await db.Registrations.FindAsync(id);
+            var actor = AdminIdentity.Current(user);
+            return Results.Ok(new
+            {
+                role = actor.Role,
+                membershipRole = actor.MembershipRole,
+                grants = actor.Grants,
+                actions = MembershipRoles.Actions.All.Select(a => new
+                {
+                    value = a,
+                    labelAr = MembershipRoles.Actions.Labels[a].Ar,
+                    labelEn = MembershipRoles.Actions.Labels[a].En,
+                    allowed = actor.Can(a),
+                }),
+            });
+        });
+
+        // Deleting an application destroys the evidence behind a decision, so it
+        // sits behind تعليق/إلغاء rather than being available to any reviewer.
+        group.MapDelete("/{id:int}", async (
+            int id,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            AuditLogger audit,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.Suspend)) return Forbid(MembershipRoles.Actions.Suspend);
+
+            var entity = await db.Registrations.FindAsync([id], cancellationToken);
             if (entity is null) return Results.NotFound();
+
+            // Written before the removal so the entry survives it.
+            audit.Registration(actor, AuditActions.Deleted, entity, entity.Status, null, entity.ReferenceNumber);
             db.Registrations.Remove(entity);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
+
             return Results.NoContent();
         });
     }
+
+    /// <summary>403 in the bilingual shape the admin console displays.</summary>
+    private static IResult Forbid(string action) => Results.Json(new
+    {
+        message = "لا تملك صلاحية تنفيذ هذا الإجراء. / You do not have permission for this action.",
+        messageAr = "لا تملك صلاحية تنفيذ هذا الإجراء على طلبات العضوية.",
+        messageEn = $"Your role does not grant '{action}' on membership requests.",
+        requiredAction = action,
+    }, statusCode: StatusCodes.Status403Forbidden);
+
+    private static IResult Problem(MembershipService.Outcome outcome) => Results.Json(new
+    {
+        message = $"{outcome.MessageAr} / {outcome.MessageEn}",
+        messageAr = outcome.MessageAr,
+        messageEn = outcome.MessageEn,
+    }, statusCode: outcome.Status);
+
+    /// <summary>
+    /// List projection. The stored payload holds national IDs, guardian
+    /// details, and contact numbers, so it is deliberately left out of the list
+    /// view — a reviewer scanning the queue has no need of it, and it keeps the
+    /// bulk PII behind the per-record fetch.
+    /// </summary>
+    private static object Summarise(Registration r)
+    {
+        var now = DateTime.UtcNow;
+        var track = MembershipTracks.Get(r.Type);
+
+        return new
+        {
+            r.Id,
+            r.Type,
+            r.ReferenceNumber,
+            r.Status,
+            statusLabelAr = RegistrationStatuses.Labels.TryGetValue(r.Status, out var l) ? l.Ar : r.Status,
+            statusLabelEn = RegistrationStatuses.Labels.TryGetValue(r.Status, out var l2) ? l2.En : r.Status,
+            r.StageOrder,
+            stageCount = track?.Stages.Count ?? 0,
+            r.MembershipNumber,
+            r.CreatedAt,
+            r.StatusChangedAt,
+            r.ApprovedAt,
+            r.ExpiresAt,
+            r.RenewedAt,
+            r.RenewalCount,
+            r.CompletionDueAt,
+            r.SupersedesId,
+            r.LastActionBy,
+            isExpired = r.IsExpired(now),
+            isOverdue = r.Status == RegistrationStatuses.AwaitingCompletion
+                        && r.CompletionDueAt is { } due && due <= now,
+            daysUntilExpiry = r.ExpiresAt is { } exp ? (int?)(exp - now).TotalDays : null,
+        };
+    }
+
+    /// <summary>Full record, including the payload, for the review screen.</summary>
+    private static object Detail(Registration r) => new
+    {
+        summary = Summarise(r),
+        r.Id,
+        r.Type,
+        r.ReferenceNumber,
+        r.Status,
+        r.StatusReason,
+        r.InternalNotes,
+        r.MembershipNumber,
+        r.PayloadJson,
+        r.CreatedAt,
+        r.StatusChangedAt,
+        r.ApprovedAt,
+        r.ExpiresAt,
+        r.RenewedAt,
+        r.RenewalCount,
+        r.CompletionDueAt,
+        r.SuspendedAt,
+        r.StageOrder,
+        r.SupersedesId,
+        r.LastActionBy,
+        track = MembershipTracks.Get(r.Type) is { } t
+            ? new { t.Key, t.LicenceNameAr, t.LicenceNameEn, t.TermYears, stages = t.Stages }
+            : null,
+    };
 
     private static void MapContactAdmin(RouteGroupBuilder admin)
     {
