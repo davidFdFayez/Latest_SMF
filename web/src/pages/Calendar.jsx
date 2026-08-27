@@ -238,7 +238,9 @@ export default function Calendar() {
                       </li>
                     ))}
                     {monthEvents.length === 0 && (
-                      <li className="cal-grid__empty">{ar ? '—' : '—'}</li>
+                      <li className="cal-grid__empty">
+                        {ar ? 'لا توجد فعاليات' : 'No events'}
+                      </li>
                     )}
                   </ul>
                 </div>
