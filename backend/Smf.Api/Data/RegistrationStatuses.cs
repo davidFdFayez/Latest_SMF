@@ -145,7 +145,10 @@ public static class RegistrationStatuses
         Approved => MembershipRoles.Actions.Approve,
         Rejected => MembershipRoles.Actions.Reject,
         AwaitingCompletion => MembershipRoles.Actions.RequestCompletion,
-        Suspended or Cancelled => MembershipRoles.Actions.Suspend,
+        // Suspending, cancelling, expiring, and closing all end an active
+        // membership, so they sit behind the one §6 grant for that —
+        // تعليق/إلغاء — rather than being reachable with plain review rights.
+        Suspended or Cancelled or Expired or Completed => MembershipRoles.Actions.Suspend,
         _ => MembershipRoles.Actions.Review,
     };
 

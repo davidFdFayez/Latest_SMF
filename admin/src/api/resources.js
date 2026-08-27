@@ -103,6 +103,54 @@ export const registrationsApi = {
   async remove(id) {
     await client.delete(`/admin/registrations/${id}`)
   },
+
+  /** Full record including the payload — the list projection omits it. */
+  async get(id) {
+    const response = await client.get(`/admin/registrations/${id}`)
+    return unwrapItem(response.data)
+  },
+
+  /**
+   * The four membership tracks with their stages, terms and fees (§2-§5 of the
+   * Phase 2 workflow document), served by the API so the console shows the
+   * federation's actual procedure rather than a copy that can drift.
+   */
+  async tracks() {
+    const response = await client.get('/admin/registrations/tracks')
+    return unwrapList(response.data)
+  },
+
+  /**
+   * What the signed-in user may do (§6). Used to hide controls the API would
+   * refuse; the API always re-checks, so this is presentation only.
+   */
+  async permissions() {
+    const response = await client.get('/admin/registrations/permissions')
+    return unwrapItem(response.data)
+  },
+
+  /** Append-only trail of who did what to this request (compliance case P6). */
+  async audit(id) {
+    const response = await client.get(`/admin/registrations/${id}/audit`)
+    return unwrapList(response.data)
+  },
+
+  /** Restarts the three-year term (§1). Requires the approve permission. */
+  async renew(id) {
+    const response = await client.post(`/admin/registrations/${id}/renew`)
+    return unwrapItem(response.data)
+  },
+
+  /** Requests whose completion window has run out (§6). */
+  async overdue() {
+    const response = await client.get('/admin/registrations/overdue')
+    return unwrapList(response.data)
+  },
+
+  async dueForRenewal(withinDays = 60) {
+    const response = await client.get('/admin/registrations/due-for-renewal', { params: { withinDays } })
+    return unwrapList(response.data)
+  },
 }
 
 /**

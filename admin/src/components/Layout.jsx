@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { to: '/events', label: 'Events', icon: EventsIcon },
   { to: '/results', label: 'Results', icon: ResultsIcon },
   { to: '/pages', label: 'Pages', icon: PagesIcon },
-  { to: '/registrations', label: 'Registrations', icon: RegistrationsIcon },
+  { to: '/registrations', label: 'Memberships', icon: RegistrationsIcon },
   { to: '/contact', label: 'Contact Messages', icon: ContactIcon },
   { to: '/whistleblower', label: 'Whistleblower Reports', icon: WhistleblowerIcon },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },

@@ -29,15 +29,28 @@ export function AuthProvider({ children }) {
     setUserState(null)
   }, [])
 
+  /**
+   * Whether the signed-in user holds a §6 membership permission.
+   *
+   * Presentation only — it decides which controls are worth showing. The API
+   * enforces the same matrix independently and returns 403 regardless, so a
+   * stale session can never turn into an unauthorised approval.
+   */
+  const can = useCallback(
+    (action) => Array.isArray(user?.membershipGrants) && user.membershipGrants.includes(action),
+    [user],
+  )
+
   const value = useMemo(
     () => ({
       token,
       user,
       isAuthenticated: Boolean(token),
+      can,
       login,
       logout,
     }),
-    [token, user, login, logout],
+    [token, user, can, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

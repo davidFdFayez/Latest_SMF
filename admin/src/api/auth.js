@@ -14,6 +14,10 @@ export async function login(username, password) {
     username: pick(data, ['username', 'name'], username),
     displayName: pick(data, ['displayName', 'fullName'], ''),
     role: pick(data, ['role'], 'Administrator'),
+    // §6 membership permissions travel with the session so the console can hide
+    // controls the API would refuse.
+    membershipRole: pick(data, ['membershipRole'], null),
+    membershipGrants: pick(data, ['membershipGrants'], []),
     expiresAt: pick(data, ['expiresAt'], null),
   })
 

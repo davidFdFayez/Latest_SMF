@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Smf.Api.Data;
 using Smf.Api.Data.Models;
@@ -592,8 +593,28 @@ public static class AdminEndpoints
         var now = DateTime.UtcNow;
         var track = MembershipTracks.Get(r.Type);
 
+        // Enough to triage the queue — who applied and how to reach them — and
+        // no more. National ID, date of birth, and guardian details stay behind
+        // the per-record fetch.
+        string? name = null, contactEmail = null, contactPhone = null;
+        try
+        {
+            var payload = JsonDocument.Parse(r.PayloadJson).RootElement;
+            name = RegistrationPayload.DisplayName(payload, arabic: true)
+                   ?? RegistrationPayload.DisplayName(payload, arabic: false);
+            contactEmail = RegistrationPayload.FirstString(payload, "email", "applicantEmail", "officialEmail");
+            contactPhone = RegistrationPayload.FirstString(payload, "phone", "mobile", "applicantPhone", "officialPhone");
+        }
+        catch (JsonException)
+        {
+            // A malformed payload must not take the whole queue down.
+        }
+
         return new
         {
+            applicantName = name,
+            contactEmail,
+            contactPhone,
             r.Id,
             r.Type,
             r.ReferenceNumber,
