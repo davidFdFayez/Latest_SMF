@@ -1,0 +1,56 @@
+services:
+  api:
+    build:
+      context: ./backend/Smf.Api
+      dockerfile: Dockerfile
+    image: smf-api:latest
+    container_name: smf-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Data Source=/app/data/smf.db
+      Jwt__Secret: SmfMuaythai2026-ProdSigningKey-ChangeIfNeeded-32chars!
+      Jwt__Issuer: Smf.Api
+      Jwt__Audience: Smf.Clients
+      Jwt__ExpiryMinutes: "480"
+    volumes:
+      - smf-api-data:/app/data
+    networks:
+      - smfnet
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: smf-web:latest
+    container_name: smf-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    networks:
+      - smfnet
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    image: smf-admin:latest
+    container_name: smf-admin
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8081:80"
+    networks:
+      - smfnet
+
+volumes:
+  smf-api-data:
+
+networks:
+  smfnet:
+    external: true
+    name: smfnet

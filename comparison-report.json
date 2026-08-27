@@ -1,0 +1,104 @@
+﻿[
+    {
+        "Area":  "Brand",
+        "Item":  "CSS stylec7a3.css",
+        "Status":  "MATCH",
+        "Note":  "Identical file hash"
+    },
+    {
+        "Area":  "Brand",
+        "Item":  "logo.png / logo-white / hero / partners",
+        "Status":  "MATCH",
+        "Note":  "Byte-identical assets"
+    },
+    {
+        "Area":  "Brand",
+        "Item":  "Colors #0D613F / #D4AF37",
+        "Status":  "MATCH",
+        "Note":  "Same design tokens"
+    },
+    {
+        "Area":  "Scope",
+        "Item":  "Homepage",
+        "Status":  "NEW_ONLY",
+        "Note":  "Not in HTTrack mirror; rebuilt from live site"
+    },
+    {
+        "Area":  "Org",
+        "Item":  "Overview key copy + KPIs 2019/72/13/2020",
+        "Status":  "MATCH",
+        "Note":  "Vision, mission, 4 pillars match"
+    },
+    {
+        "Area":  "Org",
+        "Item":  "History timeline 2019-2026",
+        "Status":  "MATCH",
+        "Note":  "All years present; Prince Fahd quote present"
+    },
+    {
+        "Area":  "Org",
+        "Item":  "Values 5 pillars",
+        "Status":  "MATCH",
+        "Note":  "AR pillars present; EN labels also in new"
+    },
+    {
+        "Area":  "Org",
+        "Item":  "Strategy (detail depth)",
+        "Status":  "PARTIAL",
+        "Note":  "Mirror ~45KB HTML vs new ~5KB JSX — pillars present, full body text condensed"
+    },
+    {
+        "Area":  "Org",
+        "Item":  "Initiatives (8 items)",
+        "Status":  "PARTIAL",
+        "Note":  "All 8 titles present; body paragraphs condensed"
+    },
+    {
+        "Area":  "Org",
+        "Item":  "Goals (7 items)",
+        "Status":  "PARTIAL",
+        "Note":  "All 7 titles present; bullet details condensed"
+    },
+    {
+        "Area":  "Org",
+        "Item":  "Achievements detail",
+        "Status":  "GAP",
+        "Note":  "Missing Saudi Games editions, Kingdom V 480+, year blocks, FISU detail"
+    },
+    {
+        "Area":  "Data",
+        "Item":  "Results archive medals",
+        "Status":  "MATCH",
+        "Note":  "72 records; 7G/17S/48B (mirror HTML duplicates rows in table+timeline = 144 attrs)"
+    },
+    {
+        "Area":  "Data",
+        "Item":  "All 7 gold medalists",
+        "Status":  "MATCH",
+        "Note":  "Hattan x2, Inad, Albaraa, Ali, Fatimah, Aljawharah"
+    },
+    {
+        "Area":  "Nav",
+        "Item":  "Org + news + registration + whistle + contact",
+        "Status":  "MATCH",
+        "Note":  "Present in both"
+    },
+    {
+        "Area":  "Nav",
+        "Item":  "Governance / about-muaythai full pages",
+        "Status":  "GAP",
+        "Note":  "Mirror links to live URLs; new has placeholders"
+    },
+    {
+        "Area":  "Tech",
+        "Item":  "Routes HTTP 200",
+        "Status":  "PASS",
+        "Note":  "14 public routes verified"
+    },
+    {
+        "Area":  "Tech",
+        "Item":  "API seed + proxy",
+        "Status":  "PASS",
+        "Note":  "API stats + Vite proxy OK"
+    }
+]

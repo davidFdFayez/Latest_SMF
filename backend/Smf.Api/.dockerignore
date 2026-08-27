@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+*.db
+*.db-shm
+*.db-wal
+
+# Dev-time registration documents and local database — never part of an image.
+Data/uploads/
+data/

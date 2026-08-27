@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 400" role="img" aria-label="Photo pending">
+  <title>Photo pending</title>
+  <!--
+    Neutral silhouette used wherever a real, licensed photograph of the named
+    athlete has not been supplied yet (CNT-01). It is deliberately generic: a
+    stand-in is honest, another person's photograph is not.
+  -->
+  <defs>
+    <linearGradient id="smf-ph-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#123f2c" />
+      <stop offset="100%" stop-color="#0a2a1d" />
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="400" fill="url(#smf-ph-bg)" />
+
+  <g fill="#ffffff" opacity="0.16">
+    <circle cx="160" cy="152" r="54" />
+    <path d="M160 224c-56 0-101 36-109 86-1 6 4 12 10 12h198c6 0 11-6 10-12-8-50-53-86-109-86z" />
+  </g>
+
+  <g fill="none" stroke="#c8a44a" stroke-width="2" opacity="0.45">
+    <rect x="18" y="18" width="284" height="364" rx="10" />
+  </g>
+</svg>

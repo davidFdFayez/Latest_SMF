@@ -1,0 +1,14 @@
+node_modules/
+**/node_modules/
+**/bin/
+**/obj/
+.git/
+.vs/
+*.db
+*.db-shm
+*.db-wal
+deploy/_vps_*.py
+deploy/_upload*.py
+**/.env
+**/dist/
+agent-transcripts/

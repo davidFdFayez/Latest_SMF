@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Muaythai athlete">
+  <defs>
+    <linearGradient id="a-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f7048"/>
+      <stop offset="1" stop-color="#062d1d"/>
+    </linearGradient>
+    <linearGradient id="a-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8C766"/>
+      <stop offset="1" stop-color="#C39A2A"/>
+    </linearGradient>
+    <pattern id="a-diag" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+      <rect width="18" height="18" fill="none"/>
+      <path d="M0 0v18" stroke="#ffffff" stroke-opacity=".05" stroke-width="6"/>
+    </pattern>
+  </defs>
+
+  <rect width="400" height="300" fill="url(#a-bg)"/>
+  <rect width="400" height="300" fill="url(#a-diag)"/>
+  <circle cx="318" cy="62" r="96" fill="#ffffff" opacity=".045"/>
+
+  <!-- fighter: guard stance -->
+  <g fill="url(#a-gold)">
+    <!-- head + mongkhon -->
+    <circle cx="200" cy="104" r="25"/>
+    <path d="M173 98c8-13 46-13 54 0 2 3-1 6-4 5-16-6-30-6-46 0-3 1-6-2-4-5z" opacity=".95"/>
+    <path d="M196 74h8l-2 12h-4z"/>
+    <!-- torso -->
+    <path d="M200 132c22 0 38 13 41 33l7 47c1 7-4 12-11 12h-74c-7 0-12-5-11-12l7-47c3-20 19-33 41-33z"/>
+    <!-- gloves up in guard -->
+    <circle cx="154" cy="146" r="20"/>
+    <circle cx="246" cy="146" r="20"/>
+    <!-- legs -->
+    <path d="M178 224h18l-4 46h-18zM204 224h18l4 46h-18z"/>
+  </g>
+
+  <!-- hand wraps -->
+  <g stroke="#062d1d" stroke-width="3" stroke-linecap="round" opacity=".5">
+    <path d="M144 142h20M144 150h20M236 142h20M236 150h20"/>
+  </g>
+
+  <rect x="0" y="288" width="400" height="12" fill="url(#a-gold)" opacity=".9"/>
+</svg>

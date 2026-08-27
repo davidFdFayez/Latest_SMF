@@ -1,0 +1,67 @@
+@Smf.Api_HostAddress = http://localhost:5080
+
+### Public endpoints
+
+GET {{Smf.Api_HostAddress}}/api/pages/home?lang=en
+Accept: application/json
+
+###
+
+GET {{Smf.Api_HostAddress}}/api/news?lang=en&page=1&pageSize=10
+Accept: application/json
+
+###
+
+GET {{Smf.Api_HostAddress}}/api/events?lang=en
+Accept: application/json
+
+###
+
+GET {{Smf.Api_HostAddress}}/api/results?medal=gold
+Accept: application/json
+
+###
+
+GET {{Smf.Api_HostAddress}}/api/results/stats
+Accept: application/json
+
+###
+
+GET {{Smf.Api_HostAddress}}/api/settings
+Accept: application/json
+
+###
+
+POST {{Smf.Api_HostAddress}}/api/contact
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "0500000000",
+  "subject": "Question",
+  "message": "Hello, I have a question."
+}
+
+###
+
+### Auth
+
+# @name login
+POST {{Smf.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Admin@123"
+}
+
+###
+
+### Admin endpoints (requires the token returned by /api/auth/login above)
+
+GET {{Smf.Api_HostAddress}}/api/admin/dashboard
+Authorization: Bearer {{login.response.body.token}}
+Accept: application/json
+
+###
