@@ -10,6 +10,11 @@ function normalize(r) {
     location: r.Location ?? r.location,
     category: r.Category ?? r.category,
     medal: (r.Medal ?? r.medal ?? '').toLowerCase(),
+    // Arabic names from the federation's national-team participations record.
+    // Empty where that record has no counterpart, so callers fall back to the
+    // English name rather than showing a blank cell.
+    athleteAr: r.AthleteAr ?? r.athleteAr ?? '',
+    eventAr: r.EventAr ?? r.eventAr ?? '',
   };
 }
 

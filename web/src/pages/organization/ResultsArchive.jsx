@@ -4,6 +4,13 @@ import PageHero from '../../components/PageHero';
 import { fetchResults, fetchResultsStats } from '../../api/services';
 import resultsFallback from '../../data/results';
 
+/* The archive rendered Arabic column headings over English-only names, because
+   the records carried no Arabic. They now do, from the federation's national
+   team participations record — but not for every row, so both helpers fall back
+   to the English name rather than leaving a cell blank. */
+const athleteName = (r, ar) => (ar && r.athleteAr) || r.athlete;
+const eventName = (r, ar) => (ar && r.eventAr) || r.event;
+
 const MEDAL_LABEL = {
   gold: { ar: 'ذهب', en: 'Gold' },
   silver: { ar: 'فضة', en: 'Silver' },
@@ -27,7 +34,13 @@ export default function ResultsArchive() {
   }, []);
 
   const years = useMemo(() => [...new Set(rows.map((r) => r.year))].sort((a, b) => b - a), [rows]);
-  const events = useMemo(() => [...new Set(rows.map((r) => r.event))].sort(), [rows]);
+  /* Keyed on the English name — it is what the record stores and what the
+     filter compares — but labelled in the reader's language. */
+  const events = useMemo(() => {
+    const seen = new Map();
+    rows.forEach((r) => { if (!seen.has(r.event)) seen.set(r.event, eventName(r, ar)); });
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rows, ar]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -39,7 +52,10 @@ export default function ResultsArchive() {
         r.athlete?.toLowerCase().includes(q) ||
         r.athleteSlug?.toLowerCase().includes(q) ||
         r.event?.toLowerCase().includes(q) ||
-        r.category?.toLowerCase().includes(q)
+        r.category?.toLowerCase().includes(q) ||
+        // Searching in Arabic has to find the Arabic spelling too.
+        r.athleteAr?.toLowerCase().includes(q) ||
+        r.eventAr?.toLowerCase().includes(q)
       )) return false;
       return true;
     });
@@ -54,7 +70,11 @@ export default function ResultsArchive() {
     });
     return Object.keys(byYear).sort((a, b) => Number(b) - Number(a)).map((y) => ({
       year: y,
-      events: Object.keys(byYear[y]).map((ev) => ({ event: ev, rows: byYear[y][ev] })),
+      events: Object.keys(byYear[y]).map((ev) => ({
+        event: ev,
+        eventAr: byYear[y][ev][0]?.eventAr || '',
+        rows: byYear[y][ev],
+      })),
     }));
   }, [filtered]);
 
@@ -95,7 +115,7 @@ export default function ResultsArchive() {
               <span className="s-label">{ar ? 'البطولة' : 'Event'}</span>
               <select className="archive-filters__control" value={event} onChange={(e) => setEvent(e.target.value)}>
                 <option value="">{ar ? 'الكل' : 'All'}</option>
-                {events.map((ev) => <option key={ev} value={ev}>{ev}</option>)}
+                {events.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
 
@@ -150,8 +170,8 @@ export default function ResultsArchive() {
                   {filtered.map((r) => (
                     <tr key={r.id || `${r.year}-${r.athlete}-${r.event}-${r.category}-${r.medal}`}>
                       <td className="archive-table__year">{r.year}</td>
-                      <td className="archive-table__athlete">{r.athlete}</td>
-                      <td className="archive-table__event">{r.event}</td>
+                      <td className="archive-table__athlete">{athleteName(r, ar)}</td>
+                      <td className="archive-table__event">{eventName(r, ar)}</td>
                       <td className="archive-table__location">{r.location}</td>
                       <td>{r.category}</td>
                       <td>
@@ -172,10 +192,10 @@ export default function ResultsArchive() {
                   <h3 className="s-heading" style={{ fontSize: '1.5rem' }}>{block.year}</h3>
                   {block.events.map((grp) => (
                     <div key={grp.event} className="archive-event-group" style={{ margin: '1rem 0 1.5rem', padding: '1rem', background: 'var(--clr-offwhite)', borderRadius: 8 }}>
-                      <h4 style={{ marginBottom: '0.75rem' }}>{grp.event}</h4>
+                      <h4 style={{ marginBottom: '0.75rem' }}>{ar ? grp.eventAr || grp.event : grp.event}</h4>
                       {grp.rows.map((r) => (
                         <div key={`${r.athlete}-${r.category}-${r.medal}`} className="archive-result-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0.4rem 0', borderBottom: '1px solid var(--clr-border)' }}>
-                          <strong>{r.athlete}</strong>
+                          <strong>{athleteName(r, ar)}</strong>
                           <span>{r.category}</span>
                           <span>{r.location}</span>
                           <span className={`medal-badge medal-badge--${r.medal}`}>{MEDAL_LABEL[r.medal]?.[ar ? 'ar' : 'en']}</span>

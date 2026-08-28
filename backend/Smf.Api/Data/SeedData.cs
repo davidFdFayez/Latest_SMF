@@ -45,6 +45,11 @@ public static class SeedData
             SeedResults(db, env);
         }
 
+        // Results seeded before the Arabic name columns existed hold empty
+        // strings, and SeedResults only runs on an empty table, so they would
+        // stay English-only forever. Fill them from the same source file.
+        BackfillResultNames(db, env, logger);
+
         if (!db.Pages.Any())
         {
             SeedPages(db);
@@ -239,9 +244,66 @@ public static class SeedData
                 Event = (r.Event ?? string.Empty).Replace("&amp;", "&"),
                 Location = r.Location ?? string.Empty,
                 Category = r.Category ?? string.Empty,
-                Medal = (r.Medal ?? string.Empty).ToLowerInvariant()
+                Medal = (r.Medal ?? string.Empty).ToLowerInvariant(),
+                AthleteAr = r.AthleteAr ?? string.Empty,
+                EventAr = r.EventAr ?? string.Empty
             });
         }
+    }
+
+    /// <summary>
+    /// Copies the Arabic athlete and championship names onto results that were
+    /// seeded before those columns existed.
+    ///
+    /// Matched on year plus the English athlete name, which is exactly how the
+    /// rows were written in the first place, so the pairing is unambiguous.
+    /// Rows whose source entry has no Arabic name — an athlete absent from the
+    /// federation's participations record, or one whose spelling is unconfirmed
+    /// — are left empty on purpose and the archive shows the English name.
+    ///
+    /// Idempotent: only rows still missing a value are considered.
+    /// </summary>
+    private static void BackfillResultNames(SmfDbContext db, IWebHostEnvironment env, ILogger? logger)
+    {
+        var pending = db.Results.Where(r => r.AthleteAr == "" || r.EventAr == "").ToList();
+        if (pending.Count == 0) return;
+
+        List<RawResultRecord> source;
+        try
+        {
+            source = JsonSerializer.Deserialize<List<RawResultRecord>>(
+                ReadResultsJson(env),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Could not read results.json to backfill Arabic names.");
+            return;
+        }
+
+        var byKey = source
+            .Where(r => !string.IsNullOrWhiteSpace(r.AthleteAr) || !string.IsNullOrWhiteSpace(r.EventAr))
+            .GroupBy(r => (r.Year, r.Athlete))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var filled = 0;
+        foreach (var record in pending)
+        {
+            if (!byKey.TryGetValue((record.Year, record.Athlete), out var match)) continue;
+
+            if (record.AthleteAr == "" && match.AthleteAr is { Length: > 0 })
+            {
+                record.AthleteAr = match.AthleteAr;
+                filled++;
+            }
+
+            if (record.EventAr == "" && match.EventAr is { Length: > 0 }) record.EventAr = match.EventAr;
+        }
+
+        if (filled == 0) return;
+
+        db.SaveChanges();
+        logger?.LogInformation("Backfilled Arabic names on {Count} result record(s).", filled);
     }
 
     private static string ReadResultsJson(IWebHostEnvironment env)
@@ -273,6 +335,8 @@ public static class SeedData
         public string? Location { get; init; }
         public string? Category { get; init; }
         public string? Medal { get; init; }
+        public string? AthleteAr { get; init; }
+        public string? EventAr { get; init; }
     }
 
     private static void SeedSettings(SmfDbContext db)
