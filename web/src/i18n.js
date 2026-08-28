@@ -10,6 +10,9 @@ const resources = {
       },
       govtBar: {
         name: 'الاتحاد السعودي للملاكمة التايلندية',
+        // The counterpart name, shown small beneath the logo so the brand
+        // lockup reads bilingually whichever language the site is in.
+        nameAlt: 'Saudi Muaythai Federation',
         email: 'info@saudimuaythai.sa',
       },
       nav: {
@@ -93,6 +96,7 @@ const resources = {
       },
       govtBar: {
         name: 'Saudi Muaythai Federation',
+        nameAlt: 'الاتحاد السعودي للملاكمة التايلندية',
         email: 'info@saudimuaythai.sa',
       },
       nav: {

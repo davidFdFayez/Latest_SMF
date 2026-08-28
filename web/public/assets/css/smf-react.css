@@ -852,8 +852,10 @@
 .main-nav__item--cta { display: none; }
 
 /* Matches the nav drawer breakpoint in stylec7a3.css (§23b) — while the drawer
-   is in charge, the CTA belongs inside it rather than beside the logo. */
-@media (max-width: 1680px) {
+   is in charge, the CTA belongs inside it rather than beside the logo.
+   Both copies must move together: leaving this one at the old 1680px hid the
+   call to action on every laptop even after the nav row itself came back. */
+@media (max-width: 1080px) {
   .main-nav__item--cta { display: block; margin-block-start: var(--space-md, 1rem); }
   .nav-cta--inline { display: none; }
 }

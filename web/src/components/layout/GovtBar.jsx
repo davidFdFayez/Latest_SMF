@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { IconEmail, IconWhatsApp, IconXTwitter, IconInstagram, IconYouTube, IconSnapchat, IconTikTok, IconLinkedIn } from '../icons/Icons';
 import { socialStrip } from '../../data/socialLinks';
@@ -22,8 +23,11 @@ export default function GovtBar() {
   return (
     <div className="govt-bar">
       <div className="container govt-bar__inner">
-        <span className="govt-bar__name">{t('govtBar.name')}</span>
-        <div className="govt-bar__right">
+        {/* The federation name moved to the brand lockup beside the logo, where
+            it belongs. This bar now carries contact details on one side and the
+            two utility links on the other, so both halves do something instead
+            of framing a gap. */}
+        <div className="govt-bar__left">
           <a className="govt-bar__link" href={`mailto:${t('govtBar.email')}`}>
             <IconEmail aria-hidden="true" />
             <span>{t('govtBar.email')}</span>
@@ -35,6 +39,16 @@ export default function GovtBar() {
               </a>
             ))}
           </div>
+        </div>
+
+        <div className="govt-bar__right">
+          <Link className="govt-bar__link govt-bar__link--whistle" to="/whistleblower">
+            {t('nav.whistleblower')}
+          </Link>
+          <span className="govt-bar__divider" aria-hidden="true" />
+          <Link className="govt-bar__link" to="/contact">
+            {t('nav.contact')}
+          </Link>
         </div>
       </div>
     </div>

@@ -77,7 +77,7 @@
     --transition:   0.22s ease;
 
     /* Nav */
-    --nav-height:    88px;
+    --nav-height:    76px;
     --govt-height:   40px;
 }
 
@@ -276,10 +276,25 @@ p:last-child { margin-bottom: 0; }
     white-space: nowrap;
 }
 
+.govt-bar__left,
 .govt-bar__right {
     display: flex;
     align-items: center;
     gap: var(--space-lg);
+}
+
+/* Reporting a violation is a duty-of-care link, so it is legible rather than
+   loud: white on the green bar instead of the red used in the old nav row,
+   which failed contrast against this background. */
+.govt-bar__link--whistle {
+    font-weight: 700;
+    color: var(--clr-white);
+}
+
+.govt-bar__divider {
+    inline-size: 1px;
+    block-size: 14px;
+    background: rgba(255, 255, 255, 0.28);
 }
 
 .govt-bar__link {
@@ -311,8 +326,16 @@ p:last-child { margin-bottom: 0; }
     top: 0;
     z-index: 100;
     background: var(--clr-white);
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
-    transition: box-shadow var(--transition);
+    border-block-end: 1px solid var(--clr-grey-100);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: box-shadow var(--transition), background var(--transition);
+}
+
+/* Once the page has moved, the header earns a real shadow — it is now floating
+   over content rather than sitting at the top of it. */
+.site-header.scrolled {
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.10);
+    border-block-end-color: transparent;
 }
 
 .main-nav { height: var(--nav-height); }
@@ -325,17 +348,72 @@ p:last-child { margin-bottom: 0; }
     gap: var(--space-lg);
 }
 
-.main-nav__logo img {
-    height: 88px;
-    width: auto;
-    max-width: 140px;
-    object-fit: contain;
+/* The logo used to sit alone, 62px wide against an 88px bar, with the
+   federation's name stranded in the green strip above. Pairing them gives the
+   header an anchor and makes the name part of the brand rather than a caption
+   on a different band. */
+.main-nav__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
     flex-shrink: 0;
+    min-inline-size: 0;
+    color: inherit;
 }
 
+.main-nav__brand-mark {
+    height: 58px;
+    width: auto;
+    max-width: 92px;
+    object-fit: contain;
+    flex-shrink: 0;
+    transition: height var(--transition);
+}
+
+.main-nav__brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-inline-size: 0;
+}
+
+.main-nav__brand-name {
+    font-family: var(--font-heading);
+    font-size: 0.94rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--clr-green-dark, #084d31);
+    white-space: nowrap;
+}
+
+/* The counterpart language, small enough to read as a subtitle rather than
+   competing with the name above it. */
+.main-nav__brand-alt {
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    color: var(--clr-text-muted);
+    white-space: nowrap;
+}
+
+/* Scrolling trades a little height for content: the bar tightens and the crest
+   comes down with it, so the page keeps more of the viewport as you read. */
+.site-header.scrolled .main-nav { height: 64px; }
+.site-header.scrolled .main-nav__brand-mark { height: 46px; }
+.main-nav { transition: height var(--transition); }
+
+/* The brand, the menu and the controls are three blocks on one row. Left to
+   themselves they pack together and leave the free width stranded at one end —
+   226px of dead space at 1440px, which is what made the bar look unfinished.
+   Giving the menu the free space and centring it inside pins the controls to
+   the far edge and balances the row at any width. */
 .main-nav__menu {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-inline-size: 0;
     gap: 0;
     height: 100%;
 }
@@ -346,10 +424,10 @@ p:last-child { margin-bottom: 0; }
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 0 0.75rem;
+    padding: 0 0.85rem;
     height: 100%;
     font-family: var(--font-heading);
-    font-size: 0.82rem;
+    font-size: 0.86rem;
     font-weight: 600;
     color: var(--clr-grey-700);
     letter-spacing: 0.01em;
@@ -357,6 +435,9 @@ p:last-child { margin-bottom: 0; }
     white-space: nowrap;
     position: relative;
 }
+
+/* Utility links are drawer-only: on desktop they live in the top bar. */
+.main-nav__item--utility { display: none; }
 .main-nav__link::after {
     content: '';
     position: absolute;
@@ -1462,23 +1543,26 @@ fieldset.form-group legend {
     .admin-sidebar { display: none; }
 }
 
-/* ─── 23b. Responsive — Main navigation (≤1680px) ────────────────────────────
-   The desktop nav is a single row of ten items plus the call to action and the
-   language toggle. In English that row needs about 1555px, so collapsing it at
-   1024px left every page scrolling sideways between roughly 1040px and 1660px,
-   with the language toggle pushed off the right edge entirely — the symptom
-   reported as TXT-03.
+/* ─── 23b. Responsive — Main navigation (≤1080px) ────────────────────────────
+   This query used to start at 1680px, because the row carried nine primary
+   items plus the call to action and the language toggle and needed ~1555px in
+   English. Collapsing it any lower made the page scroll sideways (TXT-03), so
+   the breakpoint was raised instead — which left every ordinary laptop, 1440px
+   included, with a hamburger and a bar holding only a logo and two buttons.
 
-   These rules are the same drawer the phone layout already used; only the width
-   at which it takes over has changed. They live in their own query rather than
-   in the 1024px block above because the grid rules there are unrelated to the
-   nav and should keep their own breakpoint.
+   The row now carries six items: the two utility links moved to the top bar and
+   the unbuilt development-pathways entry moved into the federation menu. That
+   fits a laptop with room to spare, so the drawer goes back to being what it
+   was meant for — tablets and phones.
 
    Keep this value in sync with NAV_DRAWER_MAX_WIDTH in
    src/components/layout/Header.jsx, which decides whether a dropdown opens on
    click (drawer) or on hover (desktop).
 ────────────────────────────────────────────────────────────────────────────── */
-@media (max-width: 1680px) {
+@media (max-width: 1080px) {
+    /* Utility links are part of the drawer, since the top bar hides them here. */
+    .main-nav__item--utility { display: flex; }
+
     .main-nav__menu {
         display: none;
         position: fixed;
@@ -1555,12 +1639,19 @@ fieldset.form-group legend {
     .admin-stat-cards { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }
 
+    /* The bar is a fixed 40px and cannot wrap. On a phone it keeps the social
+       strip only: the email address and the two utility links are both reachable
+       from the drawer, and neither fits beside eight icons at 360px. The whole
+       right group goes, divider included, rather than leaving it stranded. */
     .govt-bar__link { display: none; }
-    /* The bar is a fixed 40px, so it cannot wrap. The federation's full name
-       will not fit beside eight icons on a 360px phone — truncate the name
-       rather than let it push the whole page sideways. */
-    .govt-bar__name { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; }
-    .govt-bar__right { flex-shrink: 0; }
+    .govt-bar__right { display: none; }
+    .govt-bar__left { flex: 1; justify-content: flex-start; }
+
+    /* The full federation name will not fit next to the logo, the language
+       toggle and the menu button at this width, so the lockup falls back to the
+       crest alone — the name is the first thing in the page heading anyway. */
+    .main-nav__brand-text { display: none; }
+    .main-nav__brand-mark { height: 46px; }
     .contact-strip__list { flex-direction: column; gap: var(--space-md); }
 
     .whistleblower-intro { grid-template-columns: 1fr; }
