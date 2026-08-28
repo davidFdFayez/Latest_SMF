@@ -54,7 +54,7 @@ public static class SqliteSchemaGuard
                     if (string.IsNullOrEmpty(column) || existing.Contains(column)) continue;
 
                     var definition = $"\"{column}\" {property.GetColumnType()}";
-                    if (!property.IsNullable) definition += $" NOT NULL DEFAULT {DefaultLiteral(property.ClrType)}";
+                    if (!property.IsNullable) definition += $" NOT NULL DEFAULT {DefaultLiteral(entityType, property)}";
 
                     db.Database.ExecuteSqlRaw($"ALTER TABLE \"{table}\" ADD COLUMN {definition}");
                     logger?.LogInformation("Added missing column {Table}.{Column} to the SQLite schema.", table, column);
@@ -143,6 +143,55 @@ public static class SqliteSchemaGuard
     /// SQLite requires a constant default when adding a NOT NULL column to a
     /// table that may already hold rows.
     /// </summary>
+    /// <summary>
+    /// The value existing rows receive for a newly added non-nullable column.
+    ///
+    /// The model's own default is used where the entity declares one, because a
+    /// bare type default silently rewrites history: <c>AdminUser.IsActive</c>
+    /// defaults to <c>true</c> and <c>Role</c> to super admin, but adding those
+    /// columns with <c>0</c> and <c>''</c> deactivates every existing
+    /// administrator and strips their role — which is exactly what happened to
+    /// this database's original <c>admin</c> account.
+    ///
+    /// The defaults live in C# property initialisers rather than EF metadata,
+    /// so they are read by constructing the entity, which is what the
+    /// application itself would produce for a new row.
+    /// </summary>
+    private static string DefaultLiteral(Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType,
+                                         Microsoft.EntityFrameworkCore.Metadata.IProperty property)
+    {
+        try
+        {
+            if (Activator.CreateInstance(entityType.ClrType) is { } prototype)
+            {
+                var value = property.PropertyInfo?.GetValue(prototype);
+                if (value is not null)
+                {
+                    var literal = Literal(value);
+                    if (literal is not null) return literal;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // An entity without a usable parameterless constructor falls back to
+            // the type default below.
+        }
+
+        return DefaultLiteral(property.ClrType);
+    }
+
+    /// <summary>A SQLite literal for a concrete default value, or null if unsupported.</summary>
+    private static string? Literal(object value) => value switch
+    {
+        string s => "'" + s.Replace("'", "''") + "'",
+        bool b => b ? "1" : "0",
+        DateTime or DateTimeOffset or Guid => null, // "now"-style defaults are not stable literals
+        IFormattable n when value.GetType().IsPrimitive || value is decimal =>
+            n.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
+        _ => null,
+    };
+
     private static string DefaultLiteral(Type clrType)
     {
         var type = Nullable.GetUnderlyingType(clrType) ?? clrType;
