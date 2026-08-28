@@ -70,6 +70,19 @@ public class Registration
     /// </summary>
     public int? SupersedesId { get; set; }
 
+    /// <summary>
+    /// When the "your membership is about to expire" notice was last sent, so
+    /// the daily sweep warns each member once per term rather than every day.
+    /// Cleared on renewal, which starts a fresh term and a fresh warning.
+    /// </summary>
+    public DateTime? RenewalReminderSentAt { get; set; }
+
+    /// <summary>
+    /// When the completion reminder was last sent, for the same reason. Cleared
+    /// whenever a new completion request opens a new window.
+    /// </summary>
+    public DateTime? CompletionReminderSentAt { get; set; }
+
     /// <summary>True once the term has elapsed, whatever the stored status says.</summary>
     public bool IsExpired(DateTime asOf) => ExpiresAt is { } expiry && expiry <= asOf;
 }

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Smf.Api.Data;
@@ -376,6 +377,70 @@ public static class AdminEndpoints
                 cancellationToken);
 
             return outcome.Ok ? Results.Ok(Detail(entity)) : Problem(outcome);
+        });
+
+        // §6 — تعديل. The one §6 action with no endpoint at all until now: the
+        // permission was granted to three roles and the operational rules name
+        // it explicitly ("تعديل البيانات بعد الاعتماد"), but nothing could
+        // actually amend a stored request.
+        group.MapPut("/{id:int}", async (
+            int id,
+            RegistrationEditRequest request,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            MembershipService memberships,
+            CancellationToken cancellationToken) =>
+        {
+            var entity = await db.Registrations.FindAsync([id], cancellationToken);
+            if (entity is null) return Results.NotFound();
+
+            var outcome = await memberships.EditAsync(
+                entity,
+                request.Payload,
+                request.InternalNotes,
+                request.MembershipNumber,
+                AdminIdentity.Current(user),
+                cancellationToken);
+
+            return outcome.Ok ? Results.Ok(Detail(entity)) : Problem(outcome);
+        });
+
+        // §6 — تصدير. Also previously unimplemented despite every role holding
+        // the grant. The export carries applicant contact details, so it is
+        // permission-gated and every download is recorded in the audit trail.
+        group.MapGet("/export", async (
+            string? type,
+            string? status,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            AuditLogger audit,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.Export)) return Forbid(MembershipRoles.Actions.Export);
+
+            var query = db.Registrations.AsNoTracking().AsQueryable();
+            if (!string.IsNullOrWhiteSpace(type)) query = query.Where(r => r.Type == type);
+            if (!string.IsNullOrWhiteSpace(status)) query = query.Where(r => r.Status == status);
+
+            var items = await query.OrderByDescending(r => r.CreatedAt).ToListAsync(cancellationToken);
+
+            audit.Write(
+                actor,
+                AuditActions.Exported,
+                "registration",
+                0,
+                details: $"Exported {items.Count} record(s); type={type ?? "all"}, status={status ?? "all"}.");
+            await db.SaveChangesAsync(cancellationToken);
+
+            var csv = RegistrationExport.ToCsv(items);
+
+            // A UTF-8 BOM so Excel reads the Arabic columns as Arabic rather
+            // than as the machine's ANSI codepage.
+            var bytes = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
+            var name = $"smf-memberships-{DateTime.UtcNow:yyyyMMdd-HHmm}.csv";
+
+            return Results.File(bytes, "text/csv; charset=utf-8", name);
         });
 
         // §1 — تجديد كل 3 سنوات.

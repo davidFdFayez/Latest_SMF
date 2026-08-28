@@ -37,6 +37,11 @@ builder.Services.AddSingleton<SmsSender>();
 builder.Services.AddScoped<AuditLogger>();
 builder.Services.AddScoped<MembershipService>();
 
+// Nothing in an HTTP API notices a three-year term running out, so the
+// time-based half of §1/§6 — renewal warnings, expiry, completion reminders —
+// runs on a schedule.
+builder.Services.AddHostedService<MembershipMaintenanceService>();
+
 // SEC-05 — behind Cloudflare the origin only ever sees the edge's address, so
 // the real client IP (used by the rate limiter and the logs) comes from the
 // forwarded headers. KnownNetworks/Proxies are cleared because the upstream is

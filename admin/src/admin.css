@@ -1257,3 +1257,29 @@ textarea:focus {
   flex-basis: 100%;
   color: var(--text-muted);
 }
+
+/* Inline editor for a stored membership record (§6 تعديل). */
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.edit-grid__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-grid__field span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.edit-grid__field input {
+  font-size: 13px;
+}

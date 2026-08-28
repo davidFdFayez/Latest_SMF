@@ -98,10 +98,10 @@ public class MembershipService(
 
         ApplyStatusSideEffects(registration, toStatus, now);
 
-        audit.Registration(actor, AuditActions.StatusChanged, registration, fromStatus, toStatus, reason);
+        audit.Registration(actor, AuditActionFor(fromStatus, toStatus), registration, fromStatus, toStatus, reason);
         await db.SaveChangesAsync(cancellationToken);
 
-        await NotifyAsync(registration, NotificationTemplates.ForStatus(toStatus), cancellationToken);
+        await NotifyAsync(registration, TemplateFor(registration, fromStatus, toStatus), cancellationToken);
 
         return Outcome.Success();
     }
@@ -137,6 +137,8 @@ public class MembershipService(
         registration.ExpiresAt = from.AddYears(MembershipTracks.TermYears(registration.Type));
         registration.RenewedAt = now;
         registration.RenewalCount += 1;
+        // A fresh term warns again as it approaches its own end.
+        registration.RenewalReminderSentAt = null;
         registration.Status = RegistrationStatuses.Approved;
         registration.StatusChangedAt = now;
         registration.LastActionBy = actor.Username;
@@ -235,11 +237,237 @@ public class MembershipService(
     }
 
     /// <summary>
+    /// تعديل البيانات — amends a stored request (§6). Permitted after approval
+    /// too: §6 assigns that to "مسؤولو لوحة التحكم في الاتحاد حسب الصلاحيات
+    /// المعتمدة", which is exactly the <c>edit</c> grant.
+    ///
+    /// The replacement payload is re-validated with the same rules the public
+    /// form enforces, so a correction cannot introduce data the portal itself
+    /// would have refused.
+    /// </summary>
+    public async Task<Outcome> EditAsync(
+        Registration registration,
+        JsonElement? payload,
+        string? internalNotes,
+        string? membershipNumber,
+        AdminIdentity.Actor actor,
+        CancellationToken cancellationToken = default)
+    {
+        if (!actor.Can(MembershipRoles.Actions.Edit))
+        {
+            await audit.DeniedAsync(actor, MembershipRoles.Actions.Edit, "registration", registration.Id, cancellationToken);
+            return Outcome.Forbidden(
+                "لا تملك صلاحية تعديل بيانات العضوية.",
+                "Your role does not grant 'edit' on membership requests.");
+        }
+
+        var changedFields = new List<string>();
+        var gradeChanged = false;
+
+        if (payload is { } incoming)
+        {
+            if (incoming.ValueKind != JsonValueKind.Object)
+                return Outcome.Invalid("بيانات الطلب غير صالحة.", "The payload is not a valid object.");
+
+            var validation = RegistrationValidator.Validate(registration.Type, incoming);
+            if (!validation.IsValid)
+                return Outcome.Invalid(
+                    "بعض الحقول غير صحيحة: " + string.Join(", ", validation.Errors.Keys),
+                    "Some fields are not valid: " + string.Join(", ", validation.Errors.Keys));
+
+            changedFields = ChangedFields(registration.PayloadJson, incoming, out gradeChanged);
+            registration.PayloadJson = incoming.GetRawText();
+        }
+
+        if (internalNotes is not null && internalNotes != registration.InternalNotes)
+        {
+            registration.InternalNotes = internalNotes;
+            changedFields.Add("internalNotes");
+        }
+
+        if (membershipNumber is not null && membershipNumber != registration.MembershipNumber)
+        {
+            registration.MembershipNumber = membershipNumber;
+            changedFields.Add("membershipNumber");
+        }
+
+        if (changedFields.Count == 0) return Outcome.Success();
+
+        registration.LastActionBy = actor.Username;
+
+        // Field names only. The values are the applicant's identity documents
+        // and contact details, and the audit trail is not the place to copy them.
+        audit.Registration(
+            actor,
+            AuditActions.Edited,
+            registration,
+            details: "Changed: " + string.Join(", ", changedFields));
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        // An internal note is not the applicant's business; a change to their
+        // own record is. A referee's grade has its own approved wording (§4).
+        if (changedFields.Any(f => f != "internalNotes"))
+        {
+            await NotifyAsync(
+                registration,
+                gradeChanged ? NotificationTemplates.RefereeGradeUpdated : NotificationTemplates.DetailsUpdated,
+                cancellationToken);
+        }
+
+        return Outcome.Success();
+    }
+
+    /// <summary>
+    /// Names of the payload fields that differ, so the audit entry says what
+    /// was touched without reproducing any of it.
+    /// </summary>
+    private static List<string> ChangedFields(string beforeJson, JsonElement after, out bool refereeGradeChanged)
+    {
+        refereeGradeChanged = false;
+        var changed = new List<string>();
+
+        JsonElement before;
+        try
+        {
+            before = JsonDocument.Parse(beforeJson).RootElement;
+        }
+        catch (JsonException)
+        {
+            return ["payload"];
+        }
+
+        if (before.ValueKind != JsonValueKind.Object) return ["payload"];
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var p in before.EnumerateObject()) names.Add(p.Name);
+        foreach (var p in after.EnumerateObject()) names.Add(p.Name);
+
+        foreach (var name in names)
+        {
+            var hadBefore = before.TryGetProperty(name, out var oldValue);
+            var hasAfter = after.TryGetProperty(name, out var newValue);
+
+            var same = hadBefore && hasAfter
+                       && oldValue.GetRawText() == newValue.GetRawText();
+
+            if (same) continue;
+
+            changed.Add(name);
+            if (name is "refereeGrade") refereeGradeChanged = true;
+        }
+
+        changed.Sort(StringComparer.Ordinal);
+        return changed;
+    }
+
+    /// <summary>
+    /// Warns members whose term is approaching its end, so §6's تجديد notice
+    /// arrives before the membership lapses rather than after. Each member is
+    /// warned once per term. Returns how many notices were sent.
+    /// </summary>
+    public async Task<int> SendRenewalRemindersAsync(int withinDays, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var cutoff = now.AddDays(withinDays);
+
+        var due = await db.Registrations
+            .Where(r => r.Status == RegistrationStatuses.Approved
+                        && r.ExpiresAt != null
+                        && r.ExpiresAt > now
+                        && r.ExpiresAt <= cutoff
+                        && r.RenewalReminderSentAt == null)
+            .ToListAsync(cancellationToken);
+
+        if (due.Count == 0) return 0;
+
+        foreach (var registration in due) registration.RenewalReminderSentAt = now;
+
+        // Stamped before sending: a duplicate notice is worse than a missed one,
+        // and the senders already swallow their own failures.
+        await db.SaveChangesAsync(cancellationToken);
+
+        foreach (var registration in due)
+            await NotifyAsync(registration, NotificationTemplates.RenewalDue, cancellationToken);
+
+        logger.LogInformation("Sent {Count} renewal reminder(s).", due.Count);
+        return due.Count;
+    }
+
+    /// <summary>
+    /// Chases applicants who still owe the federation missing items, once per
+    /// completion window, from halfway through it onward. §6 sets the window at
+    /// seven working days and nothing is auto-rejected when it lapses, so the
+    /// reminder is the only prompt the applicant gets.
+    /// </summary>
+    public async Task<int> SendCompletionRemindersAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+
+        var candidates = await db.Registrations
+            .Where(r => r.Status == RegistrationStatuses.AwaitingCompletion
+                        && r.CompletionDueAt != null
+                        && r.CompletionReminderSentAt == null)
+            .ToListAsync(cancellationToken);
+
+        // Reminding on the same day the request was raised would just repeat the
+        // completion request itself, so it waits until the window is half spent.
+        var due = candidates
+            .Where(r => r.StatusChangedAt is { } raised
+                        && r.CompletionDueAt is { } deadline
+                        && now >= raised.AddTicks((deadline - raised).Ticks / 2))
+            .ToList();
+
+        if (due.Count == 0) return 0;
+
+        foreach (var registration in due) registration.CompletionReminderSentAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+
+        foreach (var registration in due)
+            await NotifyAsync(registration, NotificationTemplates.CompletionReminder, cancellationToken);
+
+        logger.LogInformation("Sent {Count} completion reminder(s).", due.Count);
+        return due.Count;
+    }
+
+    /// <summary>
     /// إعادة التقديم بعد الرفض (§6). A rejection is terminal, so re-applying
     /// opens a fresh request that points back at the rejected one.
     /// </summary>
     public static void LinkResubmission(Registration fresh, Registration rejected) =>
         fresh.SupersedesId = rejected.Id;
+
+    /// <summary>
+    /// The audit verb for a lifecycle move. Suspension, reinstatement, and
+    /// expiry are the entries someone auditing the register actually looks for,
+    /// so they are not flattened into a generic status change.
+    /// </summary>
+    private static string AuditActionFor(string from, string to) => (from, to) switch
+    {
+        (_, RegistrationStatuses.Suspended) => AuditActions.Suspended,
+        (RegistrationStatuses.Suspended, RegistrationStatuses.Approved) => AuditActions.Reinstated,
+        (_, RegistrationStatuses.Expired) => AuditActions.Expired,
+        _ => AuditActions.StatusChanged,
+    };
+
+    /// <summary>
+    /// The template for a status, preferring a track-specific one where the
+    /// federation wrote separate copy — §5 clubs are accredited as a facility
+    /// rather than enrolled as a person, and the approved wording says so.
+    /// </summary>
+    private static string? TemplateFor(Registration registration, string fromStatus, string toStatus)
+    {
+        // Returning to review because the applicant supplied what was missing is
+        // a different message from being picked up for review the first time —
+        // the federation wrote separate copy for it.
+        if (fromStatus == RegistrationStatuses.AwaitingCompletion && toStatus == RegistrationStatuses.UnderReview)
+            return NotificationTemplates.ResubmittedAfterCompletion;
+
+        if (toStatus == RegistrationStatuses.Approved && registration.Type == "club")
+            return NotificationTemplates.ClubApproved;
+
+        return NotificationTemplates.ForStatus(toStatus);
+    }
 
     /// <summary>Field changes that belong to a particular destination status.</summary>
     private void ApplyStatusSideEffects(Registration registration, string toStatus, DateTime now)
@@ -254,10 +482,13 @@ public class MembershipService(
                     .AddYears(MembershipTracks.TermYears(registration.Type));
                 registration.SuspendedAt = null;
                 registration.CompletionDueAt = null;
+                registration.CompletionReminderSentAt = null;
                 break;
 
             case RegistrationStatuses.AwaitingCompletion:
                 registration.CompletionDueAt = WorkingDays.CompletionDeadline(now, CompletionWorkingDays);
+                // A new window deserves its own reminder.
+                registration.CompletionReminderSentAt = null;
                 break;
 
             case RegistrationStatuses.Suspended:

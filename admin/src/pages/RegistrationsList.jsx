@@ -111,6 +111,9 @@ export default function RegistrationsList() {
   const [pendingChange, setPendingChange] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  // §6 تعديل — the open editor, as { id, fields, internalNotes, membershipNumber }.
+  const [editing, setEditing] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -201,6 +204,7 @@ export default function RegistrationsList() {
       setExpandedId(null)
       setDetail(null)
       setAudit([])
+      setEditing(null)
       return
     }
 
@@ -208,6 +212,7 @@ export default function RegistrationsList() {
     setDetail(null)
     setAudit([])
     setPendingChange(null)
+    setEditing(null)
     setDetailLoading(true)
 
     try {
@@ -275,6 +280,68 @@ export default function RegistrationsList() {
       setError(extractErrorMessage(err, 'Could not renew this membership.'))
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  /**
+   * Opens the editor over the record's own payload. Only scalar fields are
+   * offered: attachments and nested objects are managed through their own
+   * flows, and a text box is the wrong tool for them.
+   */
+  function startEditing(item) {
+    const payload = parsePayload(detail)
+    const fields = Object.fromEntries(
+      Object.entries(payload)
+        .filter(([key, value]) => !DETAIL_EXCLUDED.has(key) && (value === null || typeof value !== 'object'))
+        .map(([key, value]) => [key, value ?? '']),
+    )
+    setEditing({
+      id: getId(item),
+      fields,
+      internalNotes: detail?.internalNotes || '',
+      membershipNumber: detail?.membershipNumber || '',
+    })
+  }
+
+  async function saveEdit(item) {
+    const id = getId(item)
+    setUpdatingId(id)
+    setError('')
+    setNotice('')
+    try {
+      // The untouched parts of the payload are preserved: only the scalar
+      // fields the editor showed are replaced.
+      const payload = { ...parsePayload(detail), ...editing.fields }
+      const updated = await registrationsApi.update(id, {
+        payload,
+        internalNotes: editing.internalNotes,
+        membershipNumber: editing.membershipNumber || null,
+      })
+      mergeUpdated(id, updated)
+      setDetail(updated)
+      setEditing(null)
+      setNotice(`${item.referenceNumber} updated. The applicant has been notified.`)
+      setAudit(await registrationsApi.audit(id).catch(() => audit))
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Could not save these changes.'))
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  async function exportCsv() {
+    setExporting(true)
+    setError('')
+    try {
+      await registrationsApi.exportCsv({
+        type: typeFilter === 'all' ? undefined : typeFilter,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+      })
+      setNotice('Export downloaded. This download is recorded in the audit trail.')
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Could not export the register.'))
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -360,6 +427,14 @@ export default function RegistrationsList() {
         >
           Needs attention{attentionCount ? ` (${attentionCount})` : ''}
         </button>
+
+        {/* §6 تصدير. Exports what the current filters show, and the download
+            itself is written to the audit trail. */}
+        {can('export') && (
+          <button type="button" className="btn btn--small" onClick={exportCsv} disabled={exporting || !filtered.length}>
+            {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -389,6 +464,7 @@ export default function RegistrationsList() {
                 const track = trackOf(type)
                 const moves = movesFor(status)
                 const change = pendingChange?.id === id ? pendingChange : null
+                const edit = editing?.id === id ? editing : null
                 const busy = updatingId === id
                 const payload = isExpanded ? parsePayload(detail) : {}
                 const attachments = attachmentsOf(payload)
@@ -589,6 +665,73 @@ export default function RegistrationsList() {
                                     {attachment.slot} — {attachment.fileName}
                                   </button>
                                 ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* §6 تعديل — amend the stored record. Permitted after
+                              approval too; the API re-validates every field with
+                              the public form's own rules, so a correction cannot
+                              introduce data the portal would have refused. */}
+                          {can('edit') && detail && !edit && (
+                            <div className="detail-panel">
+                              <button type="button" className="btn btn--small" onClick={() => startEditing(item)}>
+                                Edit details
+                              </button>
+                            </div>
+                          )}
+
+                          {edit && (
+                            <div className="detail-panel">
+                              <h4>Edit details</h4>
+                              <div className="edit-grid">
+                                {Object.entries(edit.fields).map(([key, value]) => (
+                                  <label key={key} className="edit-grid__field">
+                                    <span>{key}</span>
+                                    <input
+                                      type="text"
+                                      value={value}
+                                      onChange={(event) =>
+                                        setEditing({
+                                          ...edit,
+                                          fields: { ...edit.fields, [key]: event.target.value },
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+
+                              <label className="detail-panel__field">
+                                <span>Membership / accreditation number</span>
+                                <input
+                                  type="text"
+                                  value={edit.membershipNumber}
+                                  onChange={(event) => setEditing({ ...edit, membershipNumber: event.target.value })}
+                                />
+                              </label>
+
+                              <label className="detail-panel__field">
+                                <span>Internal notes — not sent to the applicant</span>
+                                <textarea
+                                  rows={3}
+                                  value={edit.internalNotes}
+                                  onChange={(event) => setEditing({ ...edit, internalNotes: event.target.value })}
+                                />
+                              </label>
+
+                              <p className="field__hint">
+                                Changing anything other than the internal notes notifies the applicant that their
+                                record was updated.
+                              </p>
+
+                              <div className="detail-panel__actions">
+                                <button type="button" className="btn btn--primary" disabled={busy} onClick={() => saveEdit(item)}>
+                                  {busy ? 'Saving…' : 'Save changes'}
+                                </button>
+                                <button type="button" className="btn" onClick={() => setEditing(null)}>
+                                  Cancel
+                                </button>
                               </div>
                             </div>
                           )}

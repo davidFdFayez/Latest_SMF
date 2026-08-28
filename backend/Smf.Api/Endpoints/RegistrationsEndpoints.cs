@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
 using Smf.Api.Data;
 using Smf.Api.Data.Models;
@@ -91,6 +92,11 @@ public static class RegistrationsEndpoints
                 CreatedAt = DateTime.UtcNow,
             };
 
+            // §6 — إعادة التقديم بعد الرفض. A rejection is terminal, so applying
+            // again opens a fresh request; linking it to the rejected one lets a
+            // reviewer see what was wrong last time instead of starting blind.
+            registration.SupersedesId = await FindSupersededAsync(db, type, payload, cancellationToken);
+
             db.Registrations.Add(registration);
             await db.SaveChangesAsync(cancellationToken);
 
@@ -133,6 +139,61 @@ public static class RegistrationsEndpoints
         .DisableAntiforgery()
         .RequireRateLimiting(RateLimitPolicies.PublicRegistration)
         .WithTags("Registrations");
+    }
+
+    /// <summary>
+    /// The applicant's most recent rejected request of this type, if any.
+    ///
+    /// Identity is the national/residency id where the form collects one, and
+    /// the email address otherwise. Only rejected requests are matched: an
+    /// applicant with one already in flight is submitting a duplicate rather
+    /// than re-applying, and linking those would misrepresent the history.
+    /// </summary>
+    private static async Task<int?> FindSupersededAsync(
+        SmfDbContext db,
+        string type,
+        JsonElement payload,
+        CancellationToken cancellationToken)
+    {
+        var nationalId = RegistrationPayload.FirstString(payload, "nationalId");
+        var email = RegistrationPayload.FirstString(payload, "email", "applicantEmail", "officialEmail");
+
+        if (nationalId is null && email is null) return null;
+
+        // The identity lives inside the stored JSON, so candidates are narrowed
+        // in the database and matched in memory rather than with a LIKE over it.
+        var candidates = await db.Registrations
+            .Where(r => r.Type == type && r.Status == RegistrationStatuses.Rejected)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new { r.Id, r.PayloadJson })
+            .ToListAsync(cancellationToken);
+
+        foreach (var candidate in candidates)
+        {
+            JsonElement previous;
+            try
+            {
+                previous = JsonDocument.Parse(candidate.PayloadJson).RootElement;
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (nationalId is not null
+                && string.Equals(RegistrationPayload.FirstString(previous, "nationalId"), nationalId, StringComparison.OrdinalIgnoreCase))
+                return candidate.Id;
+
+            if (nationalId is null
+                && email is not null
+                && string.Equals(
+                    RegistrationPayload.FirstString(previous, "email", "applicantEmail", "officialEmail"),
+                    email,
+                    StringComparison.OrdinalIgnoreCase))
+                return candidate.Id;
+        }
+
+        return null;
     }
 
     /// <summary>Bilingual 400, in the shape the portal knows how to display.</summary>

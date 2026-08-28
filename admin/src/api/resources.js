@@ -141,6 +141,35 @@ export const registrationsApi = {
     return unwrapItem(response.data)
   },
 
+  /**
+   * §6 تعديل — amends a stored request. `patch` carries any of
+   * { payload, internalNotes, membershipNumber }; the API re-validates the
+   * payload with the same rules the public form uses.
+   */
+  async update(id, patch) {
+    const response = await client.put(`/admin/registrations/${id}`, patch)
+    return unwrapItem(response.data)
+  },
+
+  /**
+   * §6 تصدير — downloads the register as CSV. Behind the bearer token, so it is
+   * fetched as a blob and handed to the browser rather than linked.
+   */
+  async exportCsv(params) {
+    const response = await client.get('/admin/registrations/export', {
+      params,
+      responseType: 'blob',
+    })
+    const url = URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `smf-memberships-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+  },
+
   /** Requests whose completion window has run out (§6). */
   async overdue() {
     const response = await client.get('/admin/registrations/overdue')

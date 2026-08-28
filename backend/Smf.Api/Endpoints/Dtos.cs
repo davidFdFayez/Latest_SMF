@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Smf.Api.Endpoints;
 
 public record LoginRequest(string Username, string Password);
@@ -49,3 +51,14 @@ public record ContactCreateRequest(string Name, string Email, string? Phone, str
 public record WhistleblowerCreateRequest(string Description, string? OptionalContact);
 
 public record SettingUpsertRequest(string Key, string ValueAr, string ValueEn);
+
+/// <summary>
+/// §6 تعديل. Every field is optional: an edit may replace the applicant's
+/// payload, adjust the internal notes, set the membership number, or any
+/// combination. Omitted fields are left as they are.
+/// </summary>
+/// <param name="Payload">Replacement applicant data, re-validated server-side.</param>
+public record RegistrationEditRequest(
+    JsonElement? Payload,
+    string? InternalNotes,
+    string? MembershipNumber);
