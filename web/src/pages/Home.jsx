@@ -415,14 +415,22 @@ export default function Home() {
                   ? (ar ? 'الفعاليات والمنافسات' : 'Events & Competitions')
                   : (ar ? 'أخبار الاتحاد' : 'Federation News');
 
+              // Extra props are forwarded so the image link can opt out of the
+              // accessibility tree — see below.
               const TitleLink = isIfma
-                ? ({ children, className }) => <a className={className} href={href} target="_blank" rel="noopener noreferrer">{children}</a>
-                : ({ children, className }) => <Link className={className} to={href}>{children}</Link>;
+                ? ({ children, className, ...rest }) => <a className={className} href={href} target="_blank" rel="noopener noreferrer" {...rest}>{children}</a>
+                : ({ children, className, ...rest }) => <Link className={className} to={href} {...rest}>{children}</Link>;
 
               return (
                 <article className={`news-card${isIfma ? ' ifma-card' : ''}`} key={n.id || n.externalUrl}>
+                  {/* P8 — the card already links to the article twice, from the
+                      headline and from "read more". This third link wraps a
+                      decorative image (alt=""), so it has no accessible name of
+                      its own and would be announced as an empty link. Keeping it
+                      clickable by mouse while hiding it from assistive tech and
+                      the tab order gives one link per card instead of three. */}
                   {n.imageUrl && (
-                    <TitleLink className="news-card__img-link">
+                    <TitleLink className="news-card__img-link" aria-hidden="true" tabIndex={-1}>
                       <img className="news-card__img" src={n.imageUrl} alt="" loading="lazy" />
                     </TitleLink>
                   )}

@@ -172,7 +172,10 @@ p:last-child { margin-bottom: 0; }
     margin-bottom: var(--space-3xl);
 }
 .section__header h2 { margin-bottom: var(--space-sm); }
-.section__header p  { color: var(--clr-grey-400); max-width: 600px; margin-inline: auto; }
+/* WCAG AA (P8) — grey-400 on white is 2.54:1, below the 4.5:1 required for
+   body-sized text. The muted-text token is the same grey family at 4.83:1, and
+   is already what .activities-section uses for this same element. */
+.section__header p  { color: var(--clr-text-muted); max-width: 600px; margin-inline: auto; }
 
 .section__heading-accent {
     display: inline-block;
@@ -7550,7 +7553,9 @@ main { display: block; min-height: 40vh; }
 
 /* ── IFMA news cards (homepage "Latest from IFMA") ───────────────────────── */
 .ifma-card__source {
-    color: #B8860B;
+    /* WCAG AA (P8) — #B8860B on this background is 2.93:1. Darkened along the
+       same hue to 4.6:1; the chip reads identically, just legibly. */
+    color: #8E6708;
     background: #FAF3D9;
 }
 

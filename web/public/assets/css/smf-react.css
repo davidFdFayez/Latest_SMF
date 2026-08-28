@@ -89,9 +89,12 @@
   font-size: 0.75rem;
   font-weight: 700;
 }
-.medal-badge--gold { background: #faf3d9; color: #b89230; }
+/* WCAG AA (P8) — the gold and bronze inks were 2.63:1 and 3.1:1 on their own
+   chip backgrounds. Darkened along the same hues to just over 4.5:1. Silver
+   already passed at 6.9:1 and is unchanged. */
+.medal-badge--gold { background: #faf3d9; color: #866b23; }
 .medal-badge--silver { background: #f1f5f9; color: #475569; }
-.medal-badge--bronze { background: #f5e6d3; color: #b87333; }
+.medal-badge--bronze { background: #f5e6d3; color: #935c29; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MONOGRAM AVATARS
@@ -1563,4 +1566,12 @@ body.lang-ar {
 .archive-filters__views .btn {
   display: inline-flex;
   align-items: center;
+}
+/* The sizing rule above sets a white background at two-class specificity, which
+   outranks .btn--green and left the *selected* view toggle white-on-white —
+   an invisible label. Re-asserted here at matching specificity, after it. */
+.archive-filters__views .btn--green {
+  background: var(--clr-green, #0d613f);
+  border-color: var(--clr-green, #0d613f);
+  color: var(--clr-white, #fff);
 }
