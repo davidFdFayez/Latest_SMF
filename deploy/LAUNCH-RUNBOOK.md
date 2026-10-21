@@ -82,7 +82,13 @@ straight to the origin IP is refused, not the particular tool.
   notification (§6: submission, completion request, approval, rejection,
   renewal, expiry, suspension) is written to `Email__OutboxPath`
   (default `/app/data/outbox`) instead of being sent, and the API logs a warning
-  at startup saying so. Set `Email__Host`, `Email__Port`, `Email__User`,
+  at startup saying so. Phase 3 raises the stakes: a club, coach or athlete
+  account is taken up through a link that only arrives by email, so with no
+  mail server nobody can get into a portal by themselves. The console no
+  longer hides that — an invitation that was not delivered comes back with the
+  activation link for an administrator to pass on by hand (Member accounts →
+  **Get link**), each use written to the audit log. That is a way through, not
+  a substitute for configuring mail. Set `Email__Host`, `Email__Port`, `Email__User`,
   `Email__Password`, `Email__From` in `docker-compose.yml` (placeholders are
   there). Confirm afterwards in the console: **Memberships → open a request →
   Notifications** should read "Sent", not "Held in outbox".
@@ -91,6 +97,10 @@ straight to the origin IP is refused, not the particular tool.
   asks for both channels, so leaving this unset is a known gap, not a silent one.
 - **Set `Admin__BaseUrl`** to the console's public address. Password-reset links
   are built from it, so a wrong value emails an unusable link.
+- **Set `Site__BaseUrl`** to the public site's address, for the same reason:
+  portal activation links are built from it, and it defaults to
+  `https://saudimuaythai.sa`. Check it before handing anybody a link —
+  the link the console shows is the one the member will open.
 - **Give each administrator an email address** (Users → edit → Email). An account
   without one cannot use the self-service password reset.
 

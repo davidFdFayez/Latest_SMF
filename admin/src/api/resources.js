@@ -566,6 +566,11 @@ export const memberAccountsApi = {
     const response = await client.post(`/admin/member-accounts/${accountId}/resend`)
     return response.data
   },
+  /** A fresh activation link, for an account that never received one. */
+  async inviteLink(accountId) {
+    const response = await client.post(`/admin/member-accounts/${accountId}/invite-link`)
+    return response.data
+  },
   async setActive(accountId, isActive) {
     const response = await client.post(`/admin/member-accounts/${accountId}/active`, { isActive })
     return response.data

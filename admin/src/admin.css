@@ -2460,3 +2460,30 @@ textarea:focus {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* The activation link an administrator passes on by hand when no mail server
+   is configured (Phase 3 REQ-05/06/07). Wide and selectable, because it is
+   going to be copied. */
+.invite-link {
+  border-color: var(--warning);
+  background: var(--warning-light);
+}
+
+.invite-link__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.invite-link__row input {
+  flex: 1 1 320px;
+  min-width: 0;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+}

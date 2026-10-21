@@ -31,7 +31,22 @@ public class MemberAccountService(
 
     /* ── invitations ────────────────────────────────────────────────────── */
 
-    public sealed record InviteResult(MemberAccount Account, bool AlreadyExisted, string? Token);
+    /// <summary>
+    /// What came of an invitation.
+    ///
+    /// <paramref name="Link"/> and <paramref name="Delivered"/> exist because
+    /// an invitation that nobody receives leaves the account unusable, and
+    /// only the hash of the token is kept, so there is no reading it back
+    /// later. When the message did not leave the building — no SMTP host
+    /// configured, or the server refused it — the federation needs the link
+    /// in its hand to pass on by whatever other means it has.
+    /// </summary>
+    public sealed record InviteResult(
+        MemberAccount Account,
+        bool AlreadyExisted,
+        string? Token,
+        string? Link = null,
+        bool Delivered = false);
 
     /// <summary>
     /// Attaches an existing account, or creates one and invites it.
@@ -75,6 +90,11 @@ public class MemberAccountService(
                     await db.SaveChangesAsync(cancellationToken);
                 }
 
+                audit.Write(By(invitedBy), AuditActions.MemberAccountUpdated, "member_account",
+                    existing.Id, existing.Email,
+                    details: "An existing account was attached rather than invited again.");
+                await db.SaveChangesAsync(cancellationToken);
+
                 return (Outcome.Success(), new InviteResult(existing, true, null));
             }
 
@@ -82,9 +102,17 @@ public class MemberAccountService(
             var reissued = Issue(existing);
             existing.InvitedBy = invitedBy;
             await db.SaveChangesAsync(cancellationToken);
-            await SendInviteAsync(existing, reissued, cancellationToken);
+            var resent = await SendInviteAsync(existing, reissued, cancellationToken);
 
-            return (Outcome.Success(), new InviteResult(existing, false, reissued));
+            audit.Write(By(invitedBy), AuditActions.MemberAccountInvited, "member_account",
+                existing.Id, existing.Email,
+                details: resent.Delivered
+                    ? "Invitation sent again."
+                    : "Invitation sent again; it was not delivered, so the link was shown.");
+            await db.SaveChangesAsync(cancellationToken);
+
+            return (Outcome.Success(),
+                new InviteResult(existing, false, reissued, resent.Link, resent.Delivered));
         }
 
         var registration = await db.Registrations
@@ -114,8 +142,16 @@ public class MemberAccountService(
         db.MemberAccounts.Add(account);
         await db.SaveChangesAsync(cancellationToken);
 
-        await SendInviteAsync(account, token, cancellationToken);
-        return (Outcome.Success(), new InviteResult(account, false, token));
+        var sent = await SendInviteAsync(account, token, cancellationToken);
+
+        audit.Write(By(invitedBy), AuditActions.MemberAccountInvited, "member_account",
+            account.Id, account.Email,
+            details: sent.Delivered
+                ? $"A {kind} account was invited."
+                : $"A {kind} account was invited; it was not delivered, so the link was shown.");
+        await db.SaveChangesAsync(cancellationToken);
+
+        return (Outcome.Success(), new InviteResult(account, false, token, sent.Link, sent.Delivered));
     }
 
     /// <summary>Checks an invitation without spending it, so the page can say whether it is good.</summary>
@@ -330,10 +366,27 @@ public class MemberAccountService(
         return token;
     }
 
+    /// <summary>
+    /// The actor for the log. An invitation can come from the console or from
+    /// a club's own portal, so all that is certain is the name it was made
+    /// under; it carries no permissions, and nothing here consults any.
+    /// </summary>
+    private static AdminIdentity.Actor By(string invitedBy) =>
+        new(null, string.IsNullOrWhiteSpace(invitedBy) ? "unknown" : invitedBy, null,
+            new HashSet<string>());
+
     private static string Hash(string token) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
-    private async Task SendInviteAsync(MemberAccount account, string token, CancellationToken cancellationToken)
+    /// <summary>
+    /// Sends the invitation, and says where it got to. "Delivered" means the
+    /// mail server took it; a message written to the outbox because no host
+    /// is configured has not been delivered to anybody.
+    /// </summary>
+    private async Task<(string Link, bool Delivered)> SendInviteAsync(
+        MemberAccount account,
+        string token,
+        CancellationToken cancellationToken)
     {
         var baseUrl = (configuration["Site:BaseUrl"] ?? "https://saudimuaythai.sa").TrimEnd('/');
         var link = $"{baseUrl}/account/activate?token={token}";
@@ -373,5 +426,45 @@ public class MemberAccountService(
             subject: subject,
             body: body,
             cancellationToken: cancellationToken);
+
+        // The dispatcher records what happened to it; read that rather than
+        // guessing from the configuration, so an SMTP host that is set but
+        // refusing counts as undelivered too.
+        var status = await db.NotificationLog
+            .Where(n => n.TemplateKey == "member.invitation" && n.Recipient == account.Email)
+            .OrderByDescending(n => n.Id)
+            .Select(n => n.Status)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return (link, status == NotificationStatuses.Sent);
+    }
+
+    /// <summary>
+    /// A fresh invitation for an account that is still pending, for the case
+    /// where the message was sent and never arrived. The old link stops
+    /// working, which is the point: there is only ever one live invitation.
+    /// </summary>
+    public async Task<(Outcome Result, string? Link)> ReissueAsync(
+        MemberAccount account,
+        AdminIdentity.Actor actor,
+        CancellationToken cancellationToken = default)
+    {
+        if (!account.IsPending)
+        {
+            return (Outcome.Conflict(
+                "الحساب مفعّل بالفعل.",
+                "That account is already active."), null);
+        }
+
+        var token = Issue(account);
+        await db.SaveChangesAsync(cancellationToken);
+        var sent = await SendInviteAsync(account, token, cancellationToken);
+
+        // Handing over a link is handing over the account, so it is on the record.
+        audit.Write(actor, AuditActions.MemberAccountInvited, "member_account", account.Id,
+            account.Email, details: "Activation link reissued and shown to an administrator.");
+        await db.SaveChangesAsync(cancellationToken);
+
+        return (Outcome.Success(), sent.Link);
     }
 }

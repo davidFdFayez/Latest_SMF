@@ -24,6 +24,8 @@ export default function MemberAccountsList() {
   const [kind, setKind] = useState('')
   const [search, setSearch] = useState('')
   const [working, setWorking] = useState(false)
+  // An activation link to hand over, for when the message did not get there.
+  const [link, setLink] = useState(null)
 
   const load = useCallback(async () => {
     const [list, pending] = await Promise.all([
@@ -54,13 +56,29 @@ export default function MemberAccountsList() {
     setNotice('')
     setWorking(true)
     try {
-      await action()
+      const result = await action()
       await load()
-      if (message) setNotice(message)
+
+      // An invitation nobody received leaves the account unusable, so the API
+      // hands the link back instead of saying it was sent.
+      if (result?.activationLink) {
+        setLink({ email: result.email, url: result.activationLink })
+      } else if (message) {
+        setNotice(message)
+      }
     } catch (err) {
       setError(extractErrorMessage(err, 'That did not work.'))
     } finally {
       setWorking(false)
+    }
+  }
+
+  async function copy(text) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setNotice('Link copied.')
+    } catch {
+      setError('Could not reach the clipboard — select the link and copy it by hand.')
     }
   }
 
@@ -77,6 +95,30 @@ export default function MemberAccountsList() {
       <Alert type="success" onDismiss={() => setNotice('')}>
         {notice}
       </Alert>
+
+      {/* The link is the account: it is shown once, to be passed on by hand. */}
+      {link && (
+        <section className="form-card invite-link">
+          <h3 className="form-section-title form-section-title--first">
+            Activation link for {link.email}
+          </h3>
+          <p className="form-card__intro">
+            No mail server is set up, so nothing was sent. Pass this link to the account holder yourself.
+            It is good for 14 days, it works once, and nobody can read it back afterwards — if it goes
+            astray, issue a new one, which retires this one.
+          </p>
+
+          <div className="invite-link__row">
+            <input type="text" readOnly value={link.url} onFocus={(event) => event.target.select()} />
+            <button type="button" className="btn btn--small" onClick={() => copy(link.url)}>
+              Copy
+            </button>
+            <button type="button" className="btn btn--small btn--ghost" onClick={() => setLink(null)}>
+              Done
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Changes first: they are the thing somebody is waiting on. */}
       {changes.length > 0 && (
@@ -221,16 +263,27 @@ export default function MemberAccountsList() {
                   </td>
                   <td className="data-table__actions">
                     {account.isPending && (
-                      <button
-                        type="button"
-                        className="btn btn--small"
-                        disabled={working}
-                        onClick={() =>
-                          act(() => memberAccountsApi.resend(account.id), 'Invitation sent again.')
-                        }
-                      >
-                        Resend
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn--small"
+                          disabled={working}
+                          onClick={() =>
+                            act(() => memberAccountsApi.resend(account.id), 'Invitation sent again.')
+                          }
+                        >
+                          Resend
+                        </button>
+                        {/* For the holder who says the message never arrived. */}
+                        <button
+                          type="button"
+                          className="btn btn--small btn--ghost"
+                          disabled={working}
+                          onClick={() => act(() => memberAccountsApi.inviteLink(account.id))}
+                        >
+                          Get link
+                        </button>
+                      </>
                     )}
                     <button
                       type="button"

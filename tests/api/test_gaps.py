@@ -360,6 +360,85 @@ if len(slots) > 1:
 
 # =========================================================================
 say("")
+say("=== an invitation nobody receives: the link has to be obtainable ===")
+
+
+def make_club():
+    """An approved club membership, which is what a club account speaks for."""
+    tail = "".join(chr(97 + (b % 26)) for b in uuid.uuid4().bytes[:5])
+    payload = {
+        "firstNameAr": "خالد", "fatherNameAr": "علي", "familyNameAr": "الدوسري",
+        "firstNameEn": "Khalid", "fatherNameEn": "Ali", "familyNameEn": "Al" + tail,
+        "applicantRole": "owner", "applicantId": "1" + str(uuid.uuid4().int)[:9],
+        "nationality": "SA", "applicantPhone": "+966512345678",
+        "applicantEmail": "app%s@example.com" % uuid.uuid4().hex[:8],
+        "officialEmail": "club%s@example.com" % uuid.uuid4().hex[:8],
+        "region": "الرياض", "city": "الرياض",
+        "nameAr": "نادي الفجوات", "nameEn": "Gap Club " + tail,
+        "entityType": "club", "ownerName": "Khalid", "headCoachName": "Coach",
+        "headCoachPhone": "+966512345679",
+        "googleMapsUrl": "https://maps.google.com/?q=riyadh", "consent": True,
+    }
+    st, created = call("POST", "/api/registrations", {"type": "club", "payload": payload})
+    assert st == 200, created
+    rid = sql("select Id from Registrations where ReferenceNumber=?", (created["referenceNumber"],))[0][0]
+    for step in ("under_review", "awaiting_approval"):
+        call("PUT", "/api/admin/registrations/%d/status" % rid, {"status": step}, token=TOKEN)
+    call("PUT", "/api/admin/registrations/%d/status" % rid,
+         {"status": "approved", "membershipNumber": "SMF-C-%d" % rid}, token=TOKEN)
+    return rid, payload["officialEmail"]
+
+
+club_id, club_email = make_club()
+
+status, invited = call("POST", "/api/admin/member-accounts/invite",
+                       {"email": club_email, "kind": "club", "registrationId": club_id,
+                        "displayName": "Gap Club"}, token=TOKEN)
+check("a club is invited", status == 200, invited)
+check("with no mail server the invitation is not reported as delivered",
+      invited["delivered"] is False, invited["delivered"])
+check("so the link comes back to be handed over",
+      bool(invited.get("activationLink")) and "/account/activate?token=" in invited["activationLink"],
+      invited.get("activationLink"))
+
+ACCOUNT = invited["id"]
+first_link = invited["activationLink"]
+
+status, checked = call("GET", "/api/member/activate/%s" % first_link.split("token=")[1])
+check("that link is a working invitation", checked["valid"] is True, checked)
+
+# A holder who says nothing arrived gets a new one, and the old one dies.
+status, fresh = call("POST", "/api/admin/member-accounts/%d/invite-link" % ACCOUNT, token=TOKEN)
+check("a fresh link can be issued", status == 200, fresh)
+second_link = fresh.get("activationLink") or ""
+check("it is a different link", second_link and second_link != first_link, second_link[-12:])
+
+status, stale = call("GET", "/api/member/activate/%s" % first_link.split("token=")[1])
+check("issuing a new one retires the old", stale["valid"] is False, stale)
+
+status, good = call("GET", "/api/member/activate/%s" % second_link.split("token=")[1])
+check("and the new one works", good["valid"] is True, good)
+
+check("handing over a link is on the record",
+      len(sql("select 1 from AuditLog where Action='member_account.invited' and Details like ?",
+              ("%shown to an administrator%",))) >= 1)
+check("and so is the invitation that created the account",
+      len(sql("select 1 from AuditLog where Action='member_account.invited' and EntityRef=?",
+              (club_email,))) >= 2,
+      sql("select count(*) from AuditLog where EntityRef=?", (club_email,))[0][0])
+
+status, activated = call("POST", "/api/member/activate",
+                         {"token": second_link.split("token=")[1], "password": "GapClub2026"})
+check("the account activates from the link alone", status == 200 and activated.get("token"), status)
+
+status, spent = call("POST", "/api/admin/member-accounts/%d/invite-link" % ACCOUNT, token=TOKEN)
+check("an account already activated has no link to give", status == 409, status)
+
+status, anon = call("POST", "/api/admin/member-accounts/%d/invite-link" % ACCOUNT)
+check("and the link is not there for the asking", status in (401, 403), status)
+
+# =========================================================================
+say("")
 say("=== REQ-05 and REQ-06 rule 3: an athlete's row is not public ===")
 
 status, _ = call("GET", "/api/member/athletes/%d" % ATHLETE)

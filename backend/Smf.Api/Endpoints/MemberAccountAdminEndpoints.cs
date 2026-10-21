@@ -60,7 +60,17 @@ public static class MemberAccountAdminEndpoints
                 ct);
 
             return result.Ok
-                ? Results.Ok(new { invite!.Account.Id, invite.Account.Email, invite.AlreadyExisted, invite.Account.IsPending })
+                ? Results.Ok(new
+                {
+                    invite!.Account.Id,
+                    invite.Account.Email,
+                    invite.AlreadyExisted,
+                    invite.Account.IsPending,
+                    invite.Delivered,
+                    // Only when nobody received it. An invitation that arrived
+                    // belongs in its recipient's inbox and nowhere else.
+                    activationLink = invite.Delivered ? null : invite.Link,
+                })
                 : Problem(result);
         }).RequirePermission(AdminPermissions.Users, AdminPermissions.TournamentEntries);
 
@@ -82,12 +92,40 @@ public static class MemberAccountAdminEndpoints
             }
 
             var actor = AdminIdentity.Current(user);
-            var (result, _) = await accounts.InviteAsync(
+            var (result, invite) = await accounts.InviteAsync(
                 account.Email, account.Kind, account.RegistrationId,
                 account.ClubRegistrationId, account.DisplayName, actor.Username, ct);
 
-            return result.Ok ? Results.Ok(new { resent = true }) : Problem(result);
+            return result.Ok
+                ? Results.Ok(new
+                {
+                    resent = true,
+                    delivered = invite?.Delivered ?? false,
+                    activationLink = invite is { Delivered: false } ? invite.Link : null,
+                })
+                : Problem(result);
         }).RequirePermission(AdminPermissions.Users, AdminPermissions.TournamentEntries);
+
+        /// A fresh activation link, for an account that says it never got one.
+        ///
+        /// Only the hash of an invitation is kept, so the live link cannot be
+        /// looked up — it has to be reissued, which retires the old one. The
+        /// link is the account, so this needs the permission that manages
+        /// users rather than the one that runs entries, and every use is
+        /// written to the audit log.
+        group.MapPost("/{accountId:int}/invite-link", async (
+            int accountId, ClaimsPrincipal user, SmfDbContext db,
+            MemberAccountService accounts, CancellationToken ct) =>
+        {
+            var account = await db.MemberAccounts.FirstOrDefaultAsync(a => a.Id == accountId, ct);
+            if (account is null) return Results.NotFound();
+
+            var (result, link) = await accounts.ReissueAsync(account, AdminIdentity.Current(user), ct);
+
+            return result.Ok
+                ? Results.Ok(new { account.Id, account.Email, activationLink = link })
+                : Problem(result);
+        }).RequirePermission(AdminPermissions.Users);
 
         group.MapPost("/{accountId:int}/active", async (
             int accountId, ActiveRequest request, ClaimsPrincipal user,
