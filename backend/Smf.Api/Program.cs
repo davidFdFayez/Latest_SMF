@@ -28,14 +28,29 @@ builder.Services.AddScoped<JwtTokenService>();
 // Registration documents live on disk next to smf.db (see the class for why).
 builder.Services.AddSingleton<RegistrationAttachmentStore>();
 
+// Website content: page schemas and defaults (embedded), and uploaded media.
+builder.Services.AddSingleton<ContentCatalog>();
+builder.Services.AddSingleton<MediaStore>();
+
 // Registration lifecycle notifications (REG-06).
 builder.Services.AddSingleton<EmailSender>();
 builder.Services.AddSingleton<SmsSender>();
+
+// Renders and sends lifecycle notifications, recording every attempt.
+builder.Services.AddScoped<NotificationDispatcher>();
 
 // Phase 2 membership lifecycle (§1–§6). Scoped: both share the request's
 // DbContext so a decision and its audit entry commit together.
 builder.Services.AddScoped<AuditLogger>();
 builder.Services.AddScoped<MembershipService>();
+
+// Phase 3 — running a tournament.
+builder.Services.AddScoped<TournamentService>();
+builder.Services.AddScoped<TournamentEntryService>();
+builder.Services.AddScoped<DrawService>();
+builder.Services.AddScoped<ScheduleService>();
+builder.Services.AddScoped<MedicalFileService>();
+builder.Services.AddScoped<MemberAccountService>();
 
 // Nothing in an HTTP API notices a three-year term running out, so the
 // time-based half of §1/§6 — renewal warnings, expiry, completion reminders —
@@ -91,9 +106,39 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
         ClockSkew = TimeSpan.FromMinutes(1)
     };
+
+    // Roles are editable from the console, so each request re-reads the
+    // account's current permissions and refuses deactivated accounts.
+    options.Events = new JwtBearerEvents { OnTokenValidated = AdminIdentity.OnTokenValidatedAsync };
+})
+// Phase 3 — club, coach and athlete accounts. A second scheme with its own
+// audience, so a member's token does not merely lack permission on an admin
+// endpoint: it fails validation there, whatever anybody does to roles.
+.AddJwtBearer(MemberIdentity.Scheme, options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSection["Issuer"],
+        ValidAudience = MemberIdentity.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        ClockSkew = TimeSpan.FromMinutes(1)
+    };
+
+    options.Events = new JwtBearerEvents { OnTokenValidated = MemberIdentity.OnTokenValidatedAsync };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(MemberIdentity.Policy, policy =>
+    {
+        policy.AuthenticationSchemes.Add(MemberIdentity.Scheme);
+        policy.RequireAuthenticatedUser();
+    });
+});
 
 // The registration submit and document-upload endpoints are public writes, so
 // they are capped per client address. The window is far above what a genuine
@@ -103,13 +148,48 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
+    // A reset link is emailed, so this caps both nuisance mail to a real
+    // address and attempts to guess a token.
+    options.AddPolicy(RateLimitPolicies.PasswordReset, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 8,
+                Window = TimeSpan.FromMinutes(15),
+            }));
+
+    // Configurable so a club registering a squad in one sitting, or a load
+    // test, does not need a new build: RateLimits:PublicRegistration:*.
+    var registrationLimit = builder.Configuration.GetValue("RateLimits:PublicRegistration:PermitLimit", 30);
+    var registrationWindow = builder.Configuration.GetValue("RateLimits:PublicRegistration:WindowMinutes", 10);
+
+    options.AddPolicy(RateLimitPolicies.MemberAuth, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("RateLimits:MemberAuth:PermitLimit", 30),
+                Window = TimeSpan.FromMinutes(
+                    builder.Configuration.GetValue("RateLimits:MemberAuth:WindowMinutes", 5)),
+            }));
+
+    options.AddPolicy(RateLimitPolicies.MembershipCard, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 120,
+                Window = TimeSpan.FromMinutes(1),
+            }));
+
     options.AddPolicy(RateLimitPolicies.PublicRegistration, httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 30,
-                Window = TimeSpan.FromMinutes(10),
+                PermitLimit = registrationLimit,
+                Window = TimeSpan.FromMinutes(registrationWindow),
             }));
 });
 
@@ -185,12 +265,15 @@ app.MapGet("/robots.txt", () => Results.Text(
 
 // Public + admin minimal API endpoint groups.
 app.MapAuthEndpoints();
-app.MapPagesEndpoints();
+app.MapContentEndpoints();
+app.MapMediaEndpoints();
 app.MapNewsEndpoints();
 app.MapEventsEndpoints();
 app.MapResultsEndpoints();
 app.MapSettingsEndpoints();
 app.MapRegistrationsEndpoints();
+app.MapMembershipCardEndpoints();
+app.MapMemberEndpoints();
 app.MapClubsEndpoints();
 app.MapContactEndpoints();
 app.MapWhistleblowerEndpoints();
@@ -200,6 +283,23 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SmfDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Smf.Api.Startup");
+
+    // Loads and checks every content definition now, so a malformed one stops
+    // startup instead of surfacing later as a broken page.
+    var catalog = scope.ServiceProvider.GetRequiredService<ContentCatalog>();
+    logger.LogInformation("Loaded {Count} website content definitions.", catalog.All.Count());
+
+    // Notifications are part of the approved workflow, so an unconfigured
+    // mail server is stated plainly at startup rather than discovered when
+    // an applicant says they never heard back.
+    var mail = scope.ServiceProvider.GetRequiredService<EmailSender>();
+    if (!mail.IsConfigured)
+    {
+        logger.LogWarning(
+            "Email:Host is not configured — applicant notifications are written to {Path} instead of being sent.",
+            mail.OutboxPath);
+    }
+
     SeedData.Initialize(db, app.Environment, logger, app.Configuration);
 }
 

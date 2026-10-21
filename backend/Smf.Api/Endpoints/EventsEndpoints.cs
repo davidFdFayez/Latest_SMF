@@ -41,6 +41,7 @@ public static class EventsEndpoints
             e.StartDate,
             e.EndDate,
             location = e.LocationAr,
+            e.ImageUrl,
             e.Status
         },
         "en" => new
@@ -52,6 +53,7 @@ public static class EventsEndpoints
             e.StartDate,
             e.EndDate,
             location = e.LocationEn,
+            e.ImageUrl,
             e.Status
         },
         _ => new
@@ -66,6 +68,7 @@ public static class EventsEndpoints
             e.EndDate,
             e.LocationAr,
             e.LocationEn,
+            e.ImageUrl,
             e.Status
         }
     };

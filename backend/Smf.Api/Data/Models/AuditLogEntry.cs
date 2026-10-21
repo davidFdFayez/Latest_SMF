@@ -21,7 +21,7 @@ public class AuditLogEntry
     /// <summary>Username captured at the time, so the trail survives the account being renamed or removed.</summary>
     public string ActorName { get; set; } = string.Empty;
 
-    /// <summary>The actor's membership role at the time of the action (§6).</summary>
+    /// <summary>The actor's role keys at the time of the action, comma-separated.</summary>
     public string? ActorRole { get; set; }
 
     /// <summary>What was done — see <see cref="AuditActions"/>.</summary>
@@ -59,5 +59,62 @@ public static class AuditActions
     public const string Exported = "registration.exported";
     public const string Deleted = "registration.deleted";
     public const string AttachmentViewed = "registration.attachment_viewed";
+
+    /// <summary>BUG-11 — a reviewer added or removed one of an applicant's documents.</summary>
+    /* ── Phase 3: running a tournament ─────────────────────────────────── */
+    public const string TournamentCreated = "tournament.created";
+    public const string TournamentUpdated = "tournament.updated";
+    public const string TournamentPublished = "tournament.published";
+    public const string EntryCreated = "tournament.entry_created";
+    public const string EntryUpdated = "tournament.entry_updated";
+    public const string EntryWithdrawn = "tournament.entry_withdrawn";
+    public const string CheckedIn = "tournament.checked_in";
+    public const string MedicalRecorded = "tournament.medical_recorded";
+    public const string WeighInRecorded = "tournament.weigh_in_recorded";
+    public const string ReadinessApproved = "tournament.readiness_approved";
+    public const string DrawCreated = "tournament.draw_created";
+    public const string DrawPublished = "tournament.draw_published";
+    public const string DrawAmended = "tournament.draw_amended";
+    public const string ScheduleGenerated = "tournament.schedule_generated";
+    public const string ScheduleAmended = "tournament.schedule_amended";
+    public const string MemberAccountInvited = "member_account.invited";
+    public const string MemberAccountUpdated = "member_account.updated";
+    public const string ProfileChangeReviewed = "member_account.change_reviewed";
+    public const string SuspensionAdded = "athlete.suspension_added";
+    public const string SuspensionLifted = "athlete.suspension_lifted";
+    public const string MedicalFileUpdated = "athlete.medical_file_updated";
+
+    /// <summary>ISSUE-03 — a card link was replaced, revoking every copy of the old one.</summary>
+    public const string CardReissued = "registration.card_reissued";
+
+    /// <summary>BUG-12 — a membership's end date moved onto the current term.</summary>
+    public const string TermRealigned = "registration.term_realigned";
+
+    public const string AttachmentAdded = "registration.attachment_added";
+    public const string AttachmentRemoved = "registration.attachment_removed";
     public const string PermissionDenied = "registration.permission_denied";
+
+    public const string UserCreated = "admin_user.created";
+    public const string UserUpdated = "admin_user.updated";
+    public const string UserPasswordReset = "admin_user.password_reset";
+    public const string RoleCreated = "admin_role.created";
+    public const string RoleUpdated = "admin_role.updated";
+    public const string RoleDeleted = "admin_role.deleted";
+
+    public const string ContentUpdated = "content.updated";
+    public const string ContentReset = "content.reset";
+    public const string MediaUploaded = "media.uploaded";
+
+    public const string NewsCreated = "news.created";
+    public const string NewsUpdated = "news.updated";
+    public const string NewsDeleted = "news.deleted";
+    public const string EventCreated = "event.created";
+    public const string EventUpdated = "event.updated";
+    public const string EventDeleted = "event.deleted";
+
+    /// <summary>A rejected or cancelled request put back into review.</summary>
+    public const string Reopened = "registration.reopened";
+
+    public const string PasswordResetRequested = "admin_user.password_reset_requested";
+    public const string PasswordResetCompleted = "admin_user.password_reset_completed";
 }

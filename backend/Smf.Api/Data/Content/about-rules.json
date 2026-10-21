@@ -1,0 +1,149 @@
+{
+  "key": "about-rules",
+  "group": "about",
+  "order": 40,
+  "titleEn": "Rules & Officiating",
+  "titleAr": "القواعد والأنظمة",
+  "route": "/about-muaythai/rules",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    {
+      "name": "documents",
+      "type": "group",
+      "label": "Rules documents",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "subtitle", "type": "text", "label": "Line under the heading" },
+        { "name": "typeBadge", "type": "text", "label": "File type badge on each card", "help": "For example: PDF" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Documents",
+          "itemLabel": "Document",
+          "itemTitle": "title",
+          "fields": [
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "description", "type": "textarea", "label": "Description" },
+            { "name": "link", "type": "file", "label": "Document", "help": "Upload a PDF, or paste the link to the document on the IFMA website." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "links",
+      "type": "group",
+      "label": "Reference links",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Links",
+          "itemLabel": "Link",
+          "itemTitle": "title",
+          "fields": [
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "description", "type": "textarea", "label": "Description" },
+            { "name": "url", "type": "url", "label": "Link" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "buttonLabel", "type": "text", "label": "Button label" },
+        { "name": "buttonUrl", "type": "url", "label": "Button link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "قواعد المواي تاي وأنظمة التحكيم", "en": "Muaythai Rules & Officiating Standards" },
+      "subtitle": {
+        "ar": "القواعد والأنظمة الرسمية المعتمدة التي تحكم ممارسة رياضة المواي تاي في المملكة العربية السعودية، مع المرجعية الدولية لـ IFMA.",
+        "en": "Official rules and standards governing Muaythai in the Kingdom of Saudi Arabia, with reference to IFMA's international framework."
+      }
+    },
+    "documents": {
+      "label": { "ar": "وثائق IFMA الرسمية", "en": "Official IFMA Documents" },
+      "heading": { "ar": "قواعد وأنظمة المواي تاي", "en": "Rules & Regulations Documents" },
+      "subtitle": {
+        "ar": "وثائق PDF الرسمية الصادرة عن الاتحاد الدولي IFMA",
+        "en": "Official PDF documents published by the International Federation of Muaythai Associations"
+      },
+      "typeBadge": { "ar": "PDF", "en": "PDF" },
+      "items": [
+        {
+          "title": { "ar": "قواعد وأنظمة IFMA (الإصدار 3.057)", "en": "IFMA Rules and Regulations v3.057" },
+          "description": {
+            "ar": "الوثيقة الرسمية الشاملة لقواعد وأنظمة المواي تاي المعتمدة من الاتحاد الدولي IFMA.",
+            "en": "The official comprehensive rules and regulations document approved by the International Federation of Muaythai Associations."
+          },
+          "link": "https://muaythai.sport/wp-content/uploads/2026/05/IFMA-Rules-and-Regulations-v3.057_110526.pdf"
+        },
+        {
+          "title": { "ar": "أنظمة مواي تاي لور باو", "en": "IFMA Muaythai Lor Pao Rules" },
+          "description": {
+            "ar": "أنظمة مواي تاي لور باو الصادرة عن IFMA.",
+            "en": "Official IFMA Muaythai Lor Pao rules and regulations."
+          },
+          "link": "https://muaythai.sport/wp-content/uploads/2025/07/IFMA-Muaythai-Lor-Pao-v1.03.3_060325.pdf"
+        },
+        {
+          "title": { "ar": "أنظمة تشوك لوم المواي تاي", "en": "IFMA Chok Lom Muaythai Rules" },
+          "description": {
+            "ar": "أنظمة تشوك لوم المواي تاي الصادرة عن IFMA.",
+            "en": "Official IFMA Chok Lom Muaythai rules and regulations."
+          },
+          "link": "https://muaythai.sport/wp-content/uploads/2025/03/IFMA-Chok-Lom-Muaythai-v1.02.3_060325.pdf"
+        }
+      ]
+    },
+    "links": {
+      "label": { "ar": "روابط مرجعية", "en": "Reference Links" },
+      "heading": { "ar": "موارد إضافية من IFMA", "en": "Additional IFMA Resources" },
+      "items": [
+        {
+          "title": { "ar": "دليل المدربين والمديرين — IFMA", "en": "A Coach & Manager's Guide — IFMA" },
+          "description": {
+            "ar": "دليل شامل للمدربين ومديري الفرق من الاتحاد الدولي IFMA.",
+            "en": "Comprehensive guide for coaches and team managers from IFMA."
+          },
+          "url": "https://muaythai.sport/about-muaythai/muaythai-rules/a-coach-and-managers-guide/"
+        },
+        {
+          "title": { "ar": "قواعد المواي تاي — موقع IFMA", "en": "Muaythai Rules — IFMA Website" },
+          "description": {
+            "ar": "صفحة قواعد المواي تاي الرسمية على الموقع الدولي لـ IFMA.",
+            "en": "Official Muaythai rules page on the IFMA international website."
+          },
+          "url": "https://muaythai.sport/about-muaythai/muaythai-rules/"
+        }
+      ]
+    },
+    "cta": {
+      "heading": { "ar": "تعرّف على معدات المواي تاي", "en": "Explore Muaythai Equipment" },
+      "text": {
+        "ar": "اطّلع على متطلبات المعدات والتجهيزات المعتمدة لمنافسات المواي تاي.",
+        "en": "Learn about the approved equipment requirements for Muaythai competitions."
+      },
+      "buttonLabel": { "ar": "المعدات والتجهيزات", "en": "Equipment & Gear" },
+      "buttonUrl": "/about-muaythai/equipment"
+    }
+  }
+}

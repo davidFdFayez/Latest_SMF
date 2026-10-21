@@ -4,21 +4,26 @@ import { useLang } from '../context/LanguageContext';
 import PageHero from '../components/PageHero';
 import { fetchNews } from '../api/services';
 import { formatDate } from '../utils/format';
+import { usePageContent, useText } from '../content/useContent';
 
 export default function News() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('news');
+  const tx = useText();
   const [items, setItems] = useState([]);
 
   useEffect(() => {
     fetchNews({ pageSize: 40, lang }).then((data) => setItems(data || []));
   }, [lang]);
 
+  if (!c) return fallback;
+
   return (
     <>
       <PageHero
-        title={ar ? 'الأخبار' : 'News'}
-        subtitle={ar ? 'آخر أخبار الاتحاد وأخبار IFMA الدولية' : 'Latest SMF news and international IFMA coverage'}
+        title={tx(c.hero.title)}
+        subtitle={tx(c.hero.subtitle)}
         breadcrumb={[{ label: ar ? 'الأخبار' : 'News' }]}
       />
       <section className="section--white">
@@ -38,12 +43,15 @@ export default function News() {
 
               const body = (
                 <>
+                  {/* QA — one 16/9 window for every card thumbnail, filled and
+                      slightly top-biased, in place of the old inline 160px box. */}
                   {n.imageUrl && (
                     <img
+                      className="fed-nav-card__img"
                       src={n.imageUrl}
                       alt=""
-                      style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 8, marginBottom: '0.75rem' }}
                       loading="lazy"
+                      style={n.imageFocus ? { objectPosition: n.imageFocus } : undefined}
                     />
                   )}
                   <div className="fed-nav-card__cat">

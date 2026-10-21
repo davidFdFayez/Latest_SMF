@@ -30,6 +30,9 @@ import AboutPillars from './pages/about/Pillars';
 import AboutDisciplines from './pages/about/Disciplines';
 import AboutRules from './pages/about/Rules';
 import AboutEquipment from './pages/about/Equipment';
+import MembershipCard from './pages/MembershipCard';
+import { AccountActivate, AccountLogin } from './pages/account/AccountAuth';
+import AccountPortal from './pages/account/AccountPortal';
 
 export default function App() {
   return (
@@ -83,6 +86,19 @@ export default function App() {
         <Route path="contact" element={<Contact />} />
         <Route path="*" element={<Placeholder section="notfound" />} />
       </Route>
+
+      {/* ISSUE-03 — a member's card stands on its own: no site navigation, no
+          footer, nothing but the card. It is opened from a QR code at a
+          competition door and printed onto a lanyard, so the chrome would only
+          be in the way. */}
+      <Route path="membership/:token" element={<MembershipCard />} />
+
+      {/* Phase 3 REQ-05/06/07 — the club, coach and athlete portal. It stands
+          outside the site layout: it is a signed-in area, not a page of the
+          public website. */}
+      <Route path="account/login" element={<AccountLogin />} />
+      <Route path="account/activate" element={<AccountActivate />} />
+      <Route path="account" element={<AccountPortal />} />
     </Routes>
   );
 }

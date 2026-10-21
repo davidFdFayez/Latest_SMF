@@ -1,0 +1,125 @@
+{
+  "key": "about-pillars",
+  "group": "about",
+  "order": 20,
+  "titleEn": "Five Pillars",
+  "titleAr": "الركائز الخمس",
+  "route": "/about-muaythai/pillars",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    { "name": "intro", "type": "textarea", "label": "Introduction" },
+    {
+      "name": "pillars",
+      "type": "group",
+      "label": "The five pillars",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Pillars",
+          "itemLabel": "Pillar",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "number", "type": "string", "label": "Number", "help": "For example: 01" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Description" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "ركائز المواي تاي الخمس", "en": "5 Pillars of Muaythai" },
+      "subtitle": {
+        "ar": "القيم الجوهرية التي تُحدّد هوية المواي تاي وتتجاوز حدود القوة البدنية لتبلغ مرتبة المبادئ الثقافية والأخلاقية الراقية.",
+        "en": "The core values that define Muaythai — transcending physical strength to embody cultural and ethical principles."
+      }
+    },
+    "intro": {
+      "ar": "تُمثّل الركائز الخمس للمواي تاي القيمَ المحورية التي تُشكّل جوهر هذه الرياضة وهويتها، إذ تتخطى مستوى القدرة الجسدية لتُكرّس مبادئ ثقافية وأخلاقية عريقة تربط الممارسين بتراث ضارب في أعماق التاريخ.",
+      "en": "The 5 Pillars of Muaythai represent the core values that define the sport, transcending physical strength to embody cultural and ethical principles that connect practitioners to a centuries-old heritage."
+    },
+    "pillars": {
+      "label": { "ar": "القيم الجوهرية", "en": "Core Values" },
+      "heading": { "ar": "الركائز الخمس", "en": "The 5 Pillars" },
+      "items": [
+        {
+          "number": "01",
+          "title": { "ar": "التقاليد", "en": "Tradition" },
+          "body": {
+            "ar": "المواي تاي متجذّرة في عمق الثقافة التايلاندية، تُعبّر عن التوقير والانتماء للموروث الأصيل من خلال الطقوس الراسخة كرقصة \"واي كرو\" (Wai Kru) وأداء \"رام مواي\" (Ram Muay). هذه الممارسات ليست مجرد حركات، بل هي خطاب ثقافي صامت تتناقله الأجيال.",
+            "en": "Muaythai is deeply rooted in Thai culture, showcasing respect for heritage through rituals like Wai Kru and Ram Muay — cultural practices passed from generation to generation."
+          }
+        },
+        {
+          "number": "02",
+          "title": { "ar": "الاحترام", "en": "Respect" },
+          "body": {
+            "ar": "يُكنّ الرياضيون التقدير لمنافسيهم ومدربيهم وللفن القتالي ذاته، مُجسِّدين روح الاحترام المتبادل والروح الرياضية النبيلة التي تُميّز المواي تاي عن غيرها.",
+            "en": "Athletes honor their opponents, coaches, and the art itself, emphasizing mutual respect and sportsmanship that defines the spirit of Muaythai."
+          }
+        },
+        {
+          "number": "03",
+          "title": { "ar": "التميز", "en": "Excellence" },
+          "body": {
+            "ar": "السعي الدائم نحو التطوير والإتقان في التقنيات القتالية يُعدّ ركيزةً أساسية في منهج المواي تاي، حيث لا يتوقف الممارس عن التحسين والتنقية مهما بلغ مستواه.",
+            "en": "Continuous improvement and mastery of technique define Muaythai's pursuit of excellence — a practitioner never stops refining their craft."
+          }
+        },
+        {
+          "number": "04",
+          "title": { "ar": "اللعب النظيف", "en": "Fair Play" },
+          "body": {
+            "ar": "الالتزام بالأنظمة والسلوك الأخلاقي الرفيع ضمانٌ لنزاهة المنافسة وعدالتها، وهو ما تُرسّخه المواي تاي في كل ممارسيها منذ أولى خطواتهم.",
+            "en": "Adherence to rules and ethical conduct ensures fairness in competition — values Muaythai instills from the very first day of training."
+          }
+        },
+        {
+          "number": "05",
+          "title": { "ar": "الشرف", "en": "Honor" },
+          "body": {
+            "ar": "تُحفّز المواي تاي روح الوحدة والانتماء الجماعي، فتُجسّد الفخر الثقافي لمجتمعات شتى حول العالم وتبني علاقات إنسانية راسخة بين الممارسين.",
+            "en": "Muaythai promotes unity and cultural pride, building strong communities worldwide — connecting practitioners across all backgrounds."
+          }
+        }
+      ]
+    },
+    "cta": {
+      "heading": { "ar": "استكشف المواي تاي", "en": "Explore Muaythai" },
+      "text": {
+        "ar": "انطلق في رحلة عبر تاريخ المواي تاي العريق، من جذوره في تايلاند القديمة إلى مكانته اليوم كرياضة عالمية مزدهرة، تشهد نموًا متسارعًا ونجاحات متواصلة في المملكة العربية السعودية.",
+        "en": "Explore the timeless art of Muaythai and its incredible journey from ancient Thailand to becoming a globally celebrated sport thriving in Saudi Arabia."
+      },
+      "primaryLabel": { "ar": "تصفّح التخصصات", "en": "Explore Disciplines" },
+      "primaryUrl": "/about-muaythai/disciplines",
+      "secondaryLabel": { "ar": "تاريخ المواي تاي", "en": "History of Muaythai" },
+      "secondaryUrl": "/about-muaythai/history"
+    }
+  }
+}

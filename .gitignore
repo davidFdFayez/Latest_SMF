@@ -29,3 +29,10 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Runtime output: mail and SMS written to disk when no server is configured,
+# and the documents applicants upload. None of it belongs in the repository.
+backend/Smf.Api/Data/outbox/
+backend/Smf.Api/Data/sms-outbox/
+backend/Smf.Api/Data/uploads/
+backend/Smf.Api/Data/media/

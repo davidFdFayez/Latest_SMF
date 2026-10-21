@@ -1,24 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { IconEmail, IconWhatsApp, IconXTwitter, IconInstagram, IconYouTube, IconSnapchat, IconTikTok, IconLinkedIn } from '../icons/Icons';
-import { socialStrip } from '../../data/socialLinks';
-
-/* CNT-06 — URLs come from the one shared list; this only sets the order. */
-const ICONS = {
-  whatsapp: IconWhatsApp,
-  x: IconXTwitter,
-  instagram: IconInstagram,
-  youtube: IconYouTube,
-  snapchat: IconSnapchat,
-  tiktok: IconTikTok,
-  linkedin: IconLinkedIn,
-};
-
-const SOCIALS = socialStrip(['whatsapp', 'x', 'instagram', 'youtube', 'snapchat', 'tiktok', 'linkedin'])
-  .map((entry) => ({ ...entry, Icon: ICONS[entry.key] }));
+import { IconEmail } from '../icons/Icons';
+import { useSiteContent } from '../../content/site';
+import { SOCIAL_PLATFORMS, socialAccounts } from './socialPlatforms';
 
 export default function GovtBar() {
   const { t } = useTranslation();
+  const { site, navLabel } = useSiteContent();
+
+  const email = site ? site.contact?.email : t('govtBar.email');
+  const socials = socialAccounts(site, { topBarOnly: true });
 
   return (
     <div className="govt-bar">
@@ -28,26 +19,31 @@ export default function GovtBar() {
             two utility links on the other, so both halves do something instead
             of framing a gap. */}
         <div className="govt-bar__left">
-          <a className="govt-bar__link" href={`mailto:${t('govtBar.email')}`}>
-            <IconEmail aria-hidden="true" />
-            <span>{t('govtBar.email')}</span>
-          </a>
+          {email && (
+            <a className="govt-bar__link" href={`mailto:${email}`}>
+              <IconEmail aria-hidden="true" />
+              <span>{email}</span>
+            </a>
+          )}
           <div className="govt-bar__socials">
-            {SOCIALS.map(({ key, href, Icon, label }) => (
-              <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
-                <Icon aria-hidden="true" />
-              </a>
-            ))}
+            {socials.map(({ platform, url }, index) => {
+              const { Icon, label } = SOCIAL_PLATFORMS[platform];
+              return (
+                <a key={`${platform}-${index}`} href={url} target="_blank" rel="noopener noreferrer" aria-label={label}>
+                  <Icon aria-hidden="true" />
+                </a>
+              );
+            })}
           </div>
         </div>
 
         <div className="govt-bar__right">
           <Link className="govt-bar__link govt-bar__link--whistle" to="/whistleblower">
-            {t('nav.whistleblower')}
+            {navLabel('whistleblower')}
           </Link>
           <span className="govt-bar__divider" aria-hidden="true" />
           <Link className="govt-bar__link" to="/contact">
-            {t('nav.contact')}
+            {navLabel('contact')}
           </Link>
         </div>
       </div>

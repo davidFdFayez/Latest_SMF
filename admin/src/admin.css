@@ -1057,18 +1057,6 @@ textarea:focus {
   color: var(--text-muted);
 }
 
-.login-form__hint {
-  text-align: center;
-  font-size: 12.5px;
-  color: var(--text-muted);
-  margin-top: 16px;
-  margin-bottom: 0;
-}
-
-.login-form__hint code {
-  font-size: 12px;
-}
-
 /* ---------- Not found ---------- */
 
 .not-found {
@@ -1258,6 +1246,147 @@ textarea:focus {
   color: var(--text-muted);
 }
 
+/* ── Users & roles ──────────────────────────────────────────────────────────
+   Checkable cards for assigning roles to a user and permissions to a role. */
+
+.form-card + .form-card {
+  margin-top: 20px;
+}
+
+/* A fieldset used only to disable a whole form at once (read-only accounts/roles). */
+.plain-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.form-section-title--first {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.icon-btn:disabled,
+.icon-btn:disabled:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: #fff;
+}
+
+.form-card__intro {
+  margin: -4px 0 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.choice-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.choice:hover {
+  border-color: var(--accent);
+}
+
+.choice.is-checked {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.choice.is-disabled {
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.choice.is-disabled:hover {
+  border-color: var(--border);
+}
+
+.choice input {
+  width: auto;
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+.choice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.choice__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.choice__meta,
+.choice__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.choice__note {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+.perm-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px 4px;
+  margin-bottom: 14px;
+}
+
+.perm-group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.perm-group__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.perm-group__count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-inline-start: 6px;
+  font-weight: 500;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 /* Inline editor for a stored membership record (§6 تعديل). */
 .edit-grid {
   display: grid;
@@ -1282,4 +1411,972 @@ textarea:focus {
 
 .edit-grid__field input {
   font-size: 13px;
+}
+
+/* ── Website content editor ─────────────────────────────────────────────────
+   Forms generated from a page's content schema (components/content). */
+
+.cms-group-list {
+  margin-bottom: 28px;
+}
+
+.cms-group-list__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cms-group-list__title span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cms-editor {
+  padding-bottom: 80px;
+}
+
+.cms-editor .form-card {
+  max-width: none;
+}
+
+.cms-editor__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -12px 0 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.cms-editor__status .btn {
+  margin-inline-start: auto;
+}
+
+.cms-section {
+  padding: 0;
+  margin-bottom: 14px;
+}
+
+.cms-section + .cms-section {
+  margin-top: 0;
+}
+
+.cms-section__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+}
+
+.cms-section__chevron {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.cms-section__body {
+  padding: 0 22px 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+
+.cms-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cms-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cms-field--narrow {
+  max-width: 520px;
+}
+
+.cms-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cms-bilingual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cms-lang {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cms-lang__tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cms-lang textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.cms-checkbox {
+  display: inline-flex;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.cms-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px 16px;
+  margin: 0;
+  min-width: 0;
+}
+
+.cms-group legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.cms-media {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.cms-media__preview {
+  flex-shrink: 0;
+  width: 120px;
+  height: 90px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: #f9fafb;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cms-media__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cms-media__controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cms-media__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cms-list__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cms-list__count {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #eef0f2;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+.cms-list__empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.cms-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cms-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cms-item.is-open:not(.cms-item--compact) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.cms-item__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.cms-item--compact .cms-item__head {
+  align-items: flex-start;
+  padding: 10px;
+}
+
+.cms-item__toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px;
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cms-item__index {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cms-item__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cms-item__inline {
+  flex: 1;
+  min-width: 0;
+}
+
+.cms-item__tools {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.cms-item__tools .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.cms-item__body {
+  padding: 14px 14px 16px;
+  border-top: 1px solid var(--border);
+  background: #fcfcfd;
+  border-radius: 0 0 8px 8px;
+}
+
+.cms-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding: 12px 18px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.cms-savebar.is-dirty {
+  border-color: var(--warning);
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.cms-savebar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .cms-bilingual {
+    grid-template-columns: 1fr;
+  }
+
+  .cms-media {
+    flex-direction: column;
+  }
+}
+
+/* -- Per-member review page ------------------------------------------------
+   One membership request read top to bottom (RegistrationReview): the identity
+   strip under the header, the payload grouped into labelled blocks, and the
+   delivery log that answers "was the applicant actually told?". */
+
+.review-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: -8px 0 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.review-identity__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.review-identity__item--muted {
+  font-style: italic;
+}
+
+/* Overdue completions, lapsed terms and suspensions: the things a reviewer
+   must see before deciding anything. */
+.review-flags {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.review-flags__item {
+  padding: 8px 12px;
+  border-inline-start: 3px solid var(--danger);
+  background: var(--danger-light);
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* A labelled block of applicant answers (identity, contact, category...). */
+.review-group + .review-group {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.review-group__title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-dark);
+}
+
+/* The transitions this user may make from the current status, plus renewal. */
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* Every email and SMS sent about this request, newest first. */
+.notify-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.notify-list__item {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 4px 12px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--content-bg);
+}
+
+.notify-list__channel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding-top: 2px;
+}
+
+.notify-list__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notify-list__subject {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.notify-list__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.notify-list__detail {
+  font-size: 12px;
+  color: var(--danger);
+  word-break: break-word;
+}
+
+.notify-list__status {
+  justify-self: end;
+  text-align: end;
+}
+
+@media (max-width: 700px) {
+  .notify-list__item {
+    grid-template-columns: 1fr;
+  }
+
+  .notify-list__status {
+    justify-self: start;
+    text-align: start;
+  }
+}
+
+/* ── Documents on a request (BUG-11) ─────────────────────────────────────
+   The documents used to be a row of buttons that each did one thing: open.
+   Managing them needs the slot, the file name, and two actions per row, so
+   each document is now a line of its own. */
+.doc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.doc-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  background: var(--surface-2, #f8fafc);
+}
+
+.doc-list__text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.doc-list__slot {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.doc-list__file {
+  font-size: 0.8rem;
+  color: var(--muted, #64748b);
+  overflow-wrap: anywhere;
+}
+
+.doc-list__actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.doc-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-block-start: 1.1rem;
+  padding-block-start: 1.1rem;
+  border-block-start: 1px solid var(--line, #e2e8f0);
+}
+
+.doc-add .field {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+/* The file input is hidden inside its label, so the label is the control and
+   has to look and behave like the button it replaces. */
+.doc-add .btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* BUG-12 — an expired term is stated, not left to be inferred from a date. */
+.review-term--expired {
+  color: var(--danger, #b91c1c);
+  font-weight: 600;
+}
+
+/* Guidance under a field in the record editor (BUG-15). */
+.edit-grid__hint {
+  font-size: 0.78rem;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+}
+
+/* ── Focal point for a news image (BUG-07, cards) ────────────────────────
+   A card crops a photo into a 16/9 tile, so something goes. This is where
+   the editor says what must stay — the picture on the left, the tile it will
+   become on the right, side by side so the choice is judged, not guessed. */
+.focal {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.focal__canvas {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: crosshair;
+  background: var(--surface-2, #f1f5f9);
+  line-height: 0;
+}
+
+.focal__canvas:focus-visible {
+  outline: 2px solid var(--brand, #0a7c4a);
+  outline-offset: 2px;
+}
+
+.focal__canvas img {
+  inline-size: 100%;
+  block-size: auto;
+  max-block-size: 18rem;
+  object-fit: contain;
+  user-select: none;
+}
+
+/* A ring rather than a dot, so the point it marks stays visible. */
+.focal__mark {
+  position: absolute;
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+  margin: -0.7rem 0 0 -0.7rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(10, 124, 74, 0.9), 0 1px 6px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.focal__hint,
+.focal__preview-label {
+  display: block;
+  margin-block-start: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+}
+
+.focal__preview-label {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.focal__preview img {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--surface-2, #f1f5f9);
+}
+
+.focal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+}
+
+.focal__actions code {
+  font-size: 0.78rem;
+  color: var(--muted, #64748b);
+}
+
+@media (max-width: 760px) {
+  .focal {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── The member's card, as the console sees it (ISSUE-03) ────────────── */
+.mcard-admin {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.mcard-admin__qr img {
+  inline-size: 8.5rem;
+  block-size: 8.5rem;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.mcard-admin__detail .field { margin-block-end: 0.6rem; }
+
+.mcard-admin__detail input[readonly] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.mcard-admin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mcard-admin__confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--danger, #b91c1c);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--danger, #b91c1c);
+}
+
+.mcard-admin__state {
+  margin-block-start: 0.7rem;
+  font-size: 0.82rem;
+  color: var(--muted, #64748b);
+}
+
+.mcard-admin__error {
+  margin-block-start: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--danger, #b91c1c);
+}
+
+@media (max-width: 720px) {
+  .mcard-admin { grid-template-columns: 1fr; }
+}
+
+.focal__broken {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px dashed var(--line, #cbd5e1);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--muted, #64748b);
+}
+
+/* ── Phase 3: running a tournament ───────────────────────────────────── */
+
+.choice-list--inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.choice-list--inline .choice {
+  flex: 0 0 auto;
+  min-inline-size: 7rem;
+}
+
+/* The draw. Rounds read left to right, so the path to the final is the
+   shape of the page rather than something to work out. */
+.draw-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+.draw-reason {
+  min-inline-size: 18rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.bracket {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  padding-block-end: 0.5rem;
+}
+
+.bracket__round {
+  flex: 0 0 15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  /* Later rounds sit against fewer bouts, so they centre on the column. */
+  justify-content: space-around;
+}
+
+.bracket__round-name {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #64748b);
+}
+
+.bracket__bout {
+  position: relative;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  background: var(--surface-2, #f8fafc);
+  padding: 0.5rem 0.6rem;
+}
+
+.bracket__bout.is-bye { opacity: 0.72; border-style: dashed; }
+
+.bracket__number {
+  position: absolute;
+  inset-block-start: -0.55rem;
+  inset-inline-start: 0.6rem;
+  padding: 0 0.35rem;
+  border-radius: 6px;
+  background: var(--brand, #0a7c4a);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.bracket__corner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0;
+  font-size: 0.85rem;
+}
+
+.bracket__dot {
+  inline-size: 0.6rem;
+  block-size: 0.6rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.bracket__corner--red .bracket__dot { background: #dc2626; }
+.bracket__corner--blue .bracket__dot { background: #2563eb; }
+
+.bracket__club {
+  margin-inline-start: auto;
+  font-size: 0.7rem;
+  color: var(--muted, #64748b);
+}
+
+.bracket__tag {
+  display: inline-block;
+  margin-block-start: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--muted, #64748b);
+}
+
+/* The schedule. */
+.ring-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-block-start: 1rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--line, #e2e8f0);
+}
+
+.ring-add .field { margin: 0; flex: 0 1 11rem; }
+
+.sched-division {
+  padding-block: 0.9rem;
+  border-block-start: 1px solid var(--line, #e2e8f0);
+}
+
+.sched-division:first-of-type { border-block-start: 0; }
+
+.sched-division__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sched-division__head h4 { margin: 0; font-size: 1rem; }
+
+.sched-division__settings {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.sched-division__settings .field { margin: 0; min-inline-size: 9rem; }
+
+.bout-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.bout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  background: var(--surface-2, #f8fafc);
+}
+
+.bout__number {
+  min-inline-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand, #0a7c4a);
+}
+
+/* Rule 3, literally: red on the left, blue on the right. */
+.bout__pair {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.bout__fighter {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.bout__fighter--red { color: #b91c1c; }
+.bout__fighter--blue { color: #1d4ed8; }
+
+.bout__corner {
+  inline-size: 0.65rem;
+  block-size: 0.65rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.bout__fighter--red .bout__corner { background: #dc2626; }
+.bout__fighter--blue .bout__corner { background: #2563eb; }
+
+.bout__vs { font-size: 0.72rem; color: var(--muted, #64748b); }
+
+.bout__when {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+}
+
+.bout__move {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.4rem;
+}
+
+.clash-list {
+  margin: 0.4rem 0 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.change-list {
+  margin: 0;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+}
+
+.change-list dt { font-weight: 600; display: inline; }
+.change-list dd { margin: 0 0 0 0.4rem; display: inline; color: var(--muted, #64748b); }
+
+.data-table__subtext--ok { color: var(--brand, #0a7c4a); }
+
+@media (max-width: 760px) {
+  .bout { grid-template-columns: 1fr; }
+  .sched-division__head { flex-direction: column; align-items: stretch; }
 }

@@ -144,12 +144,16 @@ export function ageFrom(dateOfBirth) {
 }
 
 /**
- * Eligible age window per category (REG-05). An athlete registers from 6 to
- * 45; a coach or a referee must be an adult.
+ * Eligible age window per registration type (REG-05).
+ *
+ * The athlete window is the competition-category table below, end to end: U8
+ * opens at 6 and Masters closes at 50. `max: null` means no upper limit —
+ * BUG-08 sets the coach minimum to 21 and removes the ceiling the form used to
+ * impose.
  */
 export const AGE_LIMITS = {
-  athlete: { min: 6, max: 45 },
-  coach: { min: 18, max: 80 },
+  athlete: { min: 6, max: 50 },
+  coach: { min: 21, max: null },
   official: { min: 18, max: 80 },
 }
 
@@ -162,21 +166,109 @@ export const isMinor = (values) => {
 export const isPara = (values) => values.paraAthlete === 'yes'
 
 /**
- * Competition categories the auto-calculation can assign.
+ * Competition categories and the ages that may enter them, from the
+ * federation's "Competition Category – Age Eligibility Rules" (sheet items 00
+ * and BUG-15).
  *
- * The Junior / Youth / Senior bands follow the IFMA age groups. "Elite" covers
- * the remaining years up to the federation's own 45 upper limit, and "Para" is
- * driven by the declared para classification rather than by age. The value is
- * pre-filled but stays editable, because the federation reviews and may amend
- * the category before a registration is approved.
+ * Eligibility age is **the competition year minus the birth year**, not the
+ * athlete's age on the day — that is how the draw is seeded, so a boy born in
+ * December enters the same category as one born in January of the same year.
+ *
+ * Masters is three categories, not one. The Phase 2 sheet listed nine options
+ * with a single Masters; the signed Phase 3 document lists eleven, splitting it
+ * into 35+, 40+ and 45+. That document is newer, so it wins.
+ *
+ * Each category belongs to a track — Development, Elite or Masters — and an
+ * athlete competes in one track only (Phase 3 REQ-02 rule 3).
+ *
+ * Para is deliberately absent: it is a declaration the athlete makes on its own
+ * field, not an age category.
  */
-export const ATHLETE_CATEGORIES = [
-  { value: 'junior', ar: 'ناشئ', en: 'Junior', minAge: 6, maxAge: 13 },
-  { value: 'youth', ar: 'شباب', en: 'Youth', minAge: 14, maxAge: 17 },
-  { value: 'senior', ar: 'كبار', en: 'Senior', minAge: 18, maxAge: 40 },
-  { value: 'elite', ar: 'نخبة', en: 'Elite', minAge: 41, maxAge: 45 },
-  { value: 'para', ar: 'بارا مواي تاي', en: 'Para', minAge: 6, maxAge: 45 },
+export const COMPETITION_CATEGORIES = [
+  { value: 'u8', ar: 'تحت 8 سنوات', en: 'U8', minAge: 6, maxAge: 7 , track: 'development' },
+  { value: 'u10', ar: 'تحت 10 سنوات', en: 'U10', minAge: 8, maxAge: 9 , track: 'development' },
+  { value: 'u12', ar: 'تحت 12 سنة', en: 'U12', minAge: 10, maxAge: 11 , track: 'development' },
+  { value: 'u14', ar: 'تحت 14 سنة', en: 'U14', minAge: 12, maxAge: 13 , track: 'development' },
+  { value: 'u16', ar: 'تحت 16 سنة', en: 'U16', minAge: 14, maxAge: 15 , track: 'development' },
+  { value: 'u18', ar: 'تحت 18 سنة', en: 'U18', minAge: 16, maxAge: 17 , track: 'development' },
+  { value: 'u24', ar: 'تحت 24 سنة', en: 'U24', minAge: 18, maxAge: 23 , track: 'development' },
+  { value: 'elite', ar: 'النخبة', en: 'Elite', minAge: 18, maxAge: 40 , track: 'elite' },
+  { value: 'masters_35', ar: 'ماسترز +35', en: 'Masters 35+', minAge: 35, maxAge: 39, track: 'masters' },
+  { value: 'masters_40', ar: 'ماسترز +40', en: 'Masters 40+', minAge: 40, maxAge: 44, track: 'masters' },
+  { value: 'masters_45', ar: 'ماسترز +45', en: 'Masters 45+', minAge: 45, maxAge: 50, track: 'masters' },
 ]
+
+/** Youngest and oldest competition age any category admits. */
+export const COMPETITION_AGE_MIN = Math.min(...COMPETITION_CATEGORIES.map((c) => c.minAge))
+export const COMPETITION_AGE_MAX = Math.max(...COMPETITION_CATEGORIES.map((c) => c.maxAge))
+
+/**
+ * Competition age — the year difference the eligibility rules are written in.
+ * Returns null when the date of birth is missing or unreadable.
+ */
+export function competitionAge(dateOfBirth, competitionYear = new Date().getFullYear()) {
+  if (!dateOfBirth) return null
+  const birth = new Date(dateOfBirth)
+  if (Number.isNaN(birth.getTime())) return null
+  return competitionYear - birth.getFullYear()
+}
+
+/**
+ * Every category this athlete may enter. The rules close with an absolute
+ * instruction — "Athletes under 18 must never be allowed to select Elite" — so
+ * that is enforced as its own guard rather than being left to the table, where
+ * a future edit could quietly undo it.
+ */
+export function eligibleCategories(dateOfBirth, competitionYear) {
+  const age = competitionAge(dateOfBirth, competitionYear)
+  if (age === null) return []
+
+  return COMPETITION_CATEGORIES.filter((entry) => {
+    if (age < entry.minAge || age > entry.maxAge) return false
+    if (entry.value === 'elite' && age < 18) return false
+    return true
+  })
+}
+
+/**
+ * The one category the system assigns on its own (item 00).
+ *
+ * The age-group ladder wins wherever it applies, because that is the category
+ * an athlete competes in by default: an 18-to-23-year-old is U24 rather than
+ * Elite, and only from 24 does Elite become the assignment. Masters is the
+ * assignment once Elite has run out at 41. Anyone eligible for more than one
+ * can still be moved between them by the federation after review.
+ */
+export function categoryFor(values, competitionYear) {
+  const eligible = eligibleCategories(values?.dateOfBirth, competitionYear)
+  if (eligible.length === 0) return ''
+
+  const ladder = eligible.find((entry) => entry.value.startsWith('u'))
+  if (ladder) return ladder.value
+
+  const elite = eligible.find((entry) => entry.value === 'elite')
+  return elite ? elite.value : eligible[0].value
+}
+
+/**
+ * The tracks open to this athlete (Phase 3 REQ-02 rules 3 and 4). An athlete
+ * competes in one track only; where more than one is open, they choose.
+ */
+export function tracksFor(dateOfBirth, competitionYear) {
+  return [...new Set(eligibleCategories(dateOfBirth, competitionYear).map((entry) => entry.track))]
+}
+
+/** The track a stored category belongs to, or '' when the value is unknown. */
+export function trackOf(value) {
+  return COMPETITION_CATEGORIES.find((entry) => entry.value === value)?.track || ''
+}
+
+/** Label for a stored category value, in the reader's language. */
+export function categoryLabel(value, ar) {
+  const entry = COMPETITION_CATEGORIES.find((item) => item.value === value)
+  if (!entry) return value || ''
+  return ar ? entry.ar : entry.en
+}
 
 /**
  * IFMA weight divisions, as the upper limit of each class. Anything above the
@@ -189,7 +281,7 @@ const WEIGHT_DIVISIONS = {
 
 /** Plausible competition weight for the age band (REG-11). */
 export function weightRangeFor(values) {
-  const age = ageFrom(values.dateOfBirth)
+  const age = competitionAge(values.dateOfBirth)
   if (age === null) return { min: 20, max: 150 }
   if (age <= 13) return { min: 20, max: 80 }
   if (age <= 17) return { min: 28, max: 110 }
@@ -204,23 +296,6 @@ export function weightDivisionFor(values) {
   const limits = WEIGHT_DIVISIONS[values.gender === 'female' ? 'female' : 'male']
   const limit = limits.find((entry) => weight <= entry)
   return limit ? `-${limit} kg` : `+${limits[limits.length - 1]} kg`
-}
-
-/**
- * Category implied by age, weight, and gender. Returns '' while the inputs the
- * calculation needs are still missing.
- */
-export function categoryFor(values) {
-  if (isPara(values)) return 'para'
-
-  const age = ageFrom(values.dateOfBirth)
-  if (age === null) return ''
-  if (!weightDivisionFor(values)) return ''
-
-  const band = ATHLETE_CATEGORIES.find(
-    (entry) => entry.value !== 'para' && age >= entry.minAge && age <= entry.maxAge,
-  )
-  return band ? band.value : ''
 }
 
 /* ── shared field builders ───────────────────────────────────────────────── */
@@ -305,10 +380,16 @@ function identityFieldsFor(type) {
       required: true,
       span: 4,
       validate: `dob_${type}`,
+      // BUG-08 — the coach line is the client's own wording, verbatim.
       hint:
         type === 'athlete'
-          ? { ar: 'العمر المقبول للتسجيل من 6 إلى 45 سنة.', en: 'Eligible age for registration is 6 to 45.' }
-          : { ar: 'يجب ألا يقل العمر عن 18 سنة.', en: 'Must be 18 or older.' },
+          ? {
+              ar: `العمر المقبول للتسجيل من ${COMPETITION_AGE_MIN} إلى ${COMPETITION_AGE_MAX} سنة، وتُحتسب الفئة التنافسية تلقائياً.`,
+              en: `Eligible age for registration is ${COMPETITION_AGE_MIN} to ${COMPETITION_AGE_MAX}; the competition category is calculated automatically.`,
+            }
+          : type === 'coach'
+            ? { ar: 'الحد الأدنى للعمر في هذا التسجيل هو 21 سنة.', en: 'The minimum age for this registration is 21 years.' }
+            : { ar: 'يجب ألا يقل العمر عن 18 سنة.', en: 'Must be 18 or older.' },
     },
     nationalityField,
     {
@@ -382,8 +463,9 @@ export const FIELDS = {
         dir: 'ltr',
         validate: 'weight',
         step: '0.1',
+        min: 0,
       },
-      { name: 'height', label: { ar: 'الطول (سم)', en: 'Height (cm)' }, control: 'number', span: 4, dir: 'ltr' },
+      { name: 'height', label: { ar: 'الطول (سم)', en: 'Height (cm)' }, control: 'number', span: 4, dir: 'ltr', min: 0, max: 260, validate: 'height' },
       {
         name: 'paraAthlete',
         label: { ar: 'هل التسجيل في فئة بارا مواي تاي؟', en: 'Registering in Para Muaythai?' },
@@ -400,18 +482,10 @@ export const FIELDS = {
         required: isPara,
         hint: { ar: 'مثال: إعاقة بصرية، بتر طرف.', en: 'For example: visual impairment, limb deficiency.' },
       },
-      {
-        name: 'athleteCategory',
-        label: { ar: 'الفئة التنافسية', en: 'Competition category' },
-        control: 'select',
-        options: ATHLETE_CATEGORIES.map(({ value, ar, en }) => ({ value, ar, en })),
-        required: true,
-        span: 6,
-        hint: {
-          ar: 'تُحتسب تلقائياً من العمر والوزن والجنس، وقابلة للتعديل من الاتحاد بعد المراجعة.',
-          en: 'Calculated automatically from age, weight, and gender; the federation may amend it after review.',
-        },
-      },
+      /* Item 00 — the applicant no longer picks a competition category. It is
+         derived from the date of birth on submit (and again on the server), so
+         the field is gone from the form rather than hidden with CSS. The
+         calculated value is shown back on the review step. */
       { name: 'sector', label: { ar: 'القطاع', en: 'Sector' }, span: 4, hint: { ar: 'يُستخدم لخطابات التفريغ والإحصائيات.', en: 'Used for release letters and statistics.' } },
       ...guardianFields,
       { name: 'socialMedia', label: { ar: 'حسابات التواصل الاجتماعي', en: 'Social media accounts' }, span: 6, dir: 'ltr' },
@@ -435,7 +509,7 @@ export const FIELDS = {
         ],
         span: 4,
       },
-      { name: 'yearsExperience', label: { ar: 'سنوات الخبرة التدريبية', en: 'Years of coaching experience' }, control: 'number', span: 4, dir: 'ltr' },
+      { name: 'yearsExperience', label: { ar: 'سنوات الخبرة التدريبية', en: 'Years of coaching experience' }, control: 'number', span: 4, dir: 'ltr', min: 0, max: 70, validate: 'wholeYears' },
       { name: 'categoriesCoached', label: { ar: 'الفئات التي يدربها', en: 'Categories coached' }, span: 6, placeholder: 'رجال، ناشئين' },
       { name: 'coachingLevel', label: { ar: 'المستوى التدريبي', en: 'Coaching level' }, span: 6 },
       {
@@ -479,8 +553,8 @@ export const FIELDS = {
       // so none of it may be left blank. The two "most recent appearance"
       // fields only apply once the referee has actually officiated.
       { name: 'refereeStartDate', label: { ar: 'تاريخ بداية التحكيم مع الاتحاد', en: 'Officiating start date with SMF' }, control: 'date', required: true, span: 4 },
-      { name: 'yearsExperience', label: { ar: 'سنوات الخبرة في التحكيم', en: 'Years of officiating experience' }, control: 'number', required: true, span: 4, dir: 'ltr' },
-      { name: 'tournamentsCount', label: { ar: 'عدد البطولات التي شارك فيها كحكم', en: 'Tournaments officiated' }, control: 'number', required: true, span: 6, dir: 'ltr' },
+      { name: 'yearsExperience', label: { ar: 'سنوات الخبرة في التحكيم', en: 'Years of officiating experience' }, control: 'number', required: true, span: 4, dir: 'ltr', min: 0, max: 70, validate: 'wholeYears' },
+      { name: 'tournamentsCount', label: { ar: 'عدد البطولات التي شارك فيها كحكم', en: 'Tournaments officiated' }, control: 'number', required: true, span: 6, dir: 'ltr', min: 0, max: 2000, validate: 'wholeCount' },
       { name: 'lastTournament', label: { ar: 'آخر بطولة شارك فيها كحكم', en: 'Most recent tournament officiated' }, span: 6, when: hasOfficiated, required: hasOfficiated },
       { name: 'lastRefereeingDate', label: { ar: 'تاريخ آخر مشاركة تحكيمية', en: 'Date of last officiating appearance' }, control: 'date', span: 6, when: hasOfficiated, required: hasOfficiated },
       { name: 'coursesAttended', label: { ar: 'الدورات التحكيمية التي حضرها', en: 'Refereeing courses attended' }, span: 6 },
@@ -511,7 +585,9 @@ export const FIELDS = {
       { name: 'officialEmail', label: { ar: 'البريد الإلكتروني الرسمي للنادي', en: 'Official club email' }, control: 'email', required: true, span: 6, dir: 'ltr', validate: 'email' },
       { name: 'region', label: { ar: 'المنطقة', en: 'Region' }, control: 'select', options: REGIONS, required: true, span: 6 },
       { name: 'city', label: { ar: 'المدينة', en: 'City' }, required: true, span: 6 },
-      { name: 'district', label: { ar: 'الحي', en: 'District' }, required: true, span: 6 },
+      // 00/1 — the district is optional; the map link is what the federation
+      // actually needs to find the premises, so that is the mandatory one.
+      { name: 'district', label: { ar: 'الحي', en: 'District' }, span: 6 },
     ],
     details: [
       { name: 'nameAr', label: { ar: 'اسم النادي / المنشأة بالعربي', en: 'Club / facility name (Arabic)' }, required: true, span: 6, dir: 'rtl', validate: 'arabicText' },
@@ -537,7 +613,7 @@ export const FIELDS = {
       { name: 'headCoachEmail', label: { ar: 'البريد الإلكتروني للمدرب', en: 'Head coach email' }, control: 'email', span: 6, dir: 'ltr', validate: 'email' },
       { name: 'headCoachCertificates', label: { ar: 'شهادات المدرب الأساسي', en: 'Head coach certificates' }, span: 6, hint: { ar: 'شهادات من الاتحاد أو شهادات أخرى.', en: 'Federation-issued or other certificates.' } },
       { name: 'shortAddress', label: { ar: 'العنوان المختصر', en: 'Short address' }, span: 4 },
-      { name: 'googleMapsUrl', label: { ar: 'رابط الموقع على Google Maps', en: 'Google Maps link' }, span: 4, dir: 'ltr', validate: 'url' },
+      { name: 'googleMapsUrl', label: { ar: 'رابط الموقع على Google Maps', en: 'Google Maps link' }, required: true, span: 4, dir: 'ltr', validate: 'url' },
       { name: 'nationalAddress', label: { ar: 'العنوان الوطني', en: 'National address' }, span: 4, dir: 'ltr' },
       {
         name: 'hasBranches',
@@ -552,6 +628,9 @@ export const FIELDS = {
         control: 'number',
         span: 6,
         dir: 'ltr',
+        min: 1,
+        max: 500,
+        validate: 'wholeCount',
         when: (v) => v.hasBranches === 'yes',
         required: (v) => v.hasBranches === 'yes',
       },
@@ -584,7 +663,7 @@ export const FIELDS = {
           en: 'Per coach: name, mobile, role or speciality, and coaching certificates if any.',
         },
       },
-      { name: 'approxAthletes', label: { ar: 'عدد اللاعبين التقريبي', en: 'Approximate number of athletes' }, control: 'number', span: 4, dir: 'ltr' },
+      { name: 'approxAthletes', label: { ar: 'عدد اللاعبين التقريبي', en: 'Approximate number of athletes' }, control: 'number', span: 4, dir: 'ltr', min: 0, max: 100000, validate: 'wholeCount' },
       { name: 'categoriesAccepted', label: { ar: 'الفئات التي يستقبلها النادي', en: 'Categories accepted' }, span: 4, placeholder: 'رجال، نساء، ناشئين، أطفال' },
       { name: 'trainingSchedule', label: { ar: 'أيام وأوقات تدريب المواي تاي', en: 'Muaythai training days and times' }, span: 4 },
       {

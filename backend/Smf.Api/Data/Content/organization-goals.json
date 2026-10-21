@@ -1,0 +1,261 @@
+{
+  "key": "organization-goals",
+  "group": "federation",
+  "order": 60,
+  "titleEn": "Strategic Goals",
+  "titleAr": "الأهداف الاستراتيجية",
+  "route": "/organization/goals",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    {
+      "name": "framework",
+      "type": "group",
+      "label": "Pillars › Initiatives › Goals strip",
+      "help": "The three counters at the top of the page. The first two link to the Values and Initiatives pages.",
+      "fields": [
+        { "name": "pillarsNumber", "type": "string", "label": "Pillars count" },
+        { "name": "pillarsLabel", "type": "text", "label": "Pillars label" },
+        { "name": "initiativesNumber", "type": "string", "label": "Initiatives count" },
+        { "name": "initiativesLabel", "type": "text", "label": "Initiatives label" },
+        { "name": "goalsNumber", "type": "string", "label": "Goals count" },
+        { "name": "goalsLabel", "type": "text", "label": "Goals label" }
+      ]
+    },
+    { "name": "intro", "type": "textarea", "label": "Introduction" },
+    {
+      "name": "approved",
+      "type": "group",
+      "label": "Approved goals",
+      "help": "The federation's officially approved (charter-level) goals, from §2 of the content requirements.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Goals",
+          "itemLabel": "Goal",
+          "fields": [
+            { "name": "text", "type": "text", "label": "Goal" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "goals",
+      "type": "group",
+      "label": "Strategic goals",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "keyInitiativeLabel", "type": "text", "label": "Prefix before each key initiative", "help": "For example: Key Initiative:" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Goal cards",
+          "itemLabel": "Goal",
+          "itemTitle": "title",
+          "fields": [
+            { "name": "number", "type": "string", "label": "Number", "help": "For example: 01" },
+            { "name": "pillarTag", "type": "text", "label": "Pillars tag" },
+            { "name": "initiativeTag", "type": "text", "label": "Initiatives tag" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "summary", "type": "textarea", "label": "Summary" },
+            {
+              "name": "points",
+              "type": "list",
+              "label": "Bullet points",
+              "itemLabel": "Point",
+              "fields": [
+                { "name": "text", "type": "text", "label": "Point" }
+              ]
+            },
+            { "name": "keyInitiative", "type": "text", "label": "Key initiative" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "bridge",
+      "type": "group",
+      "label": "Link to pillars & initiatives",
+      "fields": [
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "أهدافنا الاستراتيجية", "en": "Our Strategic Goals" },
+      "subtitle": {
+        "ar": "يسعى الاتحاد السعودي للملاكمة التايلندية إلى بناء منظومة رياضية عالمية المستوى، تنسجم مع رؤية المملكة 2030 وأهداف اللجنة الأولمبية والبارالمبية السعودية.",
+        "en": "SMF is dedicated to building a world-class Muaythai ecosystem, aligned with Vision 2030 and the Saudi Olympic & Paralympic Committee's objectives."
+      }
+    },
+    "framework": {
+      "pillarsNumber": "5",
+      "pillarsLabel": { "ar": "الركائز الخمس", "en": "Pillars" },
+      "initiativesNumber": "8",
+      "initiativesLabel": { "ar": "المبادرات", "en": "Initiatives" },
+      "goalsNumber": "7",
+      "goalsLabel": { "ar": "الأهداف", "en": "Goals" }
+    },
+    "intro": {
+      "ar": "تُجسّد أهدافنا الاستراتيجية التزامنا الراسخ بالتميز الرياضي والشمول والحضور الدولي، من خلال التركيز على تطوير القاعدة الشعبية وصقل النخب ورعاية الشراكات الفاعلة.",
+      "en": "Our strategic goals reflect our commitment to sporting excellence, inclusivity, and international presence — focusing on grassroots development, elite performance, and effective partnerships."
+    },
+    "approved": {
+      "label": { "ar": "الأهداف المعتمدة", "en": "Approved Goals" },
+      "heading": { "ar": "أهدافنا", "en": "Our Goals" },
+      "items": [
+        { "text": { "ar": "نشر رياضة المواي تاي في مختلف مناطق المملكة.", "en": "Spread Muaythai across the various regions of the Kingdom." } },
+        { "text": { "ar": "إعداد أجيال من الأبطال في المواي تاي على المستوى المحلي والعالمي.", "en": "Develop generations of Muaythai champions at local and international level." } },
+        { "text": { "ar": "بناء شراكات استراتيجية مع القطاعين العام والخاص.", "en": "Build strategic partnerships with the public and private sectors." } },
+        { "text": { "ar": "تنظيم بطولات محلية ودولية وفق أعلى المعايير.", "en": "Organise local and international championships to the highest standards." } },
+        { "text": { "ar": "تأهيل الكوادر الفنية والإدارية الوطنية.", "en": "Qualify national technical and administrative cadres." } }
+      ]
+    },
+    "goals": {
+      "label": { "ar": "الأهداف السبعة", "en": "7 Strategic Goals" },
+      "heading": { "ar": "خريطة الطريق الاستراتيجية", "en": "Strategic Roadmap" },
+      "keyInitiativeLabel": { "ar": "مبادرة محورية:", "en": "Key Initiative:" },
+      "items": [
+        {
+          "number": "01",
+          "pillarTag": { "ar": "التميّز · اللعب النظيف", "en": "Excellence · Fair Play" },
+          "initiativeTag": { "ar": "المبادرتان 1 + 2", "en": "Initiatives 1 + 2" },
+          "title": { "ar": "تنمية القاعدة الشعبية وتعزيز المشاركة الجماهيرية", "en": "Grassroots Development & Mass Participation" },
+          "summary": { "ar": "تعزيز حضور المواي تاي في جميع مناطق المملكة العربية السعودية.", "en": "Strengthen Muaythai's presence across all regions of the Kingdom." },
+          "points": [
+            { "text": { "ar": "إطلاق حملات توعية وطنية بالمواي تاي في المدارس والمجتمعات المحلية.", "en": "Launch Muaythai awareness campaigns in schools and communities." } },
+            { "text": { "ar": "تطوير برامج تدريبية منظّمة للشباب والمبتدئين.", "en": "Develop structured training programs for youth and beginners." } },
+            { "text": { "ar": "توسيع شبكة الأندية والصالات الرياضية وتعزيز الشراكات مع القطاع الخاص.", "en": "Expand Muaythai clubs and establish partnerships with private gyms." } }
+          ],
+          "keyInitiative": { "ar": "الحملة الوطنية للتوعية وإدراج المواي تاي في المناهج المدرسية.", "en": "National Awareness Campaign and School Integration Program." }
+        },
+        {
+          "number": "02",
+          "pillarTag": { "ar": "التميّز · التقاليد", "en": "Excellence · Tradition" },
+          "initiativeTag": { "ar": "المبادرتان 3 + 4", "en": "Initiatives 3 + 4" },
+          "title": { "ar": "اكتشاف المواهب وتطويرها", "en": "Talent Development" },
+          "summary": { "ar": "رصد المواهب المحلية وصقلها وإيصالها إلى المستويات الوطنية والدولية.", "en": "Identify, nurture, and elevate local talent to national and international stages." },
+          "points": [
+            { "text": { "ar": "تنظيم فعاليات وطنية وإقليمية لاكتشاف المواهب.", "en": "Host regional and national talent scouting events." } },
+            { "text": { "ar": "تطبيق نظام رقمي لمتابعة الرياضيين وتتبع تطورهم.", "en": "Implement a national athlete monitoring and tracking system." } },
+            { "text": { "ar": "إطلاق برنامج إرشادي للرياضيين الناشئين.", "en": "Launch a mentorship program for emerging athletes." } }
+          ],
+          "keyInitiative": { "ar": "البرنامج الوطني لاكتشاف المواهب والإرشاد الرياضي.", "en": "National Talent Identification and Mentorship Program." }
+        },
+        {
+          "number": "03",
+          "pillarTag": { "ar": "الاحترام · اللعب النظيف", "en": "Respect · Fair Play" },
+          "initiativeTag": { "ar": "المبادرة 1", "en": "Initiative 1" },
+          "title": { "ar": "تمكين المرأة وتوسيع مشاركتها", "en": "Women's Inclusion & Expansion" },
+          "summary": { "ar": "توسيع فرص مشاركة المرأة في الملاكمة التايلندية على جميع المستويات.", "en": "Increase opportunities for women to engage in Muaythai at all levels." },
+          "points": [
+            { "text": { "ar": "إنشاء جلسات تدريبية ودورات نسائية متخصصة.", "en": "Establish women-only training sessions and workshops." } },
+            { "text": { "ar": "توسيع مشاركة المرأة في المنافسات وأدوار القيادة الرياضية.", "en": "Expand women's participation in competitions and leadership roles." } },
+            { "text": { "ar": "ضمان التمثيل المتكافئ في أكاديميات المواي تاي الوطنية.", "en": "Ensure equal representation in national Muaythai academies." } }
+          ],
+          "keyInitiative": { "ar": "برنامج تمكين المرأة وبطولة المواي تاي النسائية.", "en": "Women's Muaythai Program and Championship Series." }
+        },
+        {
+          "number": "04",
+          "pillarTag": { "ar": "التميّز · الشرف", "en": "Excellence · Honour" },
+          "initiativeTag": { "ar": "المبادرتان 4 + 7", "en": "Initiatives 4 + 7" },
+          "title": { "ar": "التميّز التنافسي", "en": "Competitive Excellence" },
+          "summary": { "ar": "تعزيز مكانة المملكة العربية السعودية بوصفها قوة مؤثرة في المنافسات الدولية للملاكمة التايلندية.", "en": "Position Saudi Arabia as a top contender in international Muaythai competitions." },
+          "points": [
+            { "text": { "ar": "تطوير البيئة التدريبية بمرافق ومدربين على أعلى مستوى عالمي.", "en": "Enhance the training environment with world-class facilities and coaches." } },
+            { "text": { "ar": "توفير حوافز مادية وتمويل مستهدف لرياضيي النخبة.", "en": "Provide performance-based incentives and funding for elite athletes." } },
+            { "text": { "ar": "تعزيز التعاون مع المنظمات الدولية لزيادة التعرض للمنافسات العالمية.", "en": "Strengthen collaboration with international Muaythai organizations for global exposure." } }
+          ],
+          "keyInitiative": { "ar": "المشاركة في بطولات IFMA والمعسكرات التدريبية المتخصصة.", "en": "Participation in IFMA Championships and Elite Training Camps." }
+        },
+        {
+          "number": "05",
+          "pillarTag": { "ar": "التميّز", "en": "Excellence" },
+          "initiativeTag": { "ar": "التمكين الحوكمي", "en": "Governance Enabler" },
+          "title": { "ar": "التحول الرقمي والابتكار", "en": "Digital Transformation & Innovation" },
+          "summary": { "ar": "تحديث منظومة العمل الاتحادي وتعزيز التجربة الرقمية للرياضيين والأعضاء.", "en": "Modernize operations and enhance the digital experience for athletes and members." },
+          "points": [
+            { "text": { "ar": "تطبيق منصة رقمية متكاملة للتسجيل ورصد الأداء الرياضي.", "en": "Implement a digital registration and performance tracking platform." } },
+            { "text": { "ar": "إطلاق تطبيق رسمي للاتحاد يتيح المتابعة الحية ومعلومات الفعاليات.", "en": "Launch a mobile app for real-time event updates and community engagement." } },
+            { "text": { "ar": "دمج تتبع تطور الرياضيين مع أدوات التحليل الأداء.", "en": "Integrate athlete progress tracking with performance analytics." } }
+          ],
+          "keyInitiative": { "ar": "نظام الإدارة الرقمية للرياضيين.", "en": "Digital Athlete Management System." }
+        },
+        {
+          "number": "06",
+          "pillarTag": { "ar": "الاحترام · التقاليد", "en": "Respect · Tradition" },
+          "initiativeTag": { "ar": "المبادرتان 1 + 2", "en": "Initiatives 1 + 2" },
+          "title": { "ar": "الانخراط المجتمعي وبناء الشراكات", "en": "Community Engagement & Partnerships" },
+          "summary": { "ar": "تعزيز روح الانتماء الجماعي من خلال إشراك القطاعين العام والخاص.", "en": "Foster a strong community spirit by involving public and private sectors." },
+          "points": [
+            { "text": { "ar": "تنظيم فعاليات وطنية ومسابقات لياقة بدنية وتجمعات مجتمعية.", "en": "Organize national events, fitness challenges, and community gatherings." } },
+            { "text": { "ar": "إبرام شراكات استراتيجية مع المدارس والمنظمات الرياضية والمبادرات الحكومية.", "en": "Partner with schools, sports organizations, and government initiatives." } },
+            { "text": { "ar": "تشجيع ثقافة التطوع وإرساء شبكة من الرعاة والممولين.", "en": "Encourage volunteerism and establish sponsorship networks." } }
+          ],
+          "keyInitiative": { "ar": "فريق تطوير الرعاية والشراكات الاستراتيجية.", "en": "Sponsorship and Partnership Development Team." }
+        },
+        {
+          "number": "07",
+          "pillarTag": { "ar": "اللعب النظيف · الشرف", "en": "Fair Play · Honour" },
+          "initiativeTag": { "ar": "التمكين الحوكمي", "en": "Governance Enabler" },
+          "title": { "ar": "الصحة والسلامة والامتثال", "en": "Health, Safety & Compliance" },
+          "summary": { "ar": "ضمان صحة الرياضيين وسلامتهم من خلال الالتزام بالمعايير الدولية.", "en": "Ensure the health and well-being of athletes through compliance with global standards." },
+          "points": [
+            { "text": { "ar": "تطبيق برامج مكافحة المنشطات وأنظمة رصد الصحة الرياضية.", "en": "Implement anti-doping programs and health monitoring systems." } },
+            { "text": { "ar": "توفير خدمات علم النفس الرياضي والعلاج الطبيعي والتغذية للرياضيين.", "en": "Provide athlete access to sports psychologists, physiotherapists, and nutrition experts." } },
+            { "text": { "ar": "التوافق مع بروتوكولات الصحة والسلامة الدولية المعتمدة.", "en": "Align with international health and safety protocols." } }
+          ],
+          "keyInitiative": { "ar": "برنامج تعزيز الحوكمة والامتثال المؤسسي.", "en": "Governance and Compliance Enhancement Program." }
+        }
+      ]
+    },
+    "bridge": {
+      "text": {
+        "ar": "ترتبط كل هذه الأهداف بإحدى الركائز الخمس للمواي تاي، وتُعدّ المبادرات القائمة هي الأداة التنفيذية الرئيسية لتحقيقها.",
+        "en": "Each goal maps to one or more of the 5 Muaythai Pillars, with our active initiatives serving as the primary implementation vehicle."
+      },
+      "primaryLabel": { "ar": "الركائز الخمس", "en": "The 5 Pillars" },
+      "primaryUrl": "/organization/values",
+      "secondaryLabel": { "ar": "المبادرات", "en": "Initiatives" },
+      "secondaryUrl": "/organization/initiatives"
+    },
+    "cta": {
+      "text": {
+        "ar": "انضم إلى مسيرتنا نحو جعل المواي تاي السعودي رمزاً للفخر الوطني والتميز العالمي.",
+        "en": "Join us in our mission to make Saudi Muaythai a symbol of national pride and global excellence."
+      },
+      "primaryLabel": { "ar": "الإنجازات", "en": "Achievements" },
+      "primaryUrl": "/organization/achievements",
+      "secondaryLabel": { "ar": "استراتيجيتنا", "en": "Our Strategy" },
+      "secondaryUrl": "/organization/strategy"
+    }
+  }
+}

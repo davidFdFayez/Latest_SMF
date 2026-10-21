@@ -1,0 +1,130 @@
+{
+  "key": "site",
+  "group": "site",
+  "order": 10,
+  "titleEn": "Site settings & contact details",
+  "titleAr": "إعدادات الموقع وبيانات التواصل",
+  "permission": "settings",
+  "schema": [
+    {
+      "name": "identity",
+      "type": "group",
+      "label": "Federation name & branding",
+      "fields": [
+        { "name": "name", "type": "text", "label": "Federation name", "help": "Shown beside the logo (with the other language underneath) and in the footer." },
+        { "name": "shortName", "type": "string", "label": "Footer sub-line", "help": "Small line under the copyright notice." },
+        { "name": "logo", "type": "image", "label": "Header logo" },
+        { "name": "footerLogo", "type": "image", "label": "Footer logo", "help": "A light version for the dark footer." },
+        { "name": "tagline", "type": "textarea", "label": "Footer description" }
+      ]
+    },
+    {
+      "name": "contact",
+      "type": "group",
+      "label": "Contact details",
+      "help": "Used in the top bar, the footer, the home page, and the Contact page.",
+      "fields": [
+        { "name": "email", "type": "string", "label": "Email address" },
+        { "name": "phoneDisplay", "type": "string", "label": "Phone number (as displayed)", "help": "For example: +966 55 267 7377" },
+        { "name": "phoneLink", "type": "string", "label": "Phone number (for dialling)", "help": "Country code and digits only, no spaces: +966552677377" },
+        { "name": "whatsappUrl", "type": "url", "label": "WhatsApp chat link" },
+        { "name": "whatsappCommunityUrl", "type": "url", "label": "WhatsApp community invite link" },
+        { "name": "address", "type": "textarea", "label": "Address" },
+        { "name": "workingHours", "type": "text", "label": "Working hours" },
+        { "name": "website", "type": "string", "label": "Website address", "help": "Shown on the Contact page." }
+      ]
+    },
+    {
+      "name": "social",
+      "type": "list",
+      "label": "Social media accounts",
+      "help": "Shown as icons in the footer, in this order. Tick “Show in top bar” to repeat an account in the strip above the menu.",
+      "itemLabel": "Account",
+      "itemTitle": "platform",
+      "fields": [
+        {
+          "name": "platform",
+          "type": "select",
+          "label": "Platform",
+          "options": [
+            { "value": "whatsapp", "label": "WhatsApp" },
+            { "value": "x", "label": "X (Twitter)" },
+            { "value": "instagram", "label": "Instagram" },
+            { "value": "threads", "label": "Threads" },
+            { "value": "tiktok", "label": "TikTok" },
+            { "value": "linkedin", "label": "LinkedIn" },
+            { "value": "snapchat", "label": "Snapchat" },
+            { "value": "youtube", "label": "YouTube" }
+          ]
+        },
+        { "name": "url", "type": "url", "label": "Link" },
+        { "name": "showInTopBar", "type": "boolean", "label": "Show in top bar" }
+      ]
+    },
+    {
+      "name": "qrCodes",
+      "type": "group",
+      "label": "QR codes",
+      "help": "Shown in the contact section of the home page.",
+      "fields": [
+        { "name": "whatsapp", "type": "image", "label": "WhatsApp chat QR code" },
+        { "name": "community", "type": "image", "label": "WhatsApp community QR code" }
+      ]
+    },
+    {
+      "name": "partners",
+      "type": "list",
+      "label": "Supervising bodies",
+      "help": "The “under the supervision of” logos on the Home, Overview, and Official Recognition pages.",
+      "itemLabel": "Body",
+      "fields": [
+        { "name": "name", "type": "text", "label": "Name" },
+        { "name": "logo", "type": "image", "label": "Logo" }
+      ]
+    }
+  ],
+  "content": {
+    "identity": {
+      "name": { "ar": "الاتحاد السعودي للملاكمة التايلندية", "en": "Saudi Muaythai Federation" },
+      "shortName": "Saudi Muaythai Federation (SMF)",
+      "logo": "/assets/images/logo.png",
+      "footerLogo": "/assets/images/logo-white.png",
+      "tagline": {
+        "ar": "الاتحاد السعودي للمواي تاي هو الجهة الرياضية الوطنية المسؤولة عن تنظيم رياضة المواي تاي والإشراف على تطويرها في المملكة العربية السعودية. ويعمل بوصفه المرجع الفني والتنظيمي للعبة، بما يضمن ممارستها ضمن أطر ومعايير معتمدة.",
+        "en": "The Saudi Muaythai Federation is the national sports authority responsible for organising Muaythai and overseeing its development in the Kingdom of Saudi Arabia. It acts as the technical and regulatory reference for the sport, ensuring it is practised within approved frameworks and standards."
+      }
+    },
+    "contact": {
+      "email": "info@saudimuaythai.sa",
+      "phoneDisplay": "+966 55 267 7377",
+      "phoneLink": "+966552677377",
+      "whatsappUrl": "https://wa.me/966552677377",
+      "whatsappCommunityUrl": "https://chat.whatsapp.com/IhBwcIcagZqArhmATQoaVG",
+      "address": {
+        "ar": "الرياض، حي الرفيعة، شارع الديوان، مجمع الأمير فيصل بن فهد الأولمبي",
+        "en": "Riyadh, Al Rafiah District, Al Diwan St., Prince Faisal bin Fahd Olympic Complex"
+      },
+      "workingHours": { "ar": "من الساعة 10 ص وحتى الساعة 6 م", "en": "10:00 AM – 6:00 PM" },
+      "website": "www.saudimuaythai.sa"
+    },
+    "social": [
+      { "platform": "whatsapp", "url": "https://wa.me/966552677377", "showInTopBar": true },
+      { "platform": "x", "url": "https://x.com/smf_ksa", "showInTopBar": true },
+      { "platform": "instagram", "url": "https://www.instagram.com/smf__ksa/", "showInTopBar": true },
+      { "platform": "threads", "url": "https://www.threads.com/@smf__ksa", "showInTopBar": false },
+      { "platform": "tiktok", "url": "https://www.tiktok.com/@smf.ksa", "showInTopBar": true },
+      { "platform": "linkedin", "url": "https://sa.linkedin.com/company/saudimuaythai", "showInTopBar": true },
+      { "platform": "snapchat", "url": "https://snapchat.com/t/d0QLDkXr", "showInTopBar": true },
+      { "platform": "youtube", "url": "https://www.youtube.com/@SaudiMuayThaiFederation", "showInTopBar": true }
+    ],
+    "qrCodes": {
+      "whatsapp": "/assets/images/qr-whatsapp.svg",
+      "community": "/assets/images/qr-community.svg"
+    },
+    "partners": [
+      { "name": { "ar": "وزارة الرياضة", "en": "Ministry of Sport" }, "logo": "/assets/images/partner-mos.png" },
+      { "name": { "ar": "اللجنة الأولمبية والبارالمبية السعودية", "en": "Saudi Olympic & Paralympic Committee" }, "logo": "/assets/images/partner-sopc.jpg" },
+      { "name": { "ar": "الاتحاد الدولي لجمعيات المواي تاي", "en": "International Federation of Muaythai Associations" }, "logo": "/assets/images/partner-ifma.webp" }
+    ]
+  }
+}

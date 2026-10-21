@@ -48,17 +48,24 @@ public static class RegistrationValidator
     private static readonly string[] Genders = ["male", "female"];
     private static readonly string[] DocumentTypes = ["national_id", "iqama", "passport", "gcc_id"];
     private static readonly string[] YesNo = ["yes", "no"];
-    private static readonly string[] AthleteCategories = ["junior", "youth", "senior", "elite", "para"];
     private static readonly string[] RefereeGrades = ["entry", "third", "second", "first", "international"];
     private static readonly string[] ApplicantRoles = ["owner", "coach", "authorized"];
     private static readonly string[] EntityTypes = ["club", "center", "academy"];
     private static readonly string[] GuardianRelations = ["father", "mother", "legal_guardian", "other"];
 
-    /// <summary>Eligible age window per category — REG-05.</summary>
-    private static readonly Dictionary<string, (int Min, int Max)> AgeLimits = new()
+    /// <summary>
+    /// Eligible age window per registration type — REG-05.
+    ///
+    /// <c>Max: null</c> means no upper limit: BUG-08 sets the coach floor to 21
+    /// and removes the ceiling. The athlete window is the competition-category
+    /// table end to end, and is measured in competition age rather than age on
+    /// the day, so the age check and the category calculation can never
+    /// disagree about who may register.
+    /// </summary>
+    private static readonly Dictionary<string, (int Min, int? Max)> AgeLimits = new()
     {
-        ["athlete"] = (6, 45),
-        ["coach"] = (18, 80),
+        ["athlete"] = (CompetitionCategories.MinAge, CompetitionCategories.MaxAge),
+        ["coach"] = (21, null),
         ["official"] = (18, 80),
     };
 
@@ -92,7 +99,7 @@ public static class RegistrationValidator
 
         form.OneOf("documentType", DocumentTypes);
         form.NationalId("nationalId");
-        form.DateOfBirth("dateOfBirth", AgeLimits[type]);
+        form.DateOfBirth("dateOfBirth", AgeLimits[type], byCompetitionYear: type == "athlete");
         form.Nationality("nationality");
         form.OneOf("gender", Genders);
 
@@ -103,7 +110,12 @@ public static class RegistrationValidator
 
         if (type == "athlete") ValidateAthlete(form);
         if (type == "official") ValidateReferee(form);
-        if (type == "coach") form.OptionalUrl("cvUrl");
+        if (type == "coach")
+        {
+            form.OptionalUrl("cvUrl");
+            // BUG-10 — coaching experience is a count of years, never negative.
+            form.Integer("yearsExperience", 0, 70, required: false);
+        }
     }
 
     private static void ValidateAthlete(Form form)
@@ -112,8 +124,8 @@ public static class RegistrationValidator
         if (para == "yes") form.Required("paraClassification");
 
         // REG-11 — the plausible weight range follows the age band, exactly as
-        // the portal computes it.
-        var age = AgeOf(form.Text("dateOfBirth"));
+        // the portal computes it, in the same competition age the categories use.
+        var age = CompetitionCategories.AgeOf(ParseDate(form.Text("dateOfBirth")));
         var (min, max) = age switch
         {
             null => (20m, 150m),
@@ -123,11 +135,27 @@ public static class RegistrationValidator
         };
         form.Decimal("currentWeight", min, max, required: true);
 
-        form.OneOf("athleteCategory", AthleteCategories);
+        // BUG-10 — the stepper used to accept a negative height.
+        form.Decimal("height", 1m, 260m, required: false);
+
+        /* Items 00 and BUG-15 — the category is no longer asked for, so there is
+           nothing to validate against a list of options. What matters is that the
+           date of birth lands inside some category at all; anything the client
+           sends under "athleteCategory" is overwritten on the way in. */
+        if (CompetitionCategories.EligibleFor(ParseDate(form.Text("dateOfBirth"))).Count == 0
+            && !form.HasError("dateOfBirth"))
+        {
+            form.Reject("dateOfBirth",
+                $"لا توجد فئة تنافسية تناسب هذا التاريخ. العمر المقبول من {CompetitionCategories.MinAge} إلى {CompetitionCategories.MaxAge} سنة.",
+                $"No competition category covers this date of birth. The eligible age is {CompetitionCategories.MinAge} to {CompetitionCategories.MaxAge}.");
+        }
+
         form.OptionalUrl("cvUrl");
 
-        // §10 — an athlete under 18 must supply a guardian.
-        if (age is not null && age < 18)
+        // §10 — an athlete under 18 must supply a guardian. Guardianship follows
+        // actual age on the day, not the competition year.
+        var actualAge = AgeOf(form.Text("dateOfBirth"));
+        if (actualAge is not null && actualAge < 18)
         {
             form.Required("guardianName");
             form.Phone("guardianPhone");
@@ -164,7 +192,7 @@ public static class RegistrationValidator
         form.Email("officialEmail");
         form.Required("region");
         form.Required("city");
-        form.Required("district");
+        // 00/1 — the district is optional now; the map link below is mandatory.
 
         form.ArabicText("nameAr");
         form.LatinText("nameEn");
@@ -176,9 +204,11 @@ public static class RegistrationValidator
         form.OptionalEmail("ownerEmail");
         form.OptionalEmail("headCoachEmail");
         form.OptionalPhone("ownerPhone");
-        form.OptionalUrl("googleMapsUrl");
+        form.Url("googleMapsUrl");
         form.OptionalUrl("clubWebsite");
 
+        // BUG-10 — neither of these may be negative.
+        form.Integer("approxAthletes", 0, 100_000, required: false);
         if (form.Text("hasBranches") == "yes") form.Integer("branchCount", 1, 500, required: true);
     }
 
@@ -194,6 +224,16 @@ public static class RegistrationValidator
     }
 
     /* ── helpers ─────────────────────────────────────────────────────────── */
+
+    /// <summary>Parses an ISO date, or null when it is missing or malformed.</summary>
+    private static DateTime? ParseDate(string? isoDate)
+    {
+        if (string.IsNullOrWhiteSpace(isoDate)) return null;
+        return DateTime.TryParseExact(isoDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var parsed)
+            ? parsed
+            : null;
+    }
 
     private static int? AgeOf(string? isoDate)
     {
@@ -230,6 +270,12 @@ public static class RegistrationValidator
         }
 
         private void Fail(string name, string ar, string en) => errors.TryAdd(name, new Failure(ar, en));
+
+        /// <summary>Records a failure the caller worked out for itself.</summary>
+        public void Reject(string name, string ar, string en) => Fail(name, ar, en);
+
+        /// <summary>True once this field has already failed, so it is not reported twice.</summary>
+        public bool HasError(string name) => errors.ContainsKey(name);
 
         private bool Missing(string name, string? value, bool required)
         {
@@ -385,7 +431,12 @@ public static class RegistrationValidator
             }
         }
 
-        public void DateOfBirth(string name, (int Min, int Max) limits)
+        /// <param name="byCompetitionYear">
+        /// Measure the age as the competition year minus the birth year, the way
+        /// the IFMA category rules are written, rather than as the age reached on
+        /// the day. Athletes only.
+        /// </param>
+        public void DateOfBirth(string name, (int Min, int? Max) limits, bool byCompetitionYear = false)
         {
             var value = Required(name);
             if (value is null) return;
@@ -393,12 +444,25 @@ public static class RegistrationValidator
             IsoDate(name, required: true);
             if (errors.ContainsKey(name)) return;
 
-            var age = AgeOf(value);
-            if (age is null || age < limits.Min || age > limits.Max)
+            var age = byCompetitionYear
+                ? CompetitionCategories.AgeOf(ParseDate(value))
+                : AgeOf(value);
+
+            if (age is null || age < limits.Min || (limits.Max is { } ceiling && age > ceiling))
             {
-                Fail(name,
-                    $"العمر المقبول لهذا التسجيل من {limits.Min} إلى {limits.Max} سنة.",
-                    $"The eligible age for this registration is {limits.Min} to {limits.Max}.");
+                if (limits.Max is { } max)
+                {
+                    Fail(name,
+                        $"العمر المقبول لهذا التسجيل من {limits.Min} إلى {max} سنة.",
+                        $"The eligible age for this registration is {limits.Min} to {max}.");
+                }
+                else
+                {
+                    // BUG-08 — the client prescribed this sentence word for word.
+                    Fail(name,
+                        $"الحد الأدنى للعمر في هذا التسجيل هو {limits.Min} سنة.",
+                        $"The minimum age for this registration is {limits.Min} years.");
+                }
             }
         }
 
@@ -430,6 +494,15 @@ public static class RegistrationValidator
                 return null;
             }
             return parsed;
+        }
+
+        /// <summary>A link that has to be there — 00/1's Google Maps field.</summary>
+        public void Url(string name)
+        {
+            var value = Required(name);
+            if (value is null) return;
+            if (!UrlPattern.IsMatch(value))
+                Fail(name, "يرجى إدخال رابط يبدأ بـ https://", "Please enter a link starting with https://");
         }
 
         public void OptionalUrl(string name)

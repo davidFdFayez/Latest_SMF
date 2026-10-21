@@ -1,0 +1,85 @@
+{
+  "key": "governance-committees",
+  "group": "governance",
+  "order": 30,
+  "titleEn": "Committees",
+  "titleAr": "اللجان",
+  "route": "/governance/committees",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "tag", "type": "text", "label": "Small tag above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        {
+          "name": "stats",
+          "type": "list",
+          "label": "Figures",
+          "itemLabel": "Figure",
+          "itemTitle": "label",
+          "fields": [
+            { "name": "value", "type": "string", "label": "Number", "help": "For example: 7" },
+            { "name": "label", "type": "text", "label": "Label" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "structure",
+      "type": "group",
+      "label": "Committee structure chart",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "title", "type": "text", "label": "Heading" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        { "name": "topBox", "type": "text", "label": "Top box (Board of Directors)" },
+        {
+          "name": "committees",
+          "type": "list",
+          "label": "Committees",
+          "itemLabel": "Committee",
+          "itemTitle": "name",
+          "help": "Committee names only — the member listing was removed at the federation's request (TXT-29).",
+          "fields": [
+            { "name": "name", "type": "text", "label": "Committee name" }
+          ]
+        }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "tag": { "ar": "الحوكمة والرقابة", "en": "Governance & Oversight" },
+      "title": { "ar": "لجان الاتحاد السعودي للملاكمة التايلندية", "en": "Federation Committees" },
+      "subtitle": {
+        "ar": "تضطلع لجان الاتحاد بدور محوري في إدارة الشؤون الرياضية والتقنية والانضباطية وفق أعلى معايير الحوكمة.",
+        "en": "Federation committees play a central role in managing sporting, technical, and disciplinary affairs to the highest governance standards."
+      },
+      "stats": [
+        { "value": "7", "label": { "ar": "لجنة دائمة", "en": "Standing Committees" } },
+        { "value": "29", "label": { "ar": "عضو في اللجان", "en": "Committee Members" } }
+      ]
+    },
+    "structure": {
+      "label": { "ar": "هيكل اللجان", "en": "Committee Structure" },
+      "title": { "ar": "هيكل اللجان التخصصية", "en": "Specialist Committee Structure" },
+      "subtitle": {
+        "ar": "سبع لجان متخصصة تعمل تحت إشراف مجلس الإدارة لضمان أعلى معايير الحوكمة والأداء الرياضي.",
+        "en": "Seven specialist committees operating under Board oversight to ensure the highest standards of governance and sporting performance."
+      },
+      "topBox": { "ar": "مجلس الإدارة", "en": "Board of Directors" },
+      "committees": [
+        { "name": { "ar": "اللجنة الفنية", "en": "Technical Committee" } },
+        { "name": { "ar": "لجنة الحكّام", "en": "Referees Committee" } },
+        { "name": { "ar": "لجنة الرياضيين", "en": "Athletes Committee" } },
+        { "name": { "ar": "لجنة الاستئناف", "en": "Appeals Committee" } },
+        { "name": { "ar": "لجنة المنافسات", "en": "Competitions Committee" } },
+        { "name": { "ar": "لجنة الانضباط", "en": "Disciplinary Committee" } },
+        { "name": { "ar": "لجنة فض المنازعات", "en": "Dispute Resolution Committee" } }
+      ]
+    }
+  }
+}

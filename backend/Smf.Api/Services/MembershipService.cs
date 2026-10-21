@@ -20,8 +20,7 @@ namespace Smf.Api.Services;
 public class MembershipService(
     SmfDbContext db,
     AuditLogger audit,
-    EmailSender email,
-    SmsSender sms,
+    NotificationDispatcher notifications,
     IConfiguration configuration,
     ILogger<MembershipService> logger)
 {
@@ -67,7 +66,7 @@ public class MembershipService(
         var required = RegistrationStatuses.RequiredAction(toStatus);
         if (!actor.Can(required))
         {
-            await audit.DeniedAsync(actor, required, "registration", registration.Id, cancellationToken);
+            await audit.DeniedAsync(actor, required, "registration", registration.Id, cancellationToken, registration.ReferenceNumber);
             return Outcome.Forbidden(
                 "لا تملك صلاحية تنفيذ هذا الإجراء على طلبات العضوية.",
                 $"Your role does not grant '{required}' on membership requests.");
@@ -119,7 +118,7 @@ public class MembershipService(
     {
         if (!actor.Can(MembershipRoles.Actions.Approve))
         {
-            await audit.DeniedAsync(actor, MembershipRoles.Actions.Approve, "registration", registration.Id, cancellationToken);
+            await audit.DeniedAsync(actor, MembershipRoles.Actions.Approve, "registration", registration.Id, cancellationToken, registration.ReferenceNumber);
             return Outcome.Forbidden(
                 "التجديد يتطلب صلاحية القبول.",
                 "Renewal requires the 'approve' permission.");
@@ -134,7 +133,7 @@ public class MembershipService(
         var from = registration.ExpiresAt is { } current && current > now ? current : now;
         var fromStatus = registration.Status;
 
-        registration.ExpiresAt = from.AddYears(MembershipTracks.TermYears(registration.Type));
+        registration.ExpiresAt = from.AddYears(MembershipTerms.YearsFor(registration.Type, configuration));
         registration.RenewedAt = now;
         registration.RenewalCount += 1;
         // A fresh term warns again as it approaches its own end.
@@ -201,6 +200,97 @@ public class MembershipService(
         return lapsed.Count;
     }
 
+
+    /// <summary>
+    /// A membership whose end date was issued under a different term length
+    /// (BUG-12), with the date it would carry under the current one.
+    /// </summary>
+    public sealed record TermRealignment(Registration Registration, DateTime From, DateTime To);
+
+    /// <summary>
+    /// Finds memberships whose recorded end date does not match the term now in
+    /// force.
+    ///
+    /// Changing the term changes what *new* approvals get; it says nothing about
+    /// the ones already issued. After the federation shortened the term to a
+    /// single year, every membership approved before that still carried a
+    /// three-year end date, which is both wrong on screen and wrong in the
+    /// renewal reminders. This reports them; <see cref="RealignTermsAsync"/>
+    /// corrects them, and only when somebody asks it to.
+    ///
+    /// Only approved memberships are considered. An expired, suspended, or
+    /// cancelled record is history, and rewriting its dates would falsify it.
+    /// </summary>
+    public async Task<List<TermRealignment>> FindTermMismatchesAsync(CancellationToken cancellationToken = default)
+    {
+        var approved = await db.Registrations
+            .AsNoTracking()
+            .Where(r => r.Status == RegistrationStatuses.Approved
+                        && r.ApprovedAt != null
+                        && r.ExpiresAt != null)
+            .ToListAsync(cancellationToken);
+
+        var mismatches = new List<TermRealignment>();
+
+        foreach (var registration in approved)
+        {
+            var expected = ExpectedExpiry(registration);
+            if (registration.ExpiresAt is { } current && Math.Abs((current - expected).TotalDays) >= 1)
+                mismatches.Add(new TermRealignment(registration, current, expected));
+        }
+
+        return mismatches.OrderBy(m => m.Registration.ReferenceNumber).ToList();
+    }
+
+    /// <summary>
+    /// Moves those end dates onto the current term. Every change is audited
+    /// individually with the date it moved from, because this rewrites when
+    /// somebody's membership runs out.
+    /// </summary>
+    public async Task<int> RealignTermsAsync(AdminIdentity.Actor actor, CancellationToken cancellationToken = default)
+    {
+        if (!actor.Can(MembershipRoles.Actions.Approve))
+        {
+            await audit.DeniedAsync(actor, MembershipRoles.Actions.Approve, "registration", 0, cancellationToken);
+            return -1;
+        }
+
+        var mismatches = await FindTermMismatchesAsync(cancellationToken);
+        if (mismatches.Count == 0) return 0;
+
+        foreach (var mismatch in mismatches)
+        {
+            var registration = await db.Registrations.FindAsync([mismatch.Registration.Id], cancellationToken);
+            if (registration is null) continue;
+
+            registration.ExpiresAt = mismatch.To;
+            // The new end date deserves its own warning as it approaches.
+            registration.RenewalReminderSentAt = null;
+            registration.LastActionBy = actor.Username;
+
+            audit.Registration(
+                actor,
+                AuditActions.TermRealigned,
+                registration,
+                details: $"Term end moved from {mismatch.From:yyyy-MM-dd} to {mismatch.To:yyyy-MM-dd} "
+                         + $"({MembershipTerms.YearsFor(registration.Type, configuration)}-year term).");
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return mismatches.Count;
+    }
+
+    /// <summary>
+    /// Where a term should end: the original approval plus the current term,
+    /// pushed on by each renewal already granted.
+    /// </summary>
+    private DateTime ExpectedExpiry(Registration registration)
+    {
+        var years = MembershipTerms.YearsFor(registration.Type, configuration);
+        var start = registration.ApprovedAt ?? registration.CreatedAt;
+        return start.AddYears(years * (1 + registration.RenewalCount));
+    }
+
     /// <summary>
     /// Memberships inside the renewal warning window, so the federation can act
     /// before the term lapses rather than after.
@@ -255,7 +345,7 @@ public class MembershipService(
     {
         if (!actor.Can(MembershipRoles.Actions.Edit))
         {
-            await audit.DeniedAsync(actor, MembershipRoles.Actions.Edit, "registration", registration.Id, cancellationToken);
+            await audit.DeniedAsync(actor, MembershipRoles.Actions.Edit, "registration", registration.Id, cancellationToken, registration.ReferenceNumber);
             return Outcome.Forbidden(
                 "لا تملك صلاحية تعديل بيانات العضوية.",
                 "Your role does not grant 'edit' on membership requests.");
@@ -276,7 +366,12 @@ public class MembershipService(
                     "Some fields are not valid: " + string.Join(", ", validation.Errors.Keys));
 
             changedFields = ChangedFields(registration.PayloadJson, incoming, out gradeChanged);
-            registration.PayloadJson = incoming.GetRawText();
+
+            // Items 00/BUG-15 — a reviewer may move an athlete between the
+            // categories their age allows, and nothing else. The calculation
+            // keeps an eligible choice and replaces anything outside it.
+            registration.PayloadJson =
+                RegistrationPayload.WithCalculatedCategory(incoming, registration.Type);
         }
 
         if (internalNotes is not null && internalNotes != registration.InternalNotes)
@@ -469,6 +564,55 @@ public class MembershipService(
         return NotificationTemplates.ForStatus(toStatus);
     }
 
+    /// <summary>
+    /// إعادة فتح طلب مرفوض أو ملغى — puts a terminal request back into review.
+    ///
+    /// The approved lifecycle (§12) ends at رفض and إلغاء, so this is not a
+    /// normal transition: it takes قبول authority, demands a reason, is
+    /// recorded in the audit trail, and returns the request to مراجعة rather
+    /// than reinstating any decision.
+    /// </summary>
+    public async Task<Outcome> ReopenAsync(
+        Registration registration,
+        AdminIdentity.Actor actor,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        if (!actor.Can(MembershipRoles.Actions.Approve))
+        {
+            await audit.DeniedAsync(actor, MembershipRoles.Actions.Approve, "registration", registration.Id, cancellationToken, registration.ReferenceNumber);
+            return Outcome.Forbidden(
+                "إعادة فتح الطلب تتطلب صلاحية القبول.",
+                "Reopening a request requires the 'approve' permission.");
+        }
+
+        if (registration.Status is not (RegistrationStatuses.Rejected or RegistrationStatuses.Cancelled))
+            return Outcome.Invalid(
+                "لا يمكن إعادة فتح إلا طلب مرفوض أو ملغى.",
+                "Only a rejected or cancelled request can be reopened.");
+
+        if (string.IsNullOrWhiteSpace(reason))
+            return Outcome.Invalid(
+                "يجب ذكر سبب إعادة فتح الطلب.",
+                "Reopening a request requires a reason.");
+
+        var now = DateTime.UtcNow;
+        var fromStatus = registration.Status;
+
+        registration.Status = RegistrationStatuses.UnderReview;
+        registration.StatusReason = reason;
+        registration.StatusChangedAt = now;
+        registration.LastActionBy = actor.Username;
+        registration.StageOrder = StageFor(registration.Type, RegistrationStatuses.UnderReview);
+
+        audit.Registration(actor, AuditActions.Reopened, registration, fromStatus, RegistrationStatuses.UnderReview, reason);
+        await db.SaveChangesAsync(cancellationToken);
+
+        await NotifyAsync(registration, NotificationTemplates.UnderReview, cancellationToken);
+
+        return Outcome.Success();
+    }
+
     /// <summary>Field changes that belong to a particular destination status.</summary>
     private void ApplyStatusSideEffects(Registration registration, string toStatus, DateTime now)
     {
@@ -476,10 +620,13 @@ public class MembershipService(
         {
             case RegistrationStatuses.Approved:
                 registration.ApprovedAt ??= now;
+                // ISSUE-03 — the member's own card link, issued once and kept
+                // through renewals so a printed card does not stop working.
+                registration.CardToken ??= MembershipCards.NewToken();
                 // The term runs from the original approval, so a reinstated
-                // membership resumes rather than silently gaining three years.
+                // membership resumes rather than silently gaining a fresh one.
                 registration.ExpiresAt ??= (registration.ApprovedAt ?? now)
-                    .AddYears(MembershipTracks.TermYears(registration.Type));
+                    .AddYears(MembershipTerms.YearsFor(registration.Type, configuration));
                 registration.SuspendedAt = null;
                 registration.CompletionDueAt = null;
                 registration.CompletionReminderSentAt = null;
@@ -502,6 +649,11 @@ public class MembershipService(
 
             case RegistrationStatuses.Expired:
                 registration.SuspendedAt = null;
+                // BUG-12 — expiring a membership early ends the term now. Without
+                // this the record kept a future end date, and every screen went on
+                // counting down the days of a membership that had just been closed.
+                if (registration.ExpiresAt is null || registration.ExpiresAt > now)
+                    registration.ExpiresAt = now;
                 break;
         }
     }
@@ -531,9 +683,6 @@ public class MembershipService(
     {
         if (templateKey is null) return;
 
-        var template = NotificationTemplates.Get(templateKey);
-        if (template is null) return;
-
         JsonElement payload;
         try
         {
@@ -545,6 +694,8 @@ public class MembershipService(
             return;
         }
 
+        // The language the applicant filled the form in decides the copy;
+        // the dispatcher reads it again for the message it renders.
         var arabic = RegistrationPayload.FirstString(payload, "submittedLanguage") != "en";
         var track = MembershipTracks.Get(registration.Type);
 
@@ -560,19 +711,6 @@ public class MembershipService(
             [NotificationTemplates.Vars.SuspensionReason] = registration.StatusReason,
         };
 
-        var recipient = RegistrationPayload.FirstString(payload, "email", "applicantEmail", "officialEmail");
-        if (recipient is not null)
-        {
-            var subject = NotificationTemplates.Render(arabic ? template.SubjectAr : template.SubjectEn, values);
-            var body = NotificationTemplates.Render(arabic ? template.BodyAr : template.BodyEn, values);
-            await email.SendAsync(recipient, subject, body, cancellationToken);
-        }
-
-        var mobile = RegistrationPayload.FirstString(payload, "phone", "mobile", "applicantPhone", "officialPhone");
-        if (mobile is not null)
-        {
-            var text = NotificationTemplates.Render(arabic ? template.SmsAr : template.SmsEn, values);
-            await sms.SendAsync(mobile, text, cancellationToken);
-        }
+        await notifications.SendAsync(templateKey, registration, payload, values, cancellationToken);
     }
 }

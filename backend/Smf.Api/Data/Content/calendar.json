@@ -1,0 +1,33 @@
+{
+  "key": "calendar",
+  "group": "participation",
+  "order": 40,
+  "titleEn": "Activities",
+  "titleAr": "الأنشطة",
+  "route": "/activities/calendar",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "help": "The events themselves are managed under Events.",
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Title (one year selected)",
+          "help": "Write {year} where the selected year should appear, for example: {year} Events Calendar."
+        },
+        { "name": "titleAllYears", "type": "text", "label": "Title (all years selected)" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "title": { "ar": "تقويم الفعاليات {year}", "en": "{year} Events Calendar" },
+      "titleAllYears": { "ar": "تقويم الفعاليات", "en": "Events Calendar" },
+      "subtitle": { "ar": "جميع بطولات ومعسكرات ودورات وفعاليات الاتحاد", "en": "Championships, camps, courses, and federation events" }
+    }
+  }
+}

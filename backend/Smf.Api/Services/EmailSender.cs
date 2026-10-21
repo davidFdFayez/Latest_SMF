@@ -41,20 +41,26 @@ public sealed class EmailSender
     private string FromName => _configuration["Email:FromName"] ?? "Saudi Muaythai Federation";
     private string? Host => _configuration["Email:Host"];
 
-    public async Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken = default)
+    /// <summary>True once a mail server is configured; otherwise messages go to the outbox.</summary>
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(Host);
+
+    /// <summary>Where outbox files are written, for the delivery status screen.</summary>
+    public string OutboxPath => _outboxPath;
+
+    public async Task<DeliveryResult> SendAsync(string? to, string subject, string body, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(to))
         {
             _logger.LogWarning("Skipped notification '{Subject}' — no recipient address.", subject);
-            return;
+            return DeliveryResult.Skipped("No recipient address on the request.");
         }
 
         try
         {
             if (string.IsNullOrWhiteSpace(Host))
             {
-                await WriteToOutboxAsync(to, subject, body, cancellationToken);
-                return;
+                var file = await WriteToOutboxAsync(to, subject, body, cancellationToken);
+                return DeliveryResult.Outbox(file);
             }
 
             using var message = new MailMessage
@@ -82,16 +88,18 @@ public sealed class EmailSender
 
             await client.SendMailAsync(message, cancellationToken);
             _logger.LogInformation("Sent notification '{Subject}' to {Recipient}.", subject, Mask(to));
+            return DeliveryResult.Sent();
         }
         catch (Exception ex)
         {
             // The registration itself is already saved; losing the mail must not
             // turn a successful submission into an error for the applicant.
             _logger.LogError(ex, "Failed to send notification '{Subject}' to {Recipient}.", subject, Mask(to));
+            return DeliveryResult.Failed(ex.Message);
         }
     }
 
-    private async Task WriteToOutboxAsync(string to, string subject, string body, CancellationToken cancellationToken)
+    private async Task<string> WriteToOutboxAsync(string to, string subject, string body, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(_outboxPath);
 
@@ -112,6 +120,8 @@ public sealed class EmailSender
         _logger.LogInformation(
             "Email:Host is not configured — wrote notification '{Subject}' for {Recipient} to the outbox as {File}.",
             subject, Mask(to), fileName);
+
+        return fileName;
     }
 
     /// <summary>Recipient addresses are never written to the log in full.</summary>

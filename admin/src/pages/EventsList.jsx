@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { eventsApi } from '../api/resources'
 import { extractErrorMessage, formatDate, getId, pick } from '../api/utils'
+import { assetUrl } from '../utils'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
 import Alert from '../components/Alert'
@@ -11,6 +12,36 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { EditIcon, PlusIcon, TrashIcon } from '../components/Icons'
 
 const STATUS_TONE = { confirmed: 'green', tentative: 'gold', completed: 'neutral' }
+
+/**
+ * The event's banner, at the size of a row. It sits beside the title rather
+ * than in a column of its own so the table keeps its shape on a narrow screen,
+ * and it leaves no gap when an event has no image — or when the path it has
+ * cannot be loaded.
+ */
+function EventThumb({ url }) {
+  const [failed, setFailed] = useState(false)
+  const href = assetUrl(url)
+  if (!href || failed) return null
+  return (
+    <img
+      src={href}
+      alt=""
+      width={44}
+      height={30}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      style={{
+        width: 44,
+        height: 30,
+        flex: '0 0 auto',
+        objectFit: 'cover',
+        borderRadius: 4,
+        border: '1px solid var(--border)',
+      }}
+    />
+  )
+}
 
 export default function EventsList() {
   const [items, setItems] = useState([])
@@ -117,7 +148,12 @@ export default function EventsList() {
                 const status = pick(item, ['status'], 'confirmed')
                 return (
                   <tr key={id}>
-                    <td className="data-table__primary">{pick(item, ['titleEn', 'title'], '—')}</td>
+                    <td className="data-table__primary">
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <EventThumb url={pick(item, ['imageUrl', 'image'], '')} />
+                        <span>{pick(item, ['titleEn', 'title'], '—')}</span>
+                      </span>
+                    </td>
                     <td>{pick(item, ['category'], '—')}</td>
                     <td>{pick(item, ['locationEn', 'location'], '—')}</td>
                     <td>{formatDate(pick(item, ['startDate', 'date'], ''))}</td>

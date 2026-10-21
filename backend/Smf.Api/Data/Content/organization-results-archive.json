@@ -1,0 +1,28 @@
+{
+  "key": "organization-results-archive",
+  "group": "federation",
+  "order": 80,
+  "titleEn": "Results Archive",
+  "titleAr": "سجل النتائج الدولية",
+  "route": "/organization/results-archive",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "help": "The medal counts, filters and results table come from the results archive and are not edited here.",
+      "fields": [
+        { "name": "tag", "type": "string", "label": "Small tag above the title", "help": "For example: 2019 – 2026" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "tag": "2019 – 2026",
+      "title": { "ar": "سجل النتائج الدولية", "en": "International Results Archive" },
+      "subtitle": { "ar": "السجل الرسمي لجميع الميداليات الدولية للمنتخب الوطني", "en": "Official record of all national team international medals" }
+    }
+  }
+}

@@ -1,0 +1,270 @@
+{
+  "key": "organization-strategy",
+  "group": "federation",
+  "order": 40,
+  "titleEn": "Strategy",
+  "titleAr": "الاستراتيجية",
+  "route": "/organization/strategy",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "tag", "type": "text", "label": "Small tag above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        {
+          "name": "kpis",
+          "type": "list",
+          "label": "Key figures",
+          "itemLabel": "Figure",
+          "fields": [
+            { "name": "value", "type": "string", "label": "Value", "help": "For example: 1,300+" },
+            { "name": "label", "type": "text", "label": "Label" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pillars",
+      "type": "group",
+      "label": "Strategic pillars",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "intro", "type": "textarea", "label": "Introduction" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Pillars",
+          "itemLabel": "Pillar",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "number", "type": "string", "label": "Number", "help": "For example: 01" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "text", "type": "textarea", "label": "Description" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "roadmap",
+      "type": "group",
+      "label": "Development roadmap",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "intro", "type": "textarea", "label": "Introduction" },
+        {
+          "name": "groups",
+          "type": "list",
+          "label": "Roadmap phases",
+          "itemLabel": "Phase",
+          "itemTitle": "badge",
+          "fields": [
+            { "name": "badge", "type": "text", "label": "Phase name" },
+            {
+              "name": "cols",
+              "type": "select",
+              "label": "Cards per row",
+              "options": [
+                { "value": "2", "label": "2 per row" },
+                { "value": "3", "label": "3 per row" }
+              ]
+            },
+            {
+              "name": "items",
+              "type": "list",
+              "label": "Roadmap steps",
+              "itemLabel": "Step",
+              "itemTitle": "name",
+              "fields": [
+                { "name": "quarter", "type": "string", "label": "Step number", "help": "For example: 1.1" },
+                { "name": "name", "type": "text", "label": "Name" },
+                { "name": "text", "type": "textarea", "label": "Description" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "buttonLabel", "type": "text", "label": "Button label" },
+        { "name": "buttonUrl", "type": "url", "label": "Button link" }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "tag": { "ar": "رؤية 2030 — الاستراتيجية الرياضية", "en": "Vision 2030 — Sports Strategy" },
+      "title": { "ar": "رؤيتنا الاستراتيجية: بناء مستقبل المواي تاي", "en": "Our Strategic Vision: Building the Future of Muaythai" },
+      "subtitle": {
+        "ar": "يلتزم الاتحاد السعودي للملاكمة التايلندية برؤية استراتيجية جريئة وطموحة تنسجم مع أهداف رؤية المملكة 2030 ومتطلبات اللجنة الأولمبية والبارالمبية السعودية.",
+        "en": "The Saudi Muaythai Federation is committed to a bold strategy aligned with Vision 2030 and the Saudi Olympic & Paralympic Committee's objectives."
+      },
+      "kpis": [
+        { "value": "4", "label": { "ar": "محاور استراتيجية", "en": "Strategic Pillars" } },
+        { "value": "8", "label": { "ar": "مراحل تنفيذية", "en": "Roadmap Phases" } },
+        { "value": "2030", "label": { "ar": "أفق رؤية المملكة", "en": "Vision Horizon" } },
+        { "value": "1,300+", "label": { "ar": "رياضي مسجّل", "en": "Registered Athletes" } }
+      ]
+    },
+    "pillars": {
+      "label": { "ar": "الاستراتيجية", "en": "Strategy" },
+      "heading": { "ar": "المحاور الاستراتيجية الأربعة", "en": "4 Strategic Pillars" },
+      "intro": {
+        "ar": "تقوم استراتيجية الاتحاد على تعزيز المواهب المحلية وتطوير الأداء التنافسي ورفع مستوى حضور المواي تاي على الساحة الدولية.",
+        "en": "Our strategy focuses on fostering talent, promoting excellence, and enhancing Muaythai's presence on the global stage."
+      },
+      "items": [
+        {
+          "number": "01",
+          "title": { "ar": "تعزيز المشاركة الشعبية", "en": "Ignite Participation" },
+          "text": {
+            "ar": "تعزيز ودعم المشاركة والنجاح في الرياضة، مع تركيز خاص على الشباب والمرأة في جميع مناطق المملكة.",
+            "en": "Promote and support increased participation and success in the sport, with a focus on youth and women."
+          }
+        },
+        {
+          "number": "02",
+          "title": { "ar": "تطوير الأداء الرياضي", "en": "Unlock Athlete Performance" },
+          "text": {
+            "ar": "الارتقاء بأداء الرياضيين السعوديين عبر أنظمة اكتشاف الموهبة الشفافة وبرامج التطوير الرياضي المتقدمة.",
+            "en": "Elevate Saudi performance through transparent scouting systems and advanced athlete development programs."
+          }
+        },
+        {
+          "number": "03",
+          "title": { "ar": "رفع معايير التدريب والتحكيم", "en": "Elevate Coaching & Officials Standards" },
+          "text": {
+            "ar": "دعم التطوير المهني للمدربين والحكام المحليين للارتقاء بمستوى الأداء ورفع جودة البطولات.",
+            "en": "Support the development of local coaches and officials to elevate player performance and raise league standards."
+          }
+        },
+        {
+          "number": "04",
+          "title": { "ar": "تطوير مسار المنافسات", "en": "Optimize Competition Pathway" },
+          "text": {
+            "ar": "بناء دوري وطني احترافي ومستدام تجارياً مع تعزيز المشاركة الدولية وزيادة التعرض العالمي للاعبين السعوديين.",
+            "en": "Build a professional, commercially sustainable national league while increasing international participation and exposure for Saudi players."
+          }
+        }
+      ]
+    },
+    "roadmap": {
+      "label": { "ar": "خطة التطوير", "en": "Development Plan" },
+      "heading": { "ar": "خارطة الطريق الاستراتيجية", "en": "Strategic Development Roadmap" },
+      "intro": {
+        "ar": "مسار هيكلي متكامل يمتد عبر ثلاثة محاور تنموية: من التطوير الشعبي القاعدي، إلى تطوير المواهب، وصولاً إلى الأداء العالي على المستوى الدولي.",
+        "en": "A structured pathway across three development pillars — from grassroots community growth, through talent nurturing, to world-class high performance."
+      },
+      "groups": [
+        {
+          "badge": { "ar": "التطوير الشعبي", "en": "Grassroots Development" },
+          "cols": "2",
+          "items": [
+            {
+              "quarter": "1.1",
+              "name": { "ar": "إطلاق حملات التفعيل", "en": "Launch Activation Campaigns" },
+              "text": {
+                "ar": "تنظيم حملات موجّهة لتعزيز المشاركة ورفع الوعي بالرياضة وتطوير المهارات عبر مختلف الفئات العمرية والجنسين.",
+                "en": "Organize targeted campaigns to promote participation, increase awareness and develop skills across age groups and genders."
+              }
+            },
+            {
+              "quarter": "2.1",
+              "name": { "ar": "إدراج الرياضة في المدارس", "en": "Introduce the Sport within Schools" },
+              "text": {
+                "ar": "تقديم المواي تاي في المدارس ضمن المنهج الدراسي أو كنشاط بعد الدراسة لتعزيز اللياقة البدنية وتطوير المهارات واستقطاب المواهب الشابة.",
+                "en": "Introduce the sport in schools, as part of the curriculum or as an after-school activity, to promote physical fitness, skill development, and interest among students."
+              }
+            }
+          ]
+        },
+        {
+          "badge": { "ar": "تطوير المواهب", "en": "Talent Development" },
+          "cols": "2",
+          "items": [
+            {
+              "quarter": "3.1",
+              "name": { "ar": "البرنامج الوطني لاكتشاف المواهب", "en": "Develop a National Scouting Program" },
+              "text": {
+                "ar": "بناء برنامج وطني لاكتشاف المواهب الواعدة ورعايتها في جميع أنحاء المملكة، وتأسيس قاعدة رياضيين مستقبليين.",
+                "en": "Establish a national scouting program to identify and nurture promising talent across the country and build a pipeline for future athletes."
+              }
+            },
+            {
+              "quarter": "4.1",
+              "name": { "ar": "انتقاء شفاف للفرق الوطنية", "en": "Transparent National Team Selection" },
+              "text": {
+                "ar": "تصميم منظومة انتقاء هيكلية وشفافة للفرق الوطنية تضمن تقييماً موضوعياً وعادلاً لجميع الرياضيين.",
+                "en": "Develop a structured and transparent selection process for the national team to ensure fair and objective evaluation of athletes."
+              }
+            }
+          ]
+        },
+        {
+          "badge": { "ar": "الأداء العالي", "en": "High Performance" },
+          "cols": "3",
+          "items": [
+            {
+              "quarter": "5.1",
+              "name": { "ar": "المسار الوطني لتطوير المدربين", "en": "National Coaching Pathway" },
+              "text": {
+                "ar": "إنشاء مسار وطني للتدريب متوافق مع الاتحاد الدولي، يشمل التدريب الهيكلي والاعتماد والتطوير المهني المستمر.",
+                "en": "Establish a national coaching pathway aligned with the international federation, with structured training, certification, and ongoing development."
+              }
+            },
+            {
+              "quarter": "5.2",
+              "name": { "ar": "المسار الوطني لتطوير الحكام", "en": "National Officials' Pathway" },
+              "text": {
+                "ar": "إنشاء مسار وطني للحكام يتضمن التدريب والاعتماد والتطوير المستمر لرفع مستوى التحكيم وضمان توفر الكوادر اللازمة.",
+                "en": "Establish a national officials' pathway with structured training, certification, and ongoing development to enhance refereeing standards and availability."
+              }
+            },
+            {
+              "quarter": "6.1",
+              "name": { "ar": "إعادة تصميم هيكل المنافسات", "en": "Redesign Competition Structure" },
+              "text": {
+                "ar": "إعادة تصميم هيكل وتقويم المنافسات المحلية السنوية لإيجاد جدول زمني أكثر تنظيماً وإتاحةً واستراتيجيةً في التوقيت.",
+                "en": "Redesign the structure and calendar of yearly domestic sports competitions to create a more organized, accessible, and strategically timed schedule."
+              }
+            }
+          ]
+        },
+        {
+          "badge": { "ar": "الحوكمة — دعم تمكيني", "en": "Governance Enabler" },
+          "cols": "2",
+          "items": [
+            {
+              "quarter": "7.1",
+              "name": { "ar": "تعزيز إطار ترخيص الأندية والحوكمة", "en": "Strengthen Club Licensing & Governance" },
+              "text": {
+                "ar": "تعزيز حوكمة الأندية من خلال معايير الترخيص والامتثال وأطر التشغيل المستدامة.",
+                "en": "Enhance club governance through licensing, compliance standards, and sustainable operating frameworks."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "cta": {
+      "heading": { "ar": "انضم إلى مسيرة النجاح", "en": "Join Our Journey" },
+      "text": {
+        "ar": "انضم إلينا في هذه الرحلة الطموحة ونحن نواصل رسم مستقبل المواي تاي في المملكة العربية السعودية وما وراءها.",
+        "en": "Join us on this journey as we continue to shape the future of Muaythai in Saudi Arabia and beyond."
+      },
+      "buttonLabel": { "ar": "المبادرات", "en": "Initiatives" },
+      "buttonUrl": "/organization/initiatives"
+    }
+  }
+}

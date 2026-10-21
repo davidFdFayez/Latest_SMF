@@ -1,0 +1,26 @@
+{
+  "key": "news",
+  "group": "participation",
+  "order": 30,
+  "titleEn": "News",
+  "titleAr": "الأخبار",
+  "route": "/news",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "help": "The news articles themselves are managed under News.",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "title": { "ar": "الأخبار", "en": "News" },
+      "subtitle": { "ar": "آخر أخبار الاتحاد وأخبار IFMA الدولية", "en": "Latest SMF news and international IFMA coverage" }
+    }
+  }
+}

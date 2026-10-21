@@ -35,7 +35,7 @@ public static class MembershipTracks
         string Status);
 
     /// <param name="Key">Matches <see cref="Models.Registration.Type"/>.</param>
-    /// <param name="TermYears">مدة العضوية — three years for every track (§1 note).</param>
+    /// <param name="TermYears">مدة العضوية — one year for every track (BUG-12).</param>
     /// <param name="RegistrationFeeAr">رسوم التسجيل, verbatim from the federation.</param>
     /// <param name="RenewalFeeAr">رسوم التجديد, verbatim from the federation.</param>
     /// <param name="PrerequisitesAr">متطلبات خاصة قبل القبول.</param>
@@ -52,8 +52,15 @@ public static class MembershipTracks
         string PrerequisitesEn,
         IReadOnlyList<Stage> Stages);
 
-    /// <summary>مدة العضوية في منصة رياضي ثلاث سنوات (§1 — ملاحظة من الاتحاد).</summary>
-    public const int DefaultTermYears = 3;
+    /// <summary>
+    /// مدة العضوية — سنة واحدة لجميع الفئات.
+    ///
+    /// The Phase 2 document said three years, and the federation has since
+    /// corrected that to one year for every category (tracker BUG-12). The
+    /// value is still read through <see cref="MembershipTerms"/>, so a future
+    /// change is configuration rather than a release.
+    /// </summary>
+    public const int DefaultTermYears = 1;
 
     /// <summary>
     /// مهلة استكمال الطلب الناقص — 7 working days. The document marks it
@@ -239,6 +246,6 @@ public static class MembershipTracks
 
     public static bool IsValid(string? type) => Get(type) is not null;
 
-    /// <summary>The membership term for a track, falling back to the federation-wide three years.</summary>
+    /// <summary>The membership term for a track, falling back to the federation-wide default.</summary>
     public static int TermYears(string? type) => Get(type)?.TermYears ?? DefaultTermYears;
 }

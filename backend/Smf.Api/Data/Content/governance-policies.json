@@ -1,0 +1,73 @@
+{
+  "key": "governance-policies",
+  "group": "governance",
+  "order": 60,
+  "titleEn": "Policies & Regulations",
+  "titleAr": "الأنظمة والسياسات",
+  "route": "/governance/policies",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" }
+      ]
+    },
+    {
+      "name": "comingSoon",
+      "type": "group",
+      "label": "“Coming soon” block",
+      "help": "Shown while there are no published documents below.",
+      "fields": [
+        { "name": "badge", "type": "text", "label": "Badge" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "backLabel", "type": "text", "label": "“Back to home” button label" }
+      ]
+    },
+    {
+      "name": "documents",
+      "type": "group",
+      "label": "Published policies & regulations",
+      "help": "Add a document to replace the “coming soon” block with the list of documents.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Documents",
+          "itemLabel": "Document",
+          "itemTitle": "title",
+          "help": "Documents without a file are not shown.",
+          "fields": [
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "description", "type": "textarea", "label": "Description" },
+            { "name": "file", "type": "file", "label": "PDF file" },
+            { "name": "date", "type": "string", "label": "Date", "help": "Optional, shown next to “PDF” — for example: 2026 or March 2026" }
+          ]
+        }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "الأنظمة والسياسات الرسمية", "en": "Code & Policies" }
+    },
+    "comingSoon": {
+      "badge": { "ar": "قريباً", "en": "Coming Soon" },
+      "title": { "ar": "الأنظمة واللوائح والسياسات", "en": "Code, Regulations & Policies" },
+      "text": {
+        "ar": "تُعدّ الوثائق التنظيمية والسياسات الرسمية للاتحاد وستُتاح للعموم فور اعتمادها. يعمل الاتحاد السعودي للملاكمة التايلندية وفق إطار حوكمة شامل يلتزم بأعلى المعايير الدولية.",
+        "en": "Federation regulatory documents and official policies are being prepared and will be made publicly available upon approval. SMF operates under a comprehensive governance framework aligned with the highest international standards."
+      },
+      "backLabel": { "ar": "العودة للرئيسية", "en": "Back to Home" }
+    },
+    "documents": {
+      "label": { "ar": "الحوكمة", "en": "Governance" },
+      "heading": { "ar": "الأنظمة واللوائح والسياسات", "en": "Code, Regulations & Policies" },
+      "items": []
+    }
+  }
+}

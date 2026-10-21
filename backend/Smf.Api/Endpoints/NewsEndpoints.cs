@@ -54,6 +54,7 @@ public static class NewsEndpoints
             body = n.BodyAr,
             n.Category,
             n.ImageUrl,
+            imageFocus = NewsImageFocus.Css(n.ImageFocus),
             n.PublishedAt,
             n.Source,
             n.ExternalUrl
@@ -66,6 +67,7 @@ public static class NewsEndpoints
             body = n.BodyEn,
             n.Category,
             n.ImageUrl,
+            imageFocus = NewsImageFocus.Css(n.ImageFocus),
             n.PublishedAt,
             n.Source,
             n.ExternalUrl
@@ -81,6 +83,7 @@ public static class NewsEndpoints
             n.BodyEn,
             n.Category,
             n.ImageUrl,
+            imageFocus = NewsImageFocus.Css(n.ImageFocus),
             n.PublishedAt,
             n.Source,
             n.ExternalUrl

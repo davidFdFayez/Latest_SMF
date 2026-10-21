@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dashboardApi, contactApi, eventsApi, newsApi, registrationsApi, resultsApi, whistleblowerApi } from '../api/resources'
 import { pickNumber } from '../api/utils'
+import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
 import Alert from '../components/Alert'
@@ -21,6 +22,7 @@ const CARD_DEFS = [
     icon: NewsIcon,
     to: '/news',
     tone: 'green',
+    permission: 'news',
     countKeys: ['newsCount', 'totalNews', 'news'],
     subLabel: 'published',
     subKeys: ['publishedNewsCount'],
@@ -31,6 +33,7 @@ const CARD_DEFS = [
     icon: EventsIcon,
     to: '/events',
     tone: 'blue',
+    permission: 'events',
     countKeys: ['eventsCount', 'totalEvents', 'events'],
     subLabel: 'upcoming',
     subKeys: ['upcomingEventsCount'],
@@ -41,6 +44,7 @@ const CARD_DEFS = [
     icon: ResultsIcon,
     to: '/results',
     tone: 'gold',
+    permission: 'events',
     countKeys: ['resultsCount', 'totalResults', 'results'],
     subLabel: 'gold',
     subKeys: ['goldCount'],
@@ -51,6 +55,7 @@ const CARD_DEFS = [
     icon: RegistrationsIcon,
     to: '/registrations',
     tone: 'purple',
+    membershipAction: 'view',
     countKeys: ['registrationsCount', 'totalRegistrations', 'registrations'],
     subLabel: 'pending',
     subKeys: ['pendingRegistrationsCount'],
@@ -61,6 +66,7 @@ const CARD_DEFS = [
     icon: ContactIcon,
     to: '/contact',
     tone: 'orange',
+    permission: 'support',
     countKeys: ['contactMessagesCount', 'contactCount', 'totalContactMessages', 'contactMessages'],
     subLabel: 'unread',
     subKeys: ['unreadContactMessagesCount', 'unreadContactCount'],
@@ -71,6 +77,7 @@ const CARD_DEFS = [
     icon: WhistleblowerIcon,
     to: '/whistleblower',
     tone: 'red',
+    permission: 'whistleblower',
     countKeys: ['whistleblowerReportsCount', 'whistleblowerCount', 'totalWhistleblowerReports', 'whistleblowerReports'],
     subLabel: 'pending review',
     subKeys: ['unreviewedWhistleblowerCount', 'unreadWhistleblowerCount'],
@@ -78,6 +85,7 @@ const CARD_DEFS = [
 ]
 
 export default function Dashboard() {
+  const { canAccess } = useAuth()
   const [counts, setCounts] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -138,7 +146,7 @@ export default function Dashboard() {
         <Spinner label="Loading dashboard…" />
       ) : (
         <div className="card-grid">
-          {CARD_DEFS.map(({ key, label, icon: Icon, to, tone, countKeys, subLabel, subKeys }) => {
+          {CARD_DEFS.filter(canAccess).map(({ key, label, icon: Icon, to, tone, countKeys, subLabel, subKeys }) => {
             const subValue = subKeys ? pickNumber(counts, subKeys, undefined) : undefined
             return (
               <Link to={to} key={key} className={`stat-card stat-card--${tone}`}>

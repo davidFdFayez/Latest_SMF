@@ -45,7 +45,7 @@ public static class RegistrationsEndpoints
         app.MapPost("/api/registrations", async (
             RegistrationCreateRequest? request,
             SmfDbContext db,
-            EmailSender email,
+            NotificationDispatcher notifications,
             ILoggerFactory loggerFactory,
             CancellationToken cancellationToken) =>
         {
@@ -87,7 +87,10 @@ public static class RegistrationsEndpoints
             var registration = new Registration
             {
                 Type = type,
-                PayloadJson = payload.GetRawText(),
+                // Items 00/BUG-15 — an athlete's competition category is derived
+                // here from the date of birth; whatever the client sent for it is
+                // not trusted.
+                PayloadJson = RegistrationPayload.WithCalculatedCategory(payload, type),
                 Status = RegistrationStatuses.New,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -105,7 +108,7 @@ public static class RegistrationsEndpoints
             registration.ReferenceNumber = $"SMF-{prefix}-{registration.CreatedAt:yyyy}-{registration.Id:D5}";
             await db.SaveChangesAsync(cancellationToken);
 
-            await SendConfirmationAsync(registration, payload, type, email, cancellationToken);
+            await SendConfirmationAsync(registration, payload, type, notifications, cancellationToken);
 
             return Results.Ok(new
             {
@@ -208,15 +211,9 @@ public static class RegistrationsEndpoints
         Registration registration,
         JsonElement payload,
         string type,
-        EmailSender email,
+        NotificationDispatcher notifications,
         CancellationToken cancellationToken)
     {
-        var template = NotificationTemplates.Get(NotificationTemplates.SubmissionReceived);
-        if (template is null) return;
-
-        var recipient = RegistrationPayload.FirstString(payload, "email", "applicantEmail", "officialEmail");
-        if (recipient is null) return;
-
         var arabic = RegistrationPayload.FirstString(payload, "submittedLanguage") != "en";
         var labels = TypeLabels[type];
 
@@ -227,9 +224,7 @@ public static class RegistrationsEndpoints
             [NotificationTemplates.Vars.RequestNumber] = registration.ReferenceNumber,
         };
 
-        var subject = NotificationTemplates.Render(arabic ? template.SubjectAr : template.SubjectEn, values);
-        var body = NotificationTemplates.Render(arabic ? template.BodyAr : template.BodyEn, values);
-
-        await email.SendAsync(recipient, subject, body, cancellationToken);
+        await notifications.SendAsync(
+            NotificationTemplates.SubmissionReceived, registration, payload, values, cancellationToken);
     }
 }

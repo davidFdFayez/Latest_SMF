@@ -1,0 +1,169 @@
+{
+  "key": "organization-history",
+  "group": "federation",
+  "order": 20,
+  "titleEn": "History",
+  "titleAr": "تاريخ الاتحاد",
+  "route": "/organization/history",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    {
+      "name": "quote",
+      "type": "group",
+      "label": "President's quote",
+      "fields": [
+        { "name": "text", "type": "textarea", "label": "Quote", "rows": 8, "help": "Leave a blank line between paragraphs." },
+        { "name": "author", "type": "text", "label": "Attribution", "help": "Shown after a dash under the quote." }
+      ]
+    },
+    {
+      "name": "timeline",
+      "type": "group",
+      "label": "Timeline of key milestones",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading", "help": "For example: 2019 — 2026" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Timeline entries",
+          "itemLabel": "Entry",
+          "itemTitle": "year",
+          "fields": [
+            { "name": "year", "type": "string", "label": "Year" },
+            { "name": "tag", "type": "text", "label": "Tag" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Description" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "تاريخ الاتحاد السعودي للملاكمة التايلندية", "en": "History of the Saudi Muaythai Federation" },
+      "subtitle": {
+        "ar": "منذ تأسيسه، يقود الاتحاد مسيرة نمو المواي تاي في المملكة تحت قيادة سمو الأمير فهد بن منصور بن سعد بن سعود آل سعود.",
+        "en": "Since its establishment, SMF has been at the forefront of growing Muaythai in the Kingdom under the leadership of HRH Prince Fahad bin Mansour bin Saad Al Saud."
+      }
+    },
+    "quote": {
+      "text": {
+        "ar": "للمواي تاي مستقبل مشرق في المملكة العربية السعودية. أسهم الانتشار العالمي للفنون القتالية المختلطة في تسليط الضوء على المواي تاي بوصفها أحد أرقى أشكال رياضات القتال، وهي رياضة تقوم على الانضباط والتفاني واللياقة البدنية — سمات تنسجم تماماً مع رؤية 2030.\n\nستجد الأجيال القادمة من الشباب السعودي في المواي تاي تأهيلاً مثالياً لمواجهة تحديات عالم اليوم، وسنحرص على إتاحة الفرصة لأكبر عدد ممكن من الشباب والشابات لاكتشاف هذه الرياضة وما تقدمه لهم من بناء شخصي وعقلي وجسدي.",
+        "en": "Muaythai has a bright future in Saudi Arabia. The global rise of MMA has put Muaythai on the map as one of the highest form of combat sports which demands discipline, dedication and fitness – attributes that are in line with the vision 2030.\n\nThe upcoming generation of young Saudis will find a perfect preparation for the challenges of today's world through Muaythai and we will ensure that as many young male and female will be able to experience this sport for their personal, mental and physical development."
+      },
+      "author": {
+        "ar": "الأمير فهد بن منصور بن سعد بن سعود آل سعود",
+        "en": "Prince Fahad Al Saud, President of the Saudi Muaythai Federation"
+      }
+    },
+    "timeline": {
+      "label": { "ar": "٢٠١٩ — ٢٠٢٦", "en": "2019 — 2026" },
+      "heading": { "ar": "المحطات الرئيسية", "en": "Timeline of Key Milestones" },
+      "items": [
+        {
+          "year": "2019",
+          "tag": { "ar": "تأسيس", "en": "Foundation" },
+          "title": { "ar": "تأسيس الاتحاد والأولى دولياً", "en": "Establishment & First International Medals" },
+          "body": {
+            "ar": "تأسّس الاتحاد السعودي للملاكمة التايلندية رسمياً تحت مظلة اللجنة الأولمبية والبارالمبية السعودية، برئاسة سمو الأمير فهد بن منصور بن سعد بن سعود آل سعود. وفي العام ذاته، مثّل المنتخب الوطني المملكة دولياً لأول مرة في بطولة \"Chungju World Martial Arts Masterships\" بكوريا الجنوبية، محققاً 3 ميداليات برونزية.",
+            "en": "The Saudi Muaythai Federation (SMF) was officially established under the Saudi Olympic & Paralympic Committee (SOPC), with HRH Prince Fahad Bin Mansour Bin Saad Al Saud appointed as President. That same year, the national team made its international debut at the Chungju World Martial Arts Masterships in South Korea, winning 3 bronze medals."
+          }
+        },
+        {
+          "year": "2020",
+          "tag": { "ar": "اعتراف دولي", "en": "International Recognition" },
+          "title": { "ar": "أول بطولة وطنية والانضمام إلى IFMA", "en": "First National Championship & IFMA Membership" },
+          "body": {
+            "ar": "أقام الاتحاد أول بطولة مملكة للمواي تاي، وفي ديسمبر 2020 انضم رسمياً إلى عائلة IFMA، مما أسّس لوجود سعودي راسخ في منظومة الحوكمة الدولية للرياضة.",
+            "en": "SMF hosted the inaugural Kingdom Muaythai Championship, and in December 2020 achieved official IFMA membership, establishing Saudi Arabia within the highest tier of international Muaythai governance."
+          }
+        },
+        {
+          "year": "2021",
+          "tag": { "ar": "شمولية", "en": "Inclusion" },
+          "title": { "ar": "الشمولية والتوسع الدولي", "en": "Inclusion & International Growth" },
+          "body": {
+            "ar": "أطلق الاتحاد أول بطولة نسائية حصرية وأول بطولة مختلطة في تاريخه. على الصعيد الدولي، حضر المنتخب بطولة العالم في بانكوك، حاصداً 1 فضية و2 برونزية.",
+            "en": "SMF hosted its first women-only and first mixed-gender domestic championships. Internationally, the national team competed at the IFMA World Championships in Bangkok, securing 1 silver and 2 bronze medals."
+          }
+        },
+        {
+          "year": "2022",
+          "tag": { "ar": "انطلاقة دولية", "en": "International Breakthrough" },
+          "title": { "ar": "انطلاقة دولية — 20 ميدالية في موسم واحد", "en": "International Breakthrough — 20 Medals in One Season" },
+          "body": {
+            "ar": "أكثر موسم دولي إنتاجاً حتى ذلك الحين: 20 ميدالية عبر ثلاث بطولات IFMA في كوالالمبور وأبوظبي — بما فيها 6 فضيات و14 برونزية في بطولات الشباب والكبار والغراند سلام. وأجرى الاتحاد أول استكشاف استراتيجي للمواهب.",
+            "en": "The most productive international season to date: 20 medals across three IFMA events in Kuala Lumpur and Abu Dhabi — including 6 silver and 14 bronze at the Grand Slam, Youth Worlds, and Senior Worlds. SMF conducted its first strategic talent scouting exercise."
+          }
+        },
+        {
+          "year": "2023",
+          "tag": { "ar": "ذهب عالمي", "en": "World Gold" },
+          "title": { "ar": "أول ذهب عالمي — قيادة IFMA — استضافة الرياض", "en": "First World Gold · IFMA Leadership · Riyadh Hosts WCG" },
+          "body": {
+            "ar": "هتان السف: أول رياضية سعودية تُحرز ذهبية في بطولة العالم للكبار (بانكوك). ألعاب القتال العالمية في الرياض: 3 ذهبيات (هتان، عناد، علي). عُيِّن سمو الأمير فهد نائباً لرئيس IFMA — أول سعودي يتولى قيادة الاتحاد الدولي. إجمالي الموسم: 9 ميداليات.",
+            "en": "Hattan Alsaif became the first Saudi female senior world champion (Bangkok). World Combat Games, Riyadh: 3 gold medals (Hattan, Inad, Ali Alnasser). HRH Prince Fahad appointed IFMA Vice President — the first Saudi in IFMA leadership. Season total: 9 medals."
+          }
+        },
+        {
+          "year": "2024",
+          "tag": { "ar": "ذهب للرجال وبارا", "en": "Senior & Para Gold" },
+          "title": { "ar": "ذهب الكبار والبارا — أولمبياد باريس — 480 رياضياً وطنياً", "en": "Senior & Para World Gold · Paris · 480 Athletes Nationally" },
+          "body": {
+            "ar": "البراء العمودي: أول ذهبية كبار ذكور سعودية (بطرا، اليونان). علي الناصر: ذهبية بارا البارالمبية. إجمالي دولي: 2 ذهبية، 1 فضية، 11 برونزية. تمثيل في القرية الأولمبية بباريس. بطولة المملكة الخامسة: 480+ رياضياً من جميع مناطق المملكة.",
+            "en": "Albaraa Alamoudi claimed the first Saudi male senior world gold (Patras, Greece). Ali Alnasser won Para gold. International total: 2 gold, 1 silver, 11 bronze. Exhibition representation at the Paris Olympic Village. 5th Kingdom Championship: 480+ athletes from across the Kingdom."
+          }
+        },
+        {
+          "year": "2025",
+          "tag": { "ar": "أقوى موسم", "en": "Strongest Season" },
+          "title": { "ar": "أقوى موسم دولي — ذهبيات الشباب وبريق متعدد البطولات", "en": "Strongest Season — Youth Golds & Multi-Event Podiums" },
+          "body": {
+            "ar": "فاطمة كشميري والجوهرة الهزاء: أول ذهبيتَين سعوديتَين في بطولة العالم للشباب (أبوظبي). أول مشاركة في ألعاب CISM العسكرية (بانكوك): 3 برونزيات. دورة الألعاب الآسيوية للشباب (البحرين): برونزية. دورة ألعاب التضامن الإسلامي (الرياض): 1 فضية، 1 برونزية. إجمالي الموسم: 2 ذهبية، 5 فضيات، 9 برونزيات.",
+            "en": "Fatimah Kashmiri and Aljawharah Alhazzaa became the first Saudi youth world champions (Abu Dhabi). CISM Military World Games debut (Bangkok): 3 bronze. Asian Youth Games (Bahrain): 1 bronze. Islamic Solidarity Games (Riyadh): 1 silver, 1 bronze. Season total: 2 gold, 5 silver, 9 bronze."
+          }
+        },
+        {
+          "year": "2026",
+          "tag": { "ar": "جامعي عالمي", "en": "World Universities" },
+          "title": { "ar": "ألعاب الجامعات العالمية — استمرار التوسع", "en": "FISU World University Games & Continued Expansion" },
+          "body": {
+            "ar": "مثّل ثلاثة رياضيين سعوديين المملكة في دورة ألعاب الجامعات العالمية (FISU) ببرازيليا، البرازيل، محققين 3 ميداليات برونزية — وهو أول تمثيل سعودي في هذه الدورة الرفيعة. يواصل الاتحاد توسيع حضوره في المحافل الرياضية الدولية متعددة الرياضات.",
+            "en": "Three Saudi athletes represented the Kingdom at the FISU World University Games in Brasilia, Brazil, winning 3 bronze medals — the first-ever Saudi participation at this prestigious multi-sport event. SMF continues to expand its footprint across international multi-sport competitions."
+          }
+        }
+      ]
+    },
+    "cta": {
+      "text": {
+        "ar": "تعرّف على التفاصيل الكاملة للميداليات والبطولات والمعالم المؤسسية للاتحاد.",
+        "en": "Discover the full details of every medal, championship, and institutional milestone."
+      },
+      "primaryLabel": { "ar": "الإنجازات", "en": "Achievements" },
+      "primaryUrl": "/organization/achievements",
+      "secondaryLabel": { "ar": "سجل النتائج الدولية", "en": "Results Archive" },
+      "secondaryUrl": "/organization/results-archive"
+    }
+  }
+}

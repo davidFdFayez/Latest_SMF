@@ -1,0 +1,141 @@
+{
+  "key": "navigation",
+  "group": "site",
+  "order": 20,
+  "titleEn": "Menus & footer links",
+  "titleAr": "القوائم وروابط التذييل",
+  "permission": "settings",
+  "schema": [
+    {
+      "name": "menu",
+      "type": "group",
+      "label": "Menu labels",
+      "help": "The wording of the main menu, the top bar links, and the mobile menu. Where each item leads is fixed by the site.",
+      "fields": [
+        { "name": "home", "type": "text", "label": "Home" },
+        { "name": "federation", "type": "text", "label": "Federation (menu)" },
+        { "name": "federationOverview", "type": "text", "label": "Federation › Overview" },
+        { "name": "federationHistory", "type": "text", "label": "Federation › History" },
+        { "name": "federationValues", "type": "text", "label": "Federation › Values" },
+        { "name": "federationStrategy", "type": "text", "label": "Federation › Strategy" },
+        { "name": "federationInitiatives", "type": "text", "label": "Federation › Initiatives" },
+        { "name": "federationGoals", "type": "text", "label": "Federation › Goals" },
+        { "name": "federationAchievements", "type": "text", "label": "Federation › Achievements" },
+        { "name": "federationResultsArchive", "type": "text", "label": "Federation › Results archive" },
+        { "name": "pathways", "type": "text", "label": "Federation › Development pathways (coming soon)" },
+        { "name": "governance", "type": "text", "label": "Governance (menu column)" },
+        { "name": "governanceRecognition", "type": "text", "label": "Governance › Official recognition" },
+        { "name": "governanceHq", "type": "text", "label": "Governance › HQ & leadership" },
+        { "name": "governanceCommittees", "type": "text", "label": "Governance › Committees" },
+        { "name": "governanceHealth", "type": "text", "label": "Governance › Health & anti-doping" },
+        { "name": "governanceReports", "type": "text", "label": "Governance › Reports" },
+        { "name": "governancePolicies", "type": "text", "label": "Governance › Policies" },
+        { "name": "aboutMuaythai", "type": "text", "label": "About Muaythai (menu)" },
+        { "name": "aboutHistory", "type": "text", "label": "About Muaythai › History" },
+        { "name": "aboutPillars", "type": "text", "label": "About Muaythai › Five pillars" },
+        { "name": "aboutDisciplines", "type": "text", "label": "About Muaythai › Disciplines" },
+        { "name": "aboutRules", "type": "text", "label": "About Muaythai › Rules" },
+        { "name": "aboutEquipment", "type": "text", "label": "About Muaythai › Equipment" },
+        { "name": "news", "type": "text", "label": "News" },
+        { "name": "activities", "type": "text", "label": "Activities" },
+        { "name": "registration", "type": "text", "label": "Registration (menu)" },
+        { "name": "registrationAthlete", "type": "text", "label": "Registration › Athlete" },
+        { "name": "registrationClub", "type": "text", "label": "Registration › Club" },
+        { "name": "registrationCoach", "type": "text", "label": "Registration › Coach" },
+        { "name": "registrationOfficial", "type": "text", "label": "Registration › Official" },
+        { "name": "whistleblower", "type": "text", "label": "Report a violation" },
+        { "name": "contact", "type": "text", "label": "Contact us" },
+        { "name": "tryMuaythai", "type": "text", "label": "“Try Muaythai” button" },
+        { "name": "comingSoon", "type": "text", "label": "“Coming soon” badge" }
+      ]
+    },
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Header button",
+      "fields": [
+        { "name": "tryMuaythaiUrl", "type": "url", "label": "“Try Muaythai” button link" }
+      ]
+    },
+    {
+      "name": "footer",
+      "type": "group",
+      "label": "Footer headings",
+      "fields": [
+        { "name": "quickLinksHeading", "type": "text", "label": "Quick links heading" },
+        { "name": "contactHeading", "type": "text", "label": "Contact heading" },
+        { "name": "hoursLabel", "type": "text", "label": "Label before the working hours" },
+        { "name": "rights", "type": "text", "label": "“All rights reserved” wording" }
+      ]
+    },
+    {
+      "name": "footerLinks",
+      "type": "list",
+      "label": "Footer quick links",
+      "itemLabel": "Link",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Label" },
+        { "name": "url", "type": "url", "label": "Link" }
+      ]
+    }
+  ],
+  "content": {
+    "menu": {
+      "home": { "ar": "الرئيسية", "en": "Home" },
+      "federation": { "ar": "الاتحاد", "en": "Federation" },
+      "federationOverview": { "ar": "نظرة عامة", "en": "Overview" },
+      "federationHistory": { "ar": "تاريخ الاتحاد", "en": "History" },
+      "federationValues": { "ar": "القيم والرؤية", "en": "Values & Vision" },
+      "federationStrategy": { "ar": "الاستراتيجية", "en": "Strategy" },
+      "federationInitiatives": { "ar": "المبادرات", "en": "Initiatives" },
+      "federationGoals": { "ar": "الأهداف الاستراتيجية", "en": "Strategic Goals" },
+      "federationAchievements": { "ar": "الإنجازات", "en": "Achievements" },
+      "federationResultsArchive": { "ar": "سجل النتائج الدولية", "en": "Results Archive" },
+      "pathways": { "ar": "مسارات التطوير", "en": "Development Pathways" },
+      "governance": { "ar": "الحوكمة", "en": "Governance" },
+      "governanceRecognition": { "ar": "الاعتراف الرسمي", "en": "Official Recognition" },
+      "governanceHq": { "ar": "المقر والقيادة", "en": "HQ & Leadership" },
+      "governanceCommittees": { "ar": "اللجان", "en": "Committees" },
+      "governanceHealth": { "ar": "الصحة ومكافحة المنشطات", "en": "Health & Anti-Doping" },
+      "governanceReports": { "ar": "التقارير", "en": "Reports" },
+      "governancePolicies": { "ar": "الأنظمة والسياسات", "en": "Policies & Regulations" },
+      "aboutMuaythai": { "ar": "عن المواي تاي", "en": "About Muaythai" },
+      "aboutHistory": { "ar": "تاريخ المواي تاي", "en": "History of Muaythai" },
+      "aboutPillars": { "ar": "الركائز الخمس", "en": "Five Pillars" },
+      "aboutDisciplines": { "ar": "التخصصات", "en": "Disciplines" },
+      "aboutRules": { "ar": "القواعد والأنظمة", "en": "Rules & Officiating" },
+      "aboutEquipment": { "ar": "المعدات والتجهيزات", "en": "Equipment" },
+      "news": { "ar": "الأخبار", "en": "News" },
+      "activities": { "ar": "الأنشطة", "en": "Activities" },
+      "registration": { "ar": "التسجيل", "en": "Registration" },
+      "registrationAthlete": { "ar": "تسجيل لاعب", "en": "Athlete Registration" },
+      "registrationClub": { "ar": "تسجيل نادي", "en": "Club Registration" },
+      "registrationCoach": { "ar": "تسجيل مدرب", "en": "Coach Registration" },
+      "registrationOfficial": { "ar": "تسجيل حكم / مسؤول", "en": "Official Registration" },
+      "whistleblower": { "ar": "الإبلاغ عن مخالفة", "en": "Report a Violation" },
+      "contact": { "ar": "تواصل معنا", "en": "Contact Us" },
+      "tryMuaythai": { "ar": "جرب المواي تاي", "en": "Try Muaythai" },
+      "comingSoon": { "ar": "قريباً", "en": "Coming Soon" }
+    },
+    "header": {
+      "tryMuaythaiUrl": "/try-muaythai"
+    },
+    "footer": {
+      "quickLinksHeading": { "ar": "روابط سريعة", "en": "Quick Links" },
+      "contactHeading": { "ar": "تواصل معنا", "en": "Contact Us" },
+      "hoursLabel": { "ar": "ساعات العمل:", "en": "Working hours:" },
+      "rights": { "ar": "جميع الحقوق محفوظة", "en": "All Rights Reserved" }
+    },
+    "footerLinks": [
+      { "label": { "ar": "جرب المواي تاي", "en": "Try Muaythai" }, "url": "/try-muaythai" },
+      { "label": { "ar": "نظرة عامة", "en": "Overview" }, "url": "/organization/overview" },
+      { "label": { "ar": "الإنجازات", "en": "Achievements" }, "url": "/organization/achievements" },
+      { "label": { "ar": "سجل النتائج الدولية", "en": "Results Archive" }, "url": "/organization/results-archive" },
+      { "label": { "ar": "الأخبار", "en": "News" }, "url": "/news" },
+      { "label": { "ar": "التقويم والفعاليات", "en": "Calendar & Events" }, "url": "/activities/calendar" },
+      { "label": { "ar": "تسجيل لاعب", "en": "Athlete Registration" }, "url": "/registration/athlete" },
+      { "label": { "ar": "الإبلاغ عن مخالفة", "en": "Report a Violation" }, "url": "/whistleblower" },
+      { "label": { "ar": "تواصل معنا", "en": "Contact Us" }, "url": "/contact" }
+    ]
+  }
+}

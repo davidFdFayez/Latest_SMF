@@ -1,23 +1,20 @@
 import { useLang } from '../../context/LanguageContext';
 import PageHero from '../../components/PageHero';
-
-const ITEMS = [
-  { ar: 'قفازات', en: 'Gloves' },
-  { ar: 'واقي الرأس', en: 'Head guard' },
-  { ar: 'واقي الجسم', en: 'Body protector' },
-  { ar: 'شورت المواي تاي', en: 'Muaythai shorts' },
-  { ar: 'واقي الساق', en: 'Shin guards' },
-  { ar: 'واقي الفم', en: 'Mouth guard' },
-];
+import { SmartLink, usePageContent, useText } from '../../content/useContent';
 
 export default function AboutEquipment() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('about-equipment');
+  const tx = useText();
+
+  if (!c) return fallback;
+
   return (
     <>
       <PageHero
-        title={ar ? 'معدات المواي تاي ومتطلبات التجهيز' : 'Muaythai Equipment Requirements'}
-        subtitle={ar ? 'الدليل التفصيلي قيد الإعداد — هذه نظرة عامة على الفئات الأساسية.' : 'Detailed guide coming soon — overview of core equipment categories.'}
+        title={tx(c.header.title)}
+        subtitle={tx(c.header.subtitle)}
         breadcrumb={[
           { label: ar ? 'عن المواي تاي' : 'About Muaythai', to: '/about-muaythai/history' },
           { label: ar ? 'المعدات' : 'Equipment' },
@@ -26,17 +23,19 @@ export default function AboutEquipment() {
       <section className="section--white">
         <div className="container">
           <div className="fed-hub__grid">
-            {ITEMS.map((i) => (
-              <article key={i.en} className="fed-nav-card">
-                <div className="fed-nav-card__title">{ar ? i.ar : i.en}</div>
+            {c.equipment.items.map((item, i) => (
+              <article key={`${i}-${item.name?.en}`} className="fed-nav-card">
+                <div className="fed-nav-card__title">{tx(item.name)}</div>
               </article>
             ))}
           </div>
-          <p className="s-sub" style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <a href="https://muaythai.sport/" target="_blank" rel="noopener noreferrer">
-              IFMA Equipment Catalog
-            </a>
-          </p>
+          {c.equipment.catalogueUrl && (
+            <p className="s-sub" style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <SmartLink to={c.equipment.catalogueUrl}>
+                {tx(c.equipment.catalogueLabel)}
+              </SmartLink>
+            </p>
+          )}
         </div>
       </section>
     </>

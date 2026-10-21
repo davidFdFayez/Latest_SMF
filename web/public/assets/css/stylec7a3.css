@@ -7567,10 +7567,16 @@ main { display: block; min-height: 40vh; }
 
 .news-card__img-link { display: block; line-height: 0; background: var(--clr-grey-100); }
 
+/* QA — the thumbnail used to be letterboxed: a fixed 220px box with
+   `object-fit: contain` left grey bars above and below every photo that was not
+   exactly that shape. One fixed 16/9 window, filled by `cover`, and a focal
+   point a little above centre so heads are not sliced off at the top. */
 .news-card__img {
     width: 100%;
-    height: 220px;
-    object-fit: contain;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    object-position: 50% 30%;
 }
 
 .news-card__body {

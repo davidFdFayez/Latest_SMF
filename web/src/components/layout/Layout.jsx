@@ -4,6 +4,11 @@ import GovtBar from './GovtBar';
 import Header from './Header';
 import Footer from './Footer';
 import { useScrollReveal, useCountUp } from '../../hooks/useMotion';
+import { preloadContent } from '../../content/useContent';
+
+// Every page needs the site-wide content (header, footer, contact details), so
+// both keys go out in a single request as soon as the app loads.
+preloadContent(['site', 'navigation']);
 
 export default function Layout() {
   const location = useLocation();

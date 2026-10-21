@@ -148,7 +148,7 @@ public static class SqliteSchemaGuard
     ///
     /// The model's own default is used where the entity declares one, because a
     /// bare type default silently rewrites history: <c>AdminUser.IsActive</c>
-    /// defaults to <c>true</c> and <c>Role</c> to super admin, but adding those
+    /// defaults to <c>true</c> and <c>Role</c> then defaulted to super admin, but adding those
     /// columns with <c>0</c> and <c>''</c> deactivates every existing
     /// administrator and strips their role — which is exactly what happened to
     /// this database's original <c>admin</c> account.

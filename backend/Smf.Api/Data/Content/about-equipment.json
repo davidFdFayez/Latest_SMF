@@ -1,0 +1,59 @@
+{
+  "key": "about-equipment",
+  "group": "about",
+  "order": 50,
+  "titleEn": "Equipment",
+  "titleAr": "المعدات والتجهيزات",
+  "route": "/about-muaythai/equipment",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    {
+      "name": "equipment",
+      "type": "group",
+      "label": "Equipment categories",
+      "fields": [
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Categories",
+          "itemLabel": "Category",
+          "itemTitle": "name",
+          "fields": [
+            { "name": "name", "type": "text", "label": "Name" }
+          ]
+        },
+        { "name": "catalogueLabel", "type": "text", "label": "Catalogue link label" },
+        { "name": "catalogueUrl", "type": "url", "label": "Catalogue link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "معدات المواي تاي ومتطلبات التجهيز", "en": "Muaythai Equipment Requirements" },
+      "subtitle": {
+        "ar": "الدليل التفصيلي قيد الإعداد — هذه نظرة عامة على الفئات الأساسية.",
+        "en": "Detailed guide coming soon — overview of core equipment categories."
+      }
+    },
+    "equipment": {
+      "items": [
+        { "name": { "ar": "قفازات", "en": "Gloves" } },
+        { "name": { "ar": "واقي الرأس", "en": "Head guard" } },
+        { "name": { "ar": "واقي الجسم", "en": "Body protector" } },
+        { "name": { "ar": "شورت المواي تاي", "en": "Muaythai shorts" } },
+        { "name": { "ar": "واقي الساق", "en": "Shin guards" } },
+        { "name": { "ar": "واقي الفم", "en": "Mouth guard" } }
+      ],
+      "catalogueLabel": { "ar": "IFMA Equipment Catalog", "en": "IFMA Equipment Catalog" },
+      "catalogueUrl": "https://muaythai.sport/"
+    }
+  }
+}

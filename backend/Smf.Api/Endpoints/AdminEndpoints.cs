@@ -18,32 +18,25 @@ public static class AdminEndpoints
         MapNewsAdmin(admin);
         MapEventsAdmin(admin);
         MapResultsAdmin(admin);
-        MapPagesAdmin(admin);
+        admin.MapContentAdmin();
+        admin.MapMediaAdmin();
+        MapNotificationDeliveryAdmin(admin);
+        MapAuditAdmin(admin);
         MapRegistrationsAdmin(admin);
+        MapMembersAdmin(admin);
+        admin.MapTournamentAdmin();
+        admin.MapMedicalAdmin();
+        admin.MapMemberAccountsAdmin();
         MapContactAdmin(admin);
         MapWhistleblowerAdmin(admin);
         MapSettingsAdmin(admin);
         MapNotificationsAdmin(admin);
-        MapRolesAdmin(admin);
-    }
-
-    private static void MapRolesAdmin(RouteGroupBuilder admin)
-    {
-        admin.MapGet("/roles", () => Results.Ok(
-            AdminRoles.Definitions.Select(r => new
-            {
-                key = r.Key,
-                nameAr = r.NameAr,
-                nameEn = r.NameEn,
-                descriptionAr = r.DescriptionAr,
-                descriptionEn = r.DescriptionEn,
-                grants = r.Grants,
-            })));
+        admin.MapAccessAdmin();
     }
 
     private static void MapNotificationsAdmin(RouteGroupBuilder admin)
     {
-        var group = admin.MapGroup("/notification-templates");
+        var group = admin.MapGroup("/notification-templates").RequirePermission(AdminPermissions.Settings);
 
         group.MapGet("/", () => Results.Ok(
             NotificationTemplates.All.Select(t => new
@@ -76,6 +69,113 @@ public static class AdminEndpoints
         });
     }
 
+    /// <summary>
+    /// Whether notifications can actually leave the server, and what has
+    /// happened recently. Without this the console cannot tell "the applicant
+    /// was emailed" from "the message is sitting in a file on the server".
+    /// </summary>
+    private static void MapNotificationDeliveryAdmin(RouteGroupBuilder admin)
+    {
+        var group = admin.MapGroup("/notifications")
+            .RequirePermission(AdminPermissions.Settings, AdminPermissions.Users);
+
+        group.MapGet("/status", async (
+            NotificationDispatcher notifications,
+            SmfDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var since = DateTime.UtcNow.AddDays(-30);
+
+            var recent = await db.NotificationLog.AsNoTracking()
+                .Where(n => n.CreatedAt >= since)
+                .GroupBy(n => new { n.Channel, n.Status })
+                .Select(g => new { g.Key.Channel, g.Key.Status, count = g.Count() })
+                .ToListAsync(cancellationToken);
+
+            var lastFailure = await db.NotificationLog.AsNoTracking()
+                .Where(n => n.Status == NotificationStatuses.Failed)
+                .OrderByDescending(n => n.CreatedAt)
+                .Select(n => new { n.CreatedAt, n.Channel, n.Detail })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return Results.Ok(new
+            {
+                email = new { configured = notifications.EmailConfigured, outboxPath = notifications.EmailOutboxPath },
+                sms = new { configured = notifications.SmsConfigured, outboxPath = notifications.SmsOutboxPath },
+                last30Days = recent,
+                lastFailure,
+            });
+        });
+
+        group.MapGet("/", async (string? status, int? take, SmfDbContext db, CancellationToken cancellationToken) =>
+        {
+            var query = db.NotificationLog.AsNoTracking().AsQueryable();
+            if (!string.IsNullOrWhiteSpace(status)) query = query.Where(n => n.Status == status);
+
+            var items = await query
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(Math.Clamp(take ?? 100, 1, 500))
+                .ToListAsync(cancellationToken);
+
+            return Results.Ok(items);
+        });
+    }
+
+    /// <summary>
+    /// The audit trail across every area — memberships, users, roles, website
+    /// content, news, and events — so an administrator can answer "who changed
+    /// this?" without opening the record it happened to.
+    /// </summary>
+    private static void MapAuditAdmin(RouteGroupBuilder admin)
+    {
+        var group = admin.MapGroup("/audit")
+            .RequirePermission(AdminPermissions.Users, AdminPermissions.Permissions);
+
+        group.MapGet("/", async (
+            string? entityType,
+            string? action,
+            string? actor,
+            string? search,
+            int? page,
+            int? pageSize,
+            SmfDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var currentPage = Math.Max(1, page ?? 1);
+            var size = Math.Clamp(pageSize ?? 50, 1, 200);
+
+            var query = db.AuditLog.AsNoTracking().AsQueryable();
+            if (!string.IsNullOrWhiteSpace(entityType)) query = query.Where(e => e.EntityType == entityType);
+            if (!string.IsNullOrWhiteSpace(action)) query = query.Where(e => e.Action == action);
+            if (!string.IsNullOrWhiteSpace(actor)) query = query.Where(e => e.ActorName == actor);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(e =>
+                    (e.EntityRef != null && e.EntityRef.ToLower().Contains(term))
+                    || (e.Details != null && e.Details.ToLower().Contains(term))
+                    || e.ActorName.ToLower().Contains(term));
+            }
+
+            var total = await query.CountAsync(cancellationToken);
+            var items = await query
+                .OrderByDescending(e => e.CreatedAt)
+                .Skip((currentPage - 1) * size)
+                .Take(size)
+                .ToListAsync(cancellationToken);
+
+            return Results.Ok(new
+            {
+                total,
+                page = currentPage,
+                pageSize = size,
+                items,
+                entityTypes = await db.AuditLog.AsNoTracking().Select(e => e.EntityType).Distinct().OrderBy(e => e).ToListAsync(cancellationToken),
+                actions = await db.AuditLog.AsNoTracking().Select(e => e.Action).Distinct().OrderBy(e => e).ToListAsync(cancellationToken),
+            });
+        });
+    }
+
     private static void MapDashboard(RouteGroupBuilder admin)
     {
         admin.MapGet("/dashboard", async (SmfDbContext db) =>
@@ -95,15 +195,14 @@ public static class AdminEndpoints
                 contactMessagesCount = await db.ContactMessages.CountAsync(),
                 unreadContactMessagesCount = await db.ContactMessages.CountAsync(c => !c.IsRead),
                 whistleblowerReportsCount = await db.WhistleblowerReports.CountAsync(),
-                unreviewedWhistleblowerCount = await db.WhistleblowerReports.CountAsync(w => !w.IsReviewed),
-                pagesCount = await db.Pages.CountAsync()
+                unreviewedWhistleblowerCount = await db.WhistleblowerReports.CountAsync(w => !w.IsReviewed)
             });
         });
     }
 
     private static void MapNewsAdmin(RouteGroupBuilder admin)
     {
-        var group = admin.MapGroup("/news");
+        var group = admin.MapGroup("/news").RequirePermission(AdminPermissions.News);
 
         group.MapGet("/", async (SmfDbContext db) =>
             Results.Ok(await db.NewsArticles.AsNoTracking().OrderByDescending(n => n.PublishedAt).ToListAsync()));
@@ -111,7 +210,7 @@ public static class AdminEndpoints
         group.MapGet("/{id:int}", async (int id, SmfDbContext db) =>
             await db.NewsArticles.FindAsync(id) is { } item ? Results.Ok(item) : Results.NotFound());
 
-        group.MapPost("/", async (NewsUpsertRequest request, SmfDbContext db) =>
+        group.MapPost("/", async (NewsUpsertRequest request, ClaimsPrincipal user, SmfDbContext db, AuditLogger audit) =>
         {
             var entity = new NewsArticle
             {
@@ -123,6 +222,7 @@ public static class AdminEndpoints
                 BodyEn = request.BodyEn,
                 Category = request.Category,
                 ImageUrl = request.ImageUrl,
+                ImageFocus = NewsImageFocus.Clean(request.ImageFocus),
                 PublishedAt = request.PublishedAt ?? DateTime.UtcNow,
                 IsPublished = request.IsPublished,
                 Source = request.Source,
@@ -130,10 +230,15 @@ public static class AdminEndpoints
             };
             db.NewsArticles.Add(entity);
             await db.SaveChangesAsync();
+
+            // The id only exists after the insert, so the entry follows it.
+            audit.Write(AdminIdentity.Current(user), AuditActions.NewsCreated, "news", entity.Id, entity.TitleEn);
+            await db.SaveChangesAsync();
+
             return Results.Created($"/api/admin/news/{entity.Id}", entity);
         });
 
-        group.MapPut("/{id:int}", async (int id, NewsUpsertRequest request, SmfDbContext db) =>
+        group.MapPut("/{id:int}", async (int id, NewsUpsertRequest request, ClaimsPrincipal user, SmfDbContext db, AuditLogger audit) =>
         {
             var entity = await db.NewsArticles.FindAsync(id);
             if (entity is null) return Results.NotFound();
@@ -146,19 +251,24 @@ public static class AdminEndpoints
             entity.BodyEn = request.BodyEn;
             entity.Category = request.Category;
             entity.ImageUrl = request.ImageUrl;
+            entity.ImageFocus = NewsImageFocus.Clean(request.ImageFocus);
             entity.PublishedAt = request.PublishedAt ?? entity.PublishedAt;
             entity.IsPublished = request.IsPublished;
             entity.Source = request.Source;
             entity.ExternalUrl = request.ExternalUrl;
 
+            audit.Write(AdminIdentity.Current(user), AuditActions.NewsUpdated, "news", entity.Id, entity.TitleEn);
             await db.SaveChangesAsync();
             return Results.Ok(entity);
         });
 
-        group.MapDelete("/{id:int}", async (int id, SmfDbContext db) =>
+        group.MapDelete("/{id:int}", async (int id, ClaimsPrincipal user, SmfDbContext db, AuditLogger audit) =>
         {
             var entity = await db.NewsArticles.FindAsync(id);
             if (entity is null) return Results.NotFound();
+
+            // Written before the removal so the entry outlives the article.
+            audit.Write(AdminIdentity.Current(user), AuditActions.NewsDeleted, "news", entity.Id, entity.TitleEn);
             db.NewsArticles.Remove(entity);
             await db.SaveChangesAsync();
             return Results.NoContent();
@@ -167,7 +277,7 @@ public static class AdminEndpoints
 
     private static void MapEventsAdmin(RouteGroupBuilder admin)
     {
-        var group = admin.MapGroup("/events");
+        var group = admin.MapGroup("/events").RequirePermission(AdminPermissions.Events);
 
         group.MapGet("/", async (SmfDbContext db) =>
             Results.Ok(await db.Events.AsNoTracking().OrderBy(e => e.StartDate).ToListAsync()));
@@ -175,7 +285,7 @@ public static class AdminEndpoints
         group.MapGet("/{id:int}", async (int id, SmfDbContext db) =>
             await db.Events.FindAsync(id) is { } item ? Results.Ok(item) : Results.NotFound());
 
-        group.MapPost("/", async (EventUpsertRequest request, SmfDbContext db) =>
+        group.MapPost("/", async (EventUpsertRequest request, ClaimsPrincipal user, SmfDbContext db, AuditLogger audit) =>
         {
             var entity = new EventItem
             {
@@ -189,14 +299,19 @@ public static class AdminEndpoints
                 LocationAr = request.LocationAr,
                 LocationEn = request.LocationEn,
                 Status = request.Status,
-                IsPublished = request.IsPublished
+                IsPublished = request.IsPublished,
+                ImageUrl = request.ImageUrl
             };
             db.Events.Add(entity);
             await db.SaveChangesAsync();
+
+            audit.Write(AdminIdentity.Current(user), AuditActions.EventCreated, "event", entity.Id, entity.TitleEn);
+            await db.SaveChangesAsync();
+
             return Results.Created($"/api/admin/events/{entity.Id}", entity);
         });
 
-        group.MapPut("/{id:int}", async (int id, EventUpsertRequest request, SmfDbContext db) =>
+        group.MapPut("/{id:int}", async (int id, EventUpsertRequest request, ClaimsPrincipal user, SmfDbContext db, AuditLogger audit) =>
         {
             var entity = await db.Events.FindAsync(id);
             if (entity is null) return Results.NotFound();
@@ -212,15 +327,19 @@ public static class AdminEndpoints
             entity.LocationEn = request.LocationEn;
             entity.Status = request.Status;
             entity.IsPublished = request.IsPublished;
+            entity.ImageUrl = request.ImageUrl;
 
+            audit.Write(AdminIdentity.Current(user), AuditActions.EventUpdated, "event", entity.Id, entity.TitleEn);
             await db.SaveChangesAsync();
             return Results.Ok(entity);
         });
 
-        group.MapDelete("/{id:int}", async (int id, SmfDbContext db) =>
+        group.MapDelete("/{id:int}", async (int id, ClaimsPrincipal user, SmfDbContext db, AuditLogger audit) =>
         {
             var entity = await db.Events.FindAsync(id);
             if (entity is null) return Results.NotFound();
+
+            audit.Write(AdminIdentity.Current(user), AuditActions.EventDeleted, "event", entity.Id, entity.TitleEn);
             db.Events.Remove(entity);
             await db.SaveChangesAsync();
             return Results.NoContent();
@@ -229,7 +348,8 @@ public static class AdminEndpoints
 
     private static void MapResultsAdmin(RouteGroupBuilder admin)
     {
-        var group = admin.MapGroup("/results");
+        // Medal results are tournament data, so they sit with events (§17).
+        var group = admin.MapGroup("/results").RequirePermission(AdminPermissions.Events);
 
         group.MapGet("/", async (SmfDbContext db) =>
             Results.Ok(await db.Results.AsNoTracking().OrderByDescending(r => r.Year).ToListAsync()));
@@ -276,44 +396,6 @@ public static class AdminEndpoints
             var entity = await db.Results.FindAsync(id);
             if (entity is null) return Results.NotFound();
             db.Results.Remove(entity);
-            await db.SaveChangesAsync();
-            return Results.NoContent();
-        });
-    }
-
-    private static void MapPagesAdmin(RouteGroupBuilder admin)
-    {
-        var group = admin.MapGroup("/pages");
-
-        group.MapGet("/", async (SmfDbContext db) =>
-            Results.Ok(await db.Pages.AsNoTracking().OrderBy(p => p.Slug).ToListAsync()));
-
-        group.MapGet("/{slug}", async (string slug, SmfDbContext db) =>
-            await db.Pages.FirstOrDefaultAsync(p => p.Slug == slug) is { } page ? Results.Ok(page) : Results.NotFound());
-
-        group.MapPut("/{slug}", async (string slug, PageUpsertRequest request, SmfDbContext db) =>
-        {
-            var page = await db.Pages.FirstOrDefaultAsync(p => p.Slug == slug);
-            if (page is null)
-            {
-                page = new PageContent { Slug = slug, ContentJson = request.ContentJson, UpdatedAt = DateTime.UtcNow };
-                db.Pages.Add(page);
-            }
-            else
-            {
-                page.ContentJson = request.ContentJson;
-                page.UpdatedAt = DateTime.UtcNow;
-            }
-
-            await db.SaveChangesAsync();
-            return Results.Ok(page);
-        });
-
-        group.MapDelete("/{slug}", async (string slug, SmfDbContext db) =>
-        {
-            var page = await db.Pages.FirstOrDefaultAsync(p => p.Slug == slug);
-            if (page is null) return Results.NotFound();
-            db.Pages.Remove(page);
             await db.SaveChangesAsync();
             return Results.NoContent();
         });
@@ -443,7 +525,61 @@ public static class AdminEndpoints
             return Results.File(bytes, "text/csv; charset=utf-8", name);
         });
 
-        // §1 — تجديد كل 3 سنوات.
+        // §6 — إعادة فتح طلب مرفوض أو ملغى. Rejection and cancellation are
+        // terminal in the approved lifecycle, so this is a separate, deliberate
+        // act: it needs قبول authority and a reason, and it returns the request
+        // to review rather than approving it.
+        group.MapPost("/{id:int}/reopen", async (
+            int id,
+            RegistrationReopenRequest request,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            MembershipService memberships,
+            CancellationToken cancellationToken) =>
+        {
+            var entity = await db.Registrations.FindAsync([id], cancellationToken);
+            if (entity is null) return Results.NotFound();
+
+            var outcome = await memberships.ReopenAsync(
+                entity, AdminIdentity.Current(user), request.Reason, cancellationToken);
+
+            return outcome.Ok ? Results.Ok(Detail(entity)) : Problem(outcome);
+        });
+
+        // What was sent to the applicant about this request, and what happened
+        // to it — including messages held in the outbox because no mail server
+        // is configured yet.
+        group.MapGet("/{id:int}/notifications", async (
+            int id,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var items = await db.NotificationLog.AsNoTracking()
+                .Where(n => n.RegistrationId == id)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(200)
+                .ToListAsync(cancellationToken);
+
+            return Results.Ok(items.Select(n => new
+            {
+                n.Id,
+                n.Channel,
+                n.TemplateKey,
+                n.Recipient,
+                n.Subject,
+                n.Status,
+                statusLabelAr = NotificationStatuses.Labels.TryGetValue(n.Status, out var l) ? l.Ar : n.Status,
+                statusLabelEn = NotificationStatuses.Labels.TryGetValue(n.Status, out var l2) ? l2.En : n.Status,
+                n.Detail,
+                n.CreatedAt,
+            }));
+        });
+
+        // §1 — التجديد عند نهاية مدة العضوية.
         group.MapPost("/{id:int}/renew", async (
             int id,
             ClaimsPrincipal user,
@@ -511,6 +647,125 @@ public static class AdminEndpoints
             return Results.Ok(new { expired = count });
         });
 
+        /* BUG-12 — the term changed from three years to one, which only governs
+           what is approved from now on. Memberships issued before the change
+           still end three years out, so the console reports them and, when
+           somebody deliberately asks, moves them onto the current term. Preview
+           first: this rewrites when people's memberships run out. */
+        group.MapGet("/term-mismatches", async (
+            ClaimsPrincipal user,
+            MembershipService memberships,
+            IConfiguration configuration,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var mismatches = await memberships.FindTermMismatchesAsync(cancellationToken);
+
+            return Results.Ok(new
+            {
+                total = mismatches.Count,
+                items = mismatches.Select(m => new
+                {
+                    m.Registration.Id,
+                    m.Registration.Type,
+                    m.Registration.ReferenceNumber,
+                    m.Registration.MembershipNumber,
+                    m.Registration.ApprovedAt,
+                    m.Registration.RenewalCount,
+                    currentExpiry = m.From,
+                    correctedExpiry = m.To,
+                    termYears = MembershipTerms.YearsFor(m.Registration.Type, configuration),
+                }),
+            });
+        });
+
+        group.MapPost("/term-mismatches/realign", async (
+            ClaimsPrincipal user,
+            MembershipService memberships,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            var changed = await memberships.RealignTermsAsync(actor, cancellationToken);
+            return changed < 0
+                ? Forbid(MembershipRoles.Actions.Approve)
+                : Results.Ok(new { realigned = changed });
+        });
+
+
+        /* ISSUE-03 — the member's card. The console shows the link so it can be
+           sent or printed, and can regenerate it, which is the only way to
+           revoke a card that has been passed around. */
+        group.MapGet("/{id:int}/card", async (
+            int id,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            IConfiguration configuration,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var entity = await db.Registrations.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+            if (entity is null) return Results.NotFound();
+
+            if (!MembershipCards.IsEligible(entity) || entity.CardToken is null)
+            {
+                return Results.Ok(new
+                {
+                    available = false,
+                    reason = "A card exists once the membership has been approved.",
+                });
+            }
+
+            return Results.Ok(new
+            {
+                available = true,
+                url = MembershipCards.Url(entity.CardToken, configuration),
+                qrUrl = $"/api/membership-card/{entity.CardToken}/qr.svg",
+                card = MembershipCards.Describe(entity, DateTime.UtcNow, configuration),
+            });
+        });
+
+        group.MapPost("/{id:int}/card/regenerate", async (
+            int id,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            AuditLogger audit,
+            IConfiguration configuration,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.Edit))
+            {
+                await audit.DeniedAsync(actor, MembershipRoles.Actions.Edit, "registration", id, cancellationToken);
+                return Forbid(MembershipRoles.Actions.Edit);
+            }
+
+            var entity = await db.Registrations.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+            if (entity is null) return Results.NotFound();
+
+            if (!MembershipCards.IsEligible(entity))
+                return BadRequest("لا توجد بطاقة قبل اعتماد العضوية.", "A card exists once the membership has been approved.");
+
+            entity.CardToken = MembershipCards.NewToken();
+            entity.LastActionBy = actor.Username;
+
+            audit.Registration(actor, AuditActions.CardReissued, entity,
+                details: "Previous card link revoked.");
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new
+            {
+                available = true,
+                url = MembershipCards.Url(entity.CardToken, configuration),
+                qrUrl = $"/api/membership-card/{entity.CardToken}/qr.svg",
+                card = MembershipCards.Describe(entity, DateTime.UtcNow, configuration),
+            });
+        });
+
         // Serves a document the applicant uploaded with this request. The
         // attachment id must actually be referenced by *this* registration's
         // payload, so a reviewer cannot walk the uploads directory by guessing.
@@ -544,6 +799,93 @@ public static class AdminEndpoints
             return Results.File(path, meta.ContentType, meta.FileName);
         });
 
+        /* BUG-11 — the console could read an applicant's documents but never
+           change them, so a licence that arrived by email after submission had
+           nowhere to go and a wrong file could not be taken off the record.
+           Both actions carry 'edit', and both are audited: these are the
+           applicant's identity documents, and who replaced one matters. */
+        group.MapPost("/{id:int}/attachments", async (
+            int id,
+            IFormFile? file,
+            string? slot,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            AuditLogger audit,
+            RegistrationAttachmentStore store,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.Edit))
+            {
+                await audit.DeniedAsync(actor, MembershipRoles.Actions.Edit, "registration", id, cancellationToken);
+                return Forbid(MembershipRoles.Actions.Edit);
+            }
+
+            var entity = await db.Registrations.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+            if (entity is null) return Results.NotFound();
+
+            if (file is null) return BadRequest("لم يتم إرفاق ملف.", "No file was attached.");
+
+            // The slot is the portal's own field name, so an uploaded document
+            // sits in the record exactly where the applicant's would have.
+            var target = (slot ?? string.Empty).Trim();
+            if (target.Length is 0 or > 60 || !target.All(char.IsAsciiLetterOrDigit))
+                return BadRequest("نوع المستند غير صالح.", "That document slot is not valid.");
+
+            var result = await store.SaveAsync(file, cancellationToken);
+            if (!result.Succeeded || result.Attachment is null)
+                return Results.BadRequest(new { message = result.Error });
+
+            // Replacing a slot leaves the old file with nothing pointing at it.
+            var replaced = RegistrationPayload.Attachment(entity.PayloadJson, target);
+            entity.PayloadJson = RegistrationPayload.WithAttachment(entity.PayloadJson, target, result.Attachment);
+            entity.LastActionBy = actor.Username;
+            if (replaced is not null) store.Delete(replaced);
+
+            audit.Registration(
+                actor,
+                AuditActions.AttachmentAdded,
+                entity,
+                details: $"{target}: {result.Attachment.FileName}" + (replaced is null ? "" : " (replaced)"));
+
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.Ok(Detail(entity));
+        })
+        .DisableAntiforgery();
+
+        group.MapDelete("/{id:int}/attachments/{attachmentId}", async (
+            int id,
+            string attachmentId,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            AuditLogger audit,
+            RegistrationAttachmentStore store,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.Edit))
+            {
+                await audit.DeniedAsync(actor, MembershipRoles.Actions.Edit, "registration", id, cancellationToken);
+                return Forbid(MembershipRoles.Actions.Edit);
+            }
+
+            var entity = await db.Registrations.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+            if (entity is null) return Results.NotFound();
+
+            // Only a document this registration actually references.
+            var slot = RegistrationPayload.SlotOf(entity.PayloadJson, attachmentId);
+            if (slot is null) return Results.NotFound();
+
+            entity.PayloadJson = RegistrationPayload.WithAttachment(entity.PayloadJson, slot, null);
+            entity.LastActionBy = actor.Username;
+            store.Delete(attachmentId);
+
+            audit.Registration(actor, AuditActions.AttachmentRemoved, entity, details: $"{slot}: {attachmentId}");
+
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.Ok(Detail(entity));
+        });
+
         // Status vocabulary for the admin UI, so the dashboard never hard-codes it.
         group.MapGet("/statuses", () => Results.Ok(
             RegistrationStatuses.All.Select(s => new
@@ -559,13 +901,13 @@ public static class AdminEndpoints
         // §2–§5 — the four tracks with their stages, terms, and fees, so the
         // dashboard renders the federation's actual procedure rather than a
         // copy of it that can drift.
-        group.MapGet("/tracks", () => Results.Ok(
+        group.MapGet("/tracks", (IConfiguration configuration) => Results.Ok(
             MembershipTracks.All.Select(t => new
             {
                 key = t.Key,
                 licenceNameAr = t.LicenceNameAr,
                 licenceNameEn = t.LicenceNameEn,
-                termYears = t.TermYears,
+                termYears = MembershipTerms.YearsFor(t.Key, configuration),
                 registrationFeeAr = t.RegistrationFeeAr,
                 registrationFeeEn = t.RegistrationFeeEn,
                 renewalFeeAr = t.RenewalFeeAr,
@@ -594,8 +936,7 @@ public static class AdminEndpoints
             var actor = AdminIdentity.Current(user);
             return Results.Ok(new
             {
-                role = actor.Role,
-                membershipRole = actor.MembershipRole,
+                roles = actor.RoleKeys,
                 grants = actor.Grants,
                 actions = MembershipRoles.Actions.All.Select(a => new
                 {
@@ -632,6 +973,219 @@ public static class AdminEndpoints
     }
 
     /// <summary>403 in the bilingual shape the admin console displays.</summary>
+    /// <summary>
+    /// ISSUE-03 — beneficiaries as people and clubs rather than as paperwork.
+    ///
+    /// The console could only reach an athlete, coach, referee or club through
+    /// the application form they once submitted, so somebody who had applied
+    /// twice appeared twice and had no single record. These two endpoints serve
+    /// a directory of beneficiaries and one profile each, assembled from the
+    /// registrations rather than stored separately, so a profile can never
+    /// disagree with the applications behind it.
+    /// </summary>
+    private static void MapMembersAdmin(RouteGroupBuilder admin)
+    {
+        var group = admin.MapGroup("/members");
+
+        group.MapGet("/", async (
+            string? type,
+            string? search,
+            string? status,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var query = db.Registrations.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(type)) query = query.Where(r => r.Type == type);
+
+            var profiles = MemberProfiles.From(await query.ToListAsync(cancellationToken));
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                profiles = status == "active"
+                    ? profiles.Where(p => p.Current.Status == RegistrationStatuses.Approved
+                                          && !p.Current.IsExpired(DateTime.UtcNow)).ToList()
+                    : profiles.Where(p => p.Current.Status == status).ToList();
+            }
+
+            var rows = profiles.Select(ProfileRow).ToList();
+
+            // Matching happens here because the name and contact details live
+            // inside the stored JSON, which SQLite cannot search usefully.
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                rows = rows
+                    .Where(row => row.haystack.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            return Results.Ok(new
+            {
+                total = rows.Count,
+                items = rows.Select(row => row.item),
+            });
+        });
+
+        group.MapGet("/{id:int}", async (
+            int id,
+            ClaimsPrincipal user,
+            SmfDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var actor = AdminIdentity.Current(user);
+            if (!actor.Can(MembershipRoles.Actions.View)) return Forbid(MembershipRoles.Actions.View);
+
+            var anchor = await db.Registrations.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+            if (anchor is null) return Results.NotFound();
+
+            var identity = MemberProfiles.IdentityOf(anchor);
+            if (identity is null)
+            {
+                // No identifying value in the payload, so this application is
+                // the whole profile: show it on its own rather than 404.
+                return Results.Ok(ProfileDetail(new MemberProfiles.Profile(
+                    anchor.Id, anchor.Type, string.Empty, anchor, [anchor])));
+            }
+
+            var siblings = await db.Registrations.AsNoTracking()
+                .Where(r => r.Type == anchor.Type)
+                .ToListAsync(cancellationToken);
+
+            var profile = MemberProfiles.From(siblings)
+                .FirstOrDefault(p => string.Equals(p.IdentityKey, identity, StringComparison.OrdinalIgnoreCase));
+
+            return profile is null ? Results.NotFound() : Results.Ok(ProfileDetail(profile));
+        });
+    }
+
+    /// <summary>One row of the beneficiary directory, with the text it is searched on.</summary>
+    private static (object item, string haystack) ProfileRow(MemberProfiles.Profile profile)
+    {
+        var current = profile.Current;
+        var now = DateTime.UtcNow;
+        var (nameAr, nameEn, email, phone) = Identify(current);
+
+        var item = new
+        {
+            id = profile.Id,
+            profile.Type,
+            nameAr,
+            nameEn,
+            email,
+            phone,
+            current.MembershipNumber,
+            current.ReferenceNumber,
+            current.Status,
+            statusLabelEn = RegistrationStatuses.Labels.TryGetValue(current.Status, out var l) ? l.En : current.Status,
+            current.ApprovedAt,
+            current.ExpiresAt,
+            isExpired = current.IsExpired(now),
+            daysUntilExpiry = current.DaysRemaining(now),
+            applications = profile.History.Count,
+            current.RenewalCount,
+        };
+
+        var haystack = string.Join(' ', new[]
+        {
+            nameAr, nameEn, email, phone,
+            current.MembershipNumber, current.ReferenceNumber, profile.IdentityKey,
+        }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+        return (item, haystack);
+    }
+
+    /// <summary>The profile page: the current record, plus every application behind it.</summary>
+    private static object ProfileDetail(MemberProfiles.Profile profile)
+    {
+        var current = profile.Current;
+        var (nameAr, nameEn, email, phone) = Identify(current);
+
+        JsonElement payload;
+        try
+        {
+            payload = JsonDocument.Parse(current.PayloadJson).RootElement;
+        }
+        catch (JsonException)
+        {
+            payload = default;
+        }
+
+        string? Field(params string[] names) =>
+            payload.ValueKind == JsonValueKind.Object ? RegistrationPayload.FirstString(payload, names) : null;
+
+        var category = Field("athleteCategory");
+        var (categoryAr, categoryEn) = CompetitionCategories.Label(category);
+
+        return new
+        {
+            id = profile.Id,
+            profile.Type,
+            nameAr,
+            nameEn,
+            email,
+            phone,
+            identity = profile.IdentityKey,
+            nationality = Field("nationality"),
+            dateOfBirth = Field("dateOfBirth"),
+            gender = Field("gender"),
+            region = Field("region"),
+            city = Field("city"),
+
+            // What this beneficiary is, in their own track's terms.
+            competitionCategory = category is null ? null : new { value = category, ar = categoryAr, en = categoryEn },
+            competitionTrack = Field("competitionTrack"),
+            refereeGrade = Field("refereeGrade"),
+            entityType = Field("entityType"),
+            clubName = Field("clubName"),
+
+            membership = Summarise(current),
+            track = MembershipTracks.Get(current.Type) is { } t
+                ? new { t.Key, t.LicenceNameAr, t.LicenceNameEn, t.TermYears }
+                : null,
+
+            // Every application this beneficiary has made, newest first, so the
+            // profile is the way into the paperwork rather than a replacement
+            // for it.
+            applications = profile.History.Select(r => new
+            {
+                r.Id,
+                r.ReferenceNumber,
+                r.Status,
+                statusLabelEn = RegistrationStatuses.Labels.TryGetValue(r.Status, out var l) ? l.En : r.Status,
+                r.CreatedAt,
+                r.ApprovedAt,
+                r.ExpiresAt,
+                r.MembershipNumber,
+                isCurrent = r.Id == current.Id,
+            }),
+
+            documents = RegistrationPayload.AttachmentsOf(current.PayloadJson),
+        };
+    }
+
+    /// <summary>Name and contact details, read out of the stored payload.</summary>
+    private static (string? NameAr, string? NameEn, string? Email, string? Phone) Identify(Registration registration)
+    {
+        try
+        {
+            var payload = JsonDocument.Parse(registration.PayloadJson).RootElement;
+            return (
+                RegistrationPayload.DisplayName(payload, arabic: true),
+                RegistrationPayload.DisplayName(payload, arabic: false),
+                RegistrationPayload.FirstString(payload, "email", "applicantEmail", "officialEmail"),
+                RegistrationPayload.FirstString(payload, "phone", "mobile", "applicantPhone", "officialPhone"));
+        }
+        catch (JsonException)
+        {
+            return (null, null, null, null);
+        }
+    }
+
     private static IResult Forbid(string action) => Results.Json(new
     {
         message = "لا تملك صلاحية تنفيذ هذا الإجراء. / You do not have permission for this action.",
@@ -639,6 +1193,14 @@ public static class AdminEndpoints
         messageEn = $"Your role does not grant '{action}' on membership requests.",
         requiredAction = action,
     }, statusCode: StatusCodes.Status403Forbidden);
+
+    /// <summary>A bilingual 400, in the shape every other endpoint answers with.</summary>
+    private static IResult BadRequest(string ar, string en) => Results.Json(new
+    {
+        message = $"{ar} / {en}",
+        messageAr = ar,
+        messageEn = en,
+    }, statusCode: StatusCodes.Status400BadRequest);
 
     private static IResult Problem(MembershipService.Outcome outcome) => Results.Json(new
     {
@@ -701,7 +1263,9 @@ public static class AdminEndpoints
             isExpired = r.IsExpired(now),
             isOverdue = r.Status == RegistrationStatuses.AwaitingCompletion
                         && r.CompletionDueAt is { } due && due <= now,
-            daysUntilExpiry = r.ExpiresAt is { } exp ? (int?)(exp - now).TotalDays : null,
+            // BUG-12 — zero once the term is over, never the negative number a
+            // plain subtraction produced.
+            daysUntilExpiry = r.DaysRemaining(now),
         };
     }
 
@@ -735,7 +1299,7 @@ public static class AdminEndpoints
 
     private static void MapContactAdmin(RouteGroupBuilder admin)
     {
-        var group = admin.MapGroup("/contact-messages");
+        var group = admin.MapGroup("/contact-messages").RequirePermission(AdminPermissions.Support);
 
         group.MapGet("/", async (SmfDbContext db) =>
             Results.Ok(await db.ContactMessages.AsNoTracking().OrderByDescending(c => c.CreatedAt).ToListAsync()));
@@ -761,7 +1325,9 @@ public static class AdminEndpoints
 
     private static void MapWhistleblowerAdmin(RouteGroupBuilder admin)
     {
-        var group = admin.MapGroup("/whistleblower");
+        // Confidential by nature; no §17 role covers it, so by default only the
+        // Super Admin holds it until a role is deliberately granted it.
+        var group = admin.MapGroup("/whistleblower").RequirePermission(AdminPermissions.Whistleblower);
 
         group.MapGet("/", async (SmfDbContext db) =>
             Results.Ok(await db.WhistleblowerReports.AsNoTracking().OrderByDescending(w => w.CreatedAt).ToListAsync()));
@@ -787,7 +1353,7 @@ public static class AdminEndpoints
 
     private static void MapSettingsAdmin(RouteGroupBuilder admin)
     {
-        var group = admin.MapGroup("/settings");
+        var group = admin.MapGroup("/settings").RequirePermission(AdminPermissions.Settings);
 
         group.MapGet("/", async (SmfDbContext db) =>
             Results.Ok(await db.SiteSettings.AsNoTracking().OrderBy(s => s.Key).ToListAsync()));

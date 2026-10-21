@@ -1,25 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
-
-/*
- * TXT-29 — names only. The member listing this file used to render was removed
- * at the federation's request, so the chairs and members are not kept here
- * either: anything left in this array ships in the JavaScript bundle whether it
- * is rendered or not.
- */
-const COMMITTEES = [
-  { titleAr: 'اللجنة الفنية', titleEn: 'Technical Committee' },
-  { titleAr: 'لجنة الحكّام', titleEn: 'Referees Committee' },
-  { titleAr: 'لجنة الرياضيين', titleEn: 'Athletes Committee' },
-  { titleAr: 'لجنة الاستئناف', titleEn: 'Appeals Committee' },
-  { titleAr: 'لجنة المنافسات', titleEn: 'Competitions Committee' },
-  { titleAr: 'لجنة الانضباط', titleEn: 'Disciplinary Committee' },
-  { titleAr: 'لجنة فض المنازعات', titleEn: 'Dispute Resolution Committee' },
-];
+import { usePageContent, useText } from '../../content/useContent';
 
 export default function Committees() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('governance-committees');
+  const tx = useText();
+
+  if (!c) return fallback;
 
   return (
     <>
@@ -39,46 +28,41 @@ export default function Committees() {
             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
-            {ar ? 'الحوكمة والرقابة' : 'Governance & Oversight'}
+            {tx(c.hero.tag)}
           </span>
-          <h1>{ar ? 'لجان الاتحاد السعودي للملاكمة التايلندية' : 'Federation Committees'}</h1>
-          <p className="page-hero__sub">
-            {ar
-              ? 'تضطلع لجان الاتحاد بدور محوري في إدارة الشؤون الرياضية والتقنية والانضباطية وفق أعلى معايير الحوكمة.'
-              : 'Federation committees play a central role in managing sporting, technical, and disciplinary affairs to the highest governance standards.'}
-          </p>
+          <h1>{tx(c.hero.title)}</h1>
+          {tx(c.hero.subtitle) && <p className="page-hero__sub">{tx(c.hero.subtitle)}</p>}
           <div className="page-hero__stats">
-            <div className="page-hero__stat">
-              <span className="page-hero__stat-value">7</span>
-              <span className="page-hero__stat-label">{ar ? 'لجنة دائمة' : 'Standing Committees'}</span>
-            </div>
-            <div className="page-hero__stat">
-              <span className="page-hero__stat-value">29</span>
-              <span className="page-hero__stat-label">{ar ? 'عضو في اللجان' : 'Committee Members'}</span>
-            </div>
+            {c.hero.stats.map((s, i) => (
+              <div className="page-hero__stat" key={`${i}-${s.value}`}>
+                <span className="page-hero__stat-value">{s.value}</span>
+                <span className="page-hero__stat-label">{tx(s.label)}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       <section className="governance-diagram">
         <div className="container governance-diagram__inner">
-          <span className="governance-diagram__label">{ar ? 'هيكل اللجان' : 'Committee Structure'}</span>
-          <h2 className="governance-diagram__title">{ar ? 'هيكل اللجان التخصصية' : 'Specialist Committee Structure'}</h2>
-          <p className="governance-diagram__sub">
-            {ar
-              ? 'سبع لجان متخصصة تعمل تحت إشراف مجلس الإدارة لضمان أعلى معايير الحوكمة والأداء الرياضي.'
-              : 'Seven specialist committees operating under Board oversight to ensure the highest standards of governance and sporting performance.'}
-          </p>
+          <span className="governance-diagram__label">{tx(c.structure.label)}</span>
+          <h2 className="governance-diagram__title">{tx(c.structure.title)}</h2>
+          {tx(c.structure.subtitle) && <p className="governance-diagram__sub">{tx(c.structure.subtitle)}</p>}
 
           <div className="gov-structure">
             <div className="gov-tier">
-              <div className="gov-box gov-box--president">{ar ? 'مجلس الإدارة' : 'Board of Directors'}</div>
+              <div className="gov-box gov-box--president">{tx(c.structure.topBox)}</div>
             </div>
             <div className="gov-connector"><span className="gov-connector-v" /></div>
             <div className="gov-connector"><div className="gov-connector-h" /></div>
             <div className="gov-tier">
-              {COMMITTEES.map((c) => (
-                <div className="gov-box gov-box--committee" key={c.titleEn}>{ar ? c.titleAr : c.titleEn}</div>
+              {/*
+               * TXT-29 — names only. The member listing this page used to render
+               * was removed at the federation's request, so the committee list in
+               * the content carries names only — no chairs or members.
+               */}
+              {c.structure.committees.map((committee, i) => (
+                <div className="gov-box gov-box--committee" key={`${i}-${committee.name.en}`}>{tx(committee.name)}</div>
               ))}
             </div>
           </div>

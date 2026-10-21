@@ -1,102 +1,82 @@
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  IconEmail,
-  IconPhone,
-  IconLocation,
-  IconClock,
-  IconWhatsApp,
-  IconXTwitter,
-  IconInstagram,
-  IconYouTube,
-  IconSnapchat,
-  IconTikTok,
-  IconLinkedIn,
-  IconThreads,
-} from '../icons/Icons';
-import { socialStrip } from '../../data/socialLinks';
+import { IconEmail, IconPhone, IconLocation, IconClock } from '../icons/Icons';
+import { SmartLink } from '../../content/useContent';
+import { useSiteContent } from '../../content/site';
+import { SOCIAL_PLATFORMS, socialAccounts } from './socialPlatforms';
 
 /*
  * Official channels per the federation's approved content requirements (§4).
- * CNT-06 — the footer used to carry its own Snapchat URL, so the bundle shipped
- * two conflicting ones. Both strips now read the shared list.
+ * Contact details, social accounts, and the quick links are edited in the admin
+ * console (Website Content → Site settings, Menus & footer links).
  */
-const ICONS = {
-  whatsapp: IconWhatsApp,
-  x: IconXTwitter,
-  instagram: IconInstagram,
-  threads: IconThreads,
-  tiktok: IconTikTok,
-  linkedin: IconLinkedIn,
-  snapchat: IconSnapchat,
-  youtube: IconYouTube,
-};
-
-const SOCIALS = socialStrip(['whatsapp', 'x', 'instagram', 'threads', 'tiktok', 'linkedin', 'snapchat', 'youtube'])
-  .map((entry) => ({ ...entry, Icon: ICONS[entry.key] }));
-
 export default function Footer() {
   const { t } = useTranslation();
+  const { site, navigation, tx } = useSiteContent();
   const year = new Date().getFullYear();
 
-  const quickLinks = [
-    // QA-01 — /try-muaythai existed but nothing linked to it.
-    { to: '/try-muaythai', label: t('nav.tryMuaythai') },
-    { to: '/organization/overview', label: t('nav.federationOverview') },
-    { to: '/organization/achievements', label: t('nav.federationAchievements') },
-    { to: '/organization/results-archive', label: t('nav.federationResultsArchive') },
-    { to: '/news', label: t('nav.news') },
-    { to: '/activities/calendar', label: t('nav.activitiesCalendar') },
-    { to: '/registration/athlete', label: t('nav.registrationAthlete') },
-    { to: '/whistleblower', label: t('nav.whistleblower') },
-    { to: '/contact', label: t('nav.contact') },
-  ];
+  const contact = site?.contact ?? {};
+  const federationName = (site && tx(site.identity?.name)) || t('footer.federationName');
+  const footer = navigation?.footer;
+  const heading = (value, fallbackKey) => (footer && tx(value)) || t(fallbackKey);
 
   return (
     <footer className="site-footer">
       <div className="container site-footer__inner">
         <div className="site-footer__brand">
-          <img src="/assets/images/logo-white.png" alt={t('meta.siteName')} />
-          <p className="site-footer__tagline">{t('footer.tagline')}</p>
+          <img src={site?.identity?.footerLogo || '/assets/images/logo-white.png'} alt={federationName} />
+          {site && <p className="site-footer__tagline">{tx(site.identity?.tagline)}</p>}
           <div className="site-footer__socials">
-            {SOCIALS.map(({ key, href, Icon, label }) => (
-              <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
-                <Icon aria-hidden="true" />
-              </a>
-            ))}
+            {socialAccounts(site).map(({ platform, url }, index) => {
+              const { Icon, label } = SOCIAL_PLATFORMS[platform];
+              return (
+                <a key={`${platform}-${index}`} href={url} target="_blank" rel="noopener noreferrer" aria-label={label}>
+                  <Icon aria-hidden="true" />
+                </a>
+              );
+            })}
           </div>
         </div>
 
         <div className="site-footer__nav">
-          <span className="site-footer__nav-heading">{t('footer.quickLinks')}</span>
+          <span className="site-footer__nav-heading">{heading(footer?.quickLinksHeading, 'footer.quickLinks')}</span>
           <ul>
-            {quickLinks.map((link) => (
-              <li key={link.to}>
-                <Link to={link.to}>{link.label}</Link>
+            {(navigation?.footerLinks ?? []).map((link, index) => (
+              <li key={`${link.url}-${index}`}>
+                <SmartLink to={link.url}>{tx(link.label)}</SmartLink>
               </li>
             ))}
           </ul>
         </div>
 
         <div className="site-footer__nav">
-          <span className="site-footer__nav-heading">{t('footer.contactUs')}</span>
+          <span className="site-footer__nav-heading">{heading(footer?.contactHeading, 'footer.contactUs')}</span>
           <ul className="site-footer__contact-list">
-            <li>
-              <IconEmail aria-hidden="true" />
-              <a href="mailto:info@saudimuaythai.sa">info@saudimuaythai.sa</a>
-            </li>
-            <li>
-              <IconPhone aria-hidden="true" className="footer-wa-icon" />
-              <a href="tel:+966552677377">+966 55 267 7377</a>
-            </li>
-            <li>
-              <IconLocation aria-hidden="true" />
-              <span>{t('footer.address')}</span>
-            </li>
-            <li>
-              <IconClock aria-hidden="true" />
-              <span>{t('footer.workingHours')}</span>
-            </li>
+            {contact.email && (
+              <li>
+                <IconEmail aria-hidden="true" />
+                <a href={`mailto:${contact.email}`}>{contact.email}</a>
+              </li>
+            )}
+            {contact.phoneDisplay && (
+              <li>
+                <IconPhone aria-hidden="true" className="footer-wa-icon" />
+                <a href={`tel:${contact.phoneLink || contact.phoneDisplay}`}>{contact.phoneDisplay}</a>
+              </li>
+            )}
+            {site && tx(contact.address) && (
+              <li>
+                <IconLocation aria-hidden="true" />
+                <span>{tx(contact.address)}</span>
+              </li>
+            )}
+            {site && tx(contact.workingHours) && (
+              <li>
+                <IconClock aria-hidden="true" />
+                <span>
+                  {[tx(footer?.hoursLabel), tx(contact.workingHours)].filter(Boolean).join(' ')}
+                </span>
+              </li>
+            )}
           </ul>
         </div>
       </div>
@@ -104,9 +84,9 @@ export default function Footer() {
       <div className="site-footer__bottom">
         <div className="container site-footer__bottom-inner">
           <p>
-            &copy; {year} {t('footer.federationName')}. {t('footer.rights')}.
+            &copy; {year} {federationName}. {heading(footer?.rights, 'footer.rights')}.
           </p>
-          <p className="site-footer__bottom-sub">Saudi Muaythai Federation (SMF)</p>
+          {site?.identity?.shortName && <p className="site-footer__bottom-sub">{site.identity.shortName}</p>}
         </div>
       </div>
     </footer>

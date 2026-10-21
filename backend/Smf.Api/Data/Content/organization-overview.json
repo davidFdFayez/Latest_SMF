@@ -1,0 +1,246 @@
+{
+  "key": "organization-overview",
+  "group": "federation",
+  "order": 10,
+  "titleEn": "Overview",
+  "titleAr": "نظرة عامة",
+  "route": "/organization/overview",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        {
+          "name": "stats",
+          "type": "list",
+          "label": "Key figures",
+          "itemLabel": "Figure",
+          "fields": [
+            { "name": "value", "type": "string", "label": "Value", "help": "For example: 2019" },
+            { "name": "label", "type": "text", "label": "Label" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "recognition",
+      "type": "group",
+      "label": "Supervising bodies bar",
+      "help": "The logos themselves are edited in Site settings › Supervising bodies.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Label before the logos" }
+      ]
+    },
+    { "name": "intro", "type": "textarea", "label": "Introduction", "rows": 6 },
+    {
+      "name": "identity",
+      "type": "group",
+      "label": "Vision & mission",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "visionLabel", "type": "text", "label": "Vision label" },
+        { "name": "vision", "type": "textarea", "label": "Vision" },
+        { "name": "missionLabel", "type": "text", "label": "Mission label" },
+        { "name": "mission", "type": "textarea", "label": "Mission" }
+      ]
+    },
+    {
+      "name": "pillars",
+      "type": "group",
+      "label": "Governance framework",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Framework pillars",
+          "itemLabel": "Pillar",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            {
+              "name": "style",
+              "type": "select",
+              "label": "Card style",
+              "options": [
+                { "value": "default", "label": "Standard" },
+                { "value": "gold", "label": "Gold" },
+                { "value": "charcoal", "label": "Charcoal" }
+              ]
+            },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Description" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "hub",
+      "type": "group",
+      "label": "Federation sections",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "subtitle", "type": "text", "label": "Subheading" },
+        { "name": "moreLabel", "type": "text", "label": "“Learn more” text on each card" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Section cards",
+          "itemLabel": "Card",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "category", "type": "text", "label": "Category" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "description", "type": "textarea", "label": "Description" },
+            { "name": "url", "type": "url", "label": "Link" }
+          ]
+        }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "label": { "ar": "الاتحاد السعودي للملاكمة التايلندية", "en": "Saudi Muaythai Federation" },
+      "title": { "ar": "نظرة عامة على الاتحاد", "en": "About the Federation" },
+      "subtitle": {
+        "ar": "الجهة الرياضية الوطنية المعنية بتنظيم رياضة المواي تاي، والإشراف على تطويرها ونشرها والارتقاء بها في المملكة العربية السعودية.",
+        "en": "The national sports authority responsible for organising Muaythai and overseeing its development in the Kingdom of Saudi Arabia"
+      },
+      "stats": [
+        { "value": "2019", "label": { "ar": "عام التأسيس", "en": "Year Founded" } },
+        { "value": "72", "label": { "ar": "ميدالية دولية", "en": "International Medals" } },
+        { "value": "13", "label": { "ar": "منطقة نشطة", "en": "Active Regions" } },
+        { "value": "2020", "label": { "ar": "عضو في IFMA منذ", "en": "IFMA Member Since" } }
+      ]
+    },
+    "recognition": {
+      "label": { "ar": "تحت إشراف", "en": "Under supervision of" }
+    },
+    "intro": {
+      "ar": "تأسّس الاتحاد السعودي للملاكمة التايلندية عام 2019 تحت مظلة اللجنة الأولمبية والبارالمبية السعودية ووزارة الرياضة، ليكون الجهة الحاكمة الرسمية لرياضة المواي تاي في المملكة العربية السعودية. يعمل الاتحاد على بناء منظومة رياضية متكاملة تُعدّ الأبطال وتُعزز الانتماء وتُحقق التمثيل الدولي على أعلى المستويات، مع الالتزام الكامل بمعايير الحوكمة الرياضية المحلية والدولية.",
+      "en": "Established in 2019 under the Saudi Olympic & Paralympic Committee (SOPC) and the Ministry of Sport, the Saudi Muaythai Federation (SMF) is the official governing body for Muaythai in the Kingdom of Saudi Arabia. SMF builds a comprehensive sporting ecosystem that develops champions, fosters belonging, and achieves the highest international representation, while maintaining full compliance with national and international sports governance standards."
+    },
+    "identity": {
+      "label": { "ar": "هويتنا", "en": "Our Identity" },
+      "heading": { "ar": "الرؤية والرسالة", "en": "Vision & Mission" },
+      "visionLabel": { "ar": "الرؤية", "en": "Vision" },
+      "vision": {
+        "ar": "أن تكون رياضة المواي تاي في المملكة نموذجاً رياضياً رائداً محلياً وعالمياً.",
+        "en": "For Muaythai in the Kingdom to be a leading sporting model, both locally and globally."
+      },
+      "missionLabel": { "ar": "الرسالة", "en": "Mission" },
+      "mission": {
+        "ar": "تمكين ممارسي رياضة المواي تاي، وتطوير بيئة تنافسية مستدامة تدعم النجاحات الرياضية الوطنية والعالمية.",
+        "en": "Empowering Muaythai practitioners and developing a sustainable competitive environment that supports national and international sporting success."
+      }
+    },
+    "pillars": {
+      "label": { "ar": "هيكل الاتحاد", "en": "Federation Structure" },
+      "heading": { "ar": "الإطار الحاكم", "en": "Governance Framework" },
+      "items": [
+        {
+          "style": "default",
+          "title": { "ar": "الحوكمة", "en": "Governance" },
+          "body": {
+            "ar": "يعمل الاتحاد وفق أنظمة وزارة الرياضة ومعايير IFMA الدولية في جميع قراراته وأنشطته.",
+            "en": "SMF operates under Ministry of Sport regulations and IFMA international standards in all decisions and activities."
+          }
+        },
+        {
+          "style": "default",
+          "title": { "ar": "التطوير الرياضي", "en": "Sport Development" },
+          "body": {
+            "ar": "برامج تطوير متخصصة للرياضيين والمدربين والحكام عبر مسارات واضحة ومعتمدة دولياً.",
+            "en": "Specialised development programmes for athletes, coaches and referees through internationally accredited pathways."
+          }
+        },
+        {
+          "style": "gold",
+          "title": { "ar": "التمثيل الدولي", "en": "International Representation" },
+          "body": {
+            "ar": "تمثيل المملكة في بطولات IFMA العالمية والآسيوية والدولية بمنتخبات مؤهلة ومجهزة.",
+            "en": "Representing the Kingdom in IFMA World, Asian and international championships with qualified and prepared teams."
+          }
+        },
+        {
+          "style": "charcoal",
+          "title": { "ar": "الانتشار المجتمعي", "en": "Community Outreach" },
+          "body": {
+            "ar": "فعاليات ومبادرات مجتمعية تنشر ثقافة المواي تاي وتوسّع قاعدة الممارسين في مختلف مناطق المملكة.",
+            "en": "Community events and initiatives that spread Muaythai culture and expand the practitioner base across the Kingdom."
+          }
+        }
+      ]
+    },
+    "hub": {
+      "label": { "ar": "استكشف الاتحاد", "en": "Explore the Federation" },
+      "heading": { "ar": "أقسام الاتحاد", "en": "Federation Sections" },
+      "subtitle": { "ar": "تعرف على تاريخنا وقيمنا واستراتيجيتنا وفريق القيادة", "en": "Learn about our history, values, strategy and leadership" },
+      "moreLabel": { "ar": "← اقرأ المزيد", "en": "Learn more →" },
+      "items": [
+        {
+          "category": { "ar": "التاريخ", "en": "History" },
+          "title": { "ar": "تاريخ الاتحاد", "en": "Federation History" },
+          "description": {
+            "ar": "المحطات والإنجازات الكبرى منذ تأسيس الاتحاد عام 2019 حتى اليوم.",
+            "en": "Key milestones and achievements since the Federation was established in 2019."
+          },
+          "url": "/organization/history"
+        },
+        {
+          "category": { "ar": "القيم", "en": "Values" },
+          "title": { "ar": "القيم والمبادئ", "en": "Values & Principles" },
+          "description": {
+            "ar": "المبادئ التي تحكم عمل الاتحاد وتوجّه كل قراراته وأنشطته.",
+            "en": "The principles that govern the Federation and guide every decision and activity."
+          },
+          "url": "/organization/values"
+        },
+        {
+          "category": { "ar": "الاستراتيجية", "en": "Strategy" },
+          "title": { "ar": "الخطة الاستراتيجية", "en": "Strategic Plan" },
+          "description": {
+            "ar": "خارطة الطريق 2026 وأولويات التطوير الرياضي والمؤسسي.",
+            "en": "2026 roadmap and priorities for sport and institutional development."
+          },
+          "url": "/organization/strategy"
+        },
+        {
+          "category": { "ar": "الإنجازات", "en": "Achievements" },
+          "title": { "ar": "الإنجازات والألقاب", "en": "Achievements & Titles" },
+          "description": {
+            "ar": "الميداليات الدولية والألقاب العالمية للمنتخبات السعودية.",
+            "en": "International medals and world titles earned by Saudi national teams."
+          },
+          "url": "/organization/achievements"
+        },
+        {
+          "category": { "ar": "القيادة", "en": "Leadership" },
+          "title": { "ar": "مجلس الإدارة", "en": "Board of Directors" },
+          "description": {
+            "ar": "الرئيس وأعضاء مجلس الإدارة والهيكل التنفيذي.",
+            "en": "The President, board members and executive structure."
+          },
+          "url": "/governance/hq"
+        },
+        {
+          "category": { "ar": "المقر", "en": "Headquarters" },
+          "title": { "ar": "المقر الرئيسي والجهاز الإداري", "en": "HQ & Administrative Staff" },
+          "description": {
+            "ar": "الجهاز الإداري والتنفيذي والأقسام المتخصصة في مقر الاتحاد.",
+            "en": "The administrative and executive apparatus and specialised departments at Federation HQ."
+          },
+          "url": "/governance/hq"
+        }
+      ]
+    }
+  }
+}

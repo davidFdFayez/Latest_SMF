@@ -1,0 +1,384 @@
+{
+  "key": "home",
+  "group": "home",
+  "order": 10,
+  "titleEn": "Home page",
+  "titleAr": "الصفحة الرئيسية",
+  "route": "/",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Hero banner",
+      "fields": [
+        { "name": "titleStart", "type": "text", "label": "Title (first part)" },
+        { "name": "titleHighlight", "type": "text", "label": "Title (highlighted part)", "help": "Shown in the highlight colour straight after the first part." },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label", "help": "The button with the calendar icon." },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" },
+        { "name": "tertiaryLabel", "type": "text", "label": "Third button label" },
+        { "name": "tertiaryUrl", "type": "url", "label": "Third button link" }
+      ]
+    },
+    {
+      "name": "recognition",
+      "type": "group",
+      "label": "Supervision strip",
+      "help": "The logos and names come from Site settings → Supervising bodies.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Label" }
+      ]
+    },
+    {
+      "name": "kpis",
+      "type": "group",
+      "label": "Key figures",
+      "fields": [
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Figures",
+          "itemLabel": "Figure",
+          "itemTitle": "label",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "label", "type": "text", "label": "Label" },
+            {
+              "name": "source",
+              "type": "select",
+              "label": "Number source",
+              "options": [
+                { "value": "fixed", "label": "Fixed number (use the value below)" },
+                { "value": "medals", "label": "International medals (automatic total from the results archive)" }
+              ]
+            },
+            { "name": "value", "type": "string", "label": "Value", "help": "For example: 1300+ (a trailing + is shown as a plus sign). Leave blank when the number is automatic." }
+          ]
+        },
+        { "name": "memberSinceLabel", "type": "text", "label": "Last card: small label", "help": "The final card shows the year the federation joined IFMA." },
+        { "name": "memberSinceYear", "type": "string", "label": "Last card: year" },
+        { "name": "memberSinceCaption", "type": "text", "label": "Last card: caption" }
+      ]
+    },
+    {
+      "name": "about",
+      "type": "group",
+      "label": "Who we are",
+      "fields": [
+        { "name": "eyebrow", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Paragraph" },
+        { "name": "buttonLabel", "type": "text", "label": "Button label" },
+        { "name": "buttonUrl", "type": "url", "label": "Button link" },
+        { "name": "photo", "type": "image", "label": "Photo" },
+        { "name": "cardLinkLabel", "type": "text", "label": "Card link label", "help": "The link text at the bottom of every card below." },
+        {
+          "name": "cards",
+          "type": "list",
+          "label": "Cards",
+          "itemLabel": "Card",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Text" },
+            { "name": "url", "type": "url", "label": "Link" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nationalTeam",
+      "type": "group",
+      "label": "National team",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Paragraph" },
+        {
+          "name": "athletes",
+          "type": "list",
+          "label": "Athletes",
+          "itemLabel": "Athlete",
+          "itemTitle": "name",
+          "help": "Use only a licensed photograph of the athlete named. Until one exists, keep the neutral placeholder (/assets/images/athlete-placeholder.svg).",
+          "fields": [
+            { "name": "name", "type": "text", "label": "Name" },
+            { "name": "photo", "type": "image", "label": "Photo" }
+          ]
+        },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    },
+    {
+      "name": "activities",
+      "type": "group",
+      "label": "Activities & events",
+      "help": "The events and category filters come from the events calendar.",
+      "fields": [
+        { "name": "eyebrow", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Paragraph" },
+        { "name": "calendarButtonLabel", "type": "text", "label": "Full calendar button label" }
+      ]
+    },
+    {
+      "name": "news",
+      "type": "group",
+      "label": "Latest news",
+      "help": "The news cards come from the News section.",
+      "fields": [
+        { "name": "eyebrow", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "viewAllLabel", "type": "text", "label": "All news button label" }
+      ]
+    },
+    {
+      "name": "registration",
+      "type": "group",
+      "label": "Registration",
+      "fields": [
+        { "name": "eyebrow", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "note", "type": "textarea", "label": "Note" },
+        { "name": "buttonLabel", "type": "text", "label": "Card button label", "help": "The button at the bottom of every card below." },
+        {
+          "name": "cards",
+          "type": "list",
+          "label": "Registration cards",
+          "itemLabel": "Card",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "description", "type": "textarea", "label": "Description" },
+            { "name": "url", "type": "url", "label": "Link" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "whistleblower",
+      "type": "group",
+      "label": "Report a concern",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "lead", "type": "textarea", "label": "Lead text" },
+        { "name": "sub", "type": "textarea", "label": "Supporting text" },
+        { "name": "buttonLabel", "type": "text", "label": "Button label" },
+        { "name": "buttonUrl", "type": "url", "label": "Button link" }
+      ]
+    },
+    {
+      "name": "contact",
+      "type": "group",
+      "label": "Contact us",
+      "help": "The phone number, WhatsApp and community links, email and QR codes come from Site settings → Contact details and QR codes.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Paragraph" },
+        { "name": "phoneLabel", "type": "text", "label": "Phone card label" },
+        { "name": "whatsappLabel", "type": "text", "label": "WhatsApp card label" },
+        { "name": "emailLabel", "type": "text", "label": "Email card label" },
+        { "name": "communityLabel", "type": "text", "label": "Community card label" },
+        { "name": "communityValue", "type": "text", "label": "Community card text" },
+        { "name": "whatsappQrCaption", "type": "text", "label": "WhatsApp QR code caption" },
+        { "name": "communityQrCaption", "type": "text", "label": "Community QR code caption" },
+        { "name": "buttonLabel", "type": "text", "label": "Button label" }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "titleStart": { "ar": "الاتحاد السعودي", "en": "Saudi Muaythai" },
+      "titleHighlight": { "ar": "للملاكمة التايلندية", "en": "Federation" },
+      "subtitle": {
+        "ar": "الجهة الرياضية الوطنية المسؤولة عن تنظيم رياضة المواي تاي والإشراف على تطويرها في المملكة العربية السعودية",
+        "en": "The national sports authority responsible for organising Muaythai and overseeing its development in the Kingdom of Saudi Arabia"
+      },
+      "primaryLabel": { "ar": "تقويم الأنشطة", "en": "Activities Calendar" },
+      "primaryUrl": "/activities/calendar",
+      "secondaryLabel": { "ar": "سجّل استفسارك", "en": "Register Interest" },
+      "secondaryUrl": "/registration",
+      "tertiaryLabel": { "ar": "تواصل معنا", "en": "Contact Us" },
+      "tertiaryUrl": "/contact"
+    },
+    "recognition": {
+      "label": { "ar": "تحت إشراف", "en": "Under the Official Supervision of" }
+    },
+    "kpis": {
+      "items": [
+        { "label": { "ar": "رياضي مسجّل", "en": "Registered Athletes" }, "source": "fixed", "value": "1300+" },
+        { "label": { "ar": "نادٍ ومركز مسجّل", "en": "Registered Clubs" }, "source": "fixed", "value": "60+" },
+        { "label": { "ar": "مدرب معتمد", "en": "Certified Coaches" }, "source": "fixed", "value": "80+" },
+        { "label": { "ar": "ميدالية دولية", "en": "International Medals" }, "source": "medals", "value": "" },
+        { "label": { "ar": "بطولة وفعالية مُقامة", "en": "Championships & Events Hosted" }, "source": "fixed", "value": "30+" }
+      ],
+      "memberSinceLabel": { "ar": "عضو منذ", "en": "Member Since" },
+      "memberSinceYear": "2019",
+      "memberSinceCaption": { "ar": "الاتحاد الدولي IFMA", "en": "IFMA International Federation" }
+    },
+    "about": {
+      "eyebrow": { "ar": "من نحن", "en": "Who We Are" },
+      "heading": {
+        "ar": "مرحبًا بكم في المنصة الرسمية للاتحاد السعودي للملاكمة التايلندية",
+        "en": "Welcome to the official platform of the Saudi Muaythai Federation"
+      },
+      "text": {
+        "ar": "المواي تاي أكثر من مجرد رياضة — إنها أسلوب حياة يجسّد القوة والتراث والصمود. يلتزم الاتحاد السعودي للملاكمة التايلندية ببناء مجتمع مزدهر لهذه الرياضة ودعم الرياضيين على جميع المستويات.",
+        "en": "Muaythai is more than a sport — it's a way of life that embodies strength, tradition, and resilience. At the Saudi Muaythai Federation (SMF), we are committed to building a thriving Muaythai community and supporting athletes of all levels."
+      },
+      "buttonLabel": { "ar": "اقرأ أكثر", "en": "Read More" },
+      "buttonUrl": "/organization/overview",
+      "photo": "/assets/images/hero-fighter.jpg",
+      "cardLinkLabel": { "ar": "اقرأ أكثر", "en": "Read More" },
+      "cards": [
+        {
+          "title": { "ar": "نظرة عامة", "en": "Overview" },
+          "body": {
+            "ar": "تأسس الاتحاد السعودي للملاكمة التايلندية عام 2019 برعاية اللجنة الأولمبية السعودية ووزارة الرياضة.",
+            "en": "SMF was established in 2019 under the Saudi Olympic Committee and Ministry of Sport."
+          },
+          "url": "/organization/overview"
+        },
+        {
+          "title": { "ar": "الرؤية", "en": "Vision" },
+          "body": {
+            "ar": "أن تكون رياضة المواي تاي في المملكة نموذجاً رياضياً رائداً محلياً وعالمياً.",
+            "en": "For Muaythai in the Kingdom to be a leading sporting model, both locally and globally."
+          },
+          "url": "/organization/strategy"
+        },
+        {
+          "title": { "ar": "الرسالة", "en": "Mission" },
+          "body": {
+            "ar": "تمكين ممارسي رياضة المواي تاي، وتطوير بيئة تنافسية مستدامة تدعم النجاحات الرياضية الوطنية والعالمية.",
+            "en": "Empowering Muaythai practitioners and developing a sustainable competitive environment that supports national and international sporting success."
+          },
+          "url": "/organization/overview"
+        },
+        {
+          "title": { "ar": "القيم", "en": "Values" },
+          "body": {
+            "ar": "الاحترام • الشرف • التقاليد • اللعب النظيف • التميز",
+            "en": "Respect · Honour · Tradition · Fair-Play · Excellence"
+          },
+          "url": "/organization/values"
+        }
+      ]
+    },
+    "nationalTeam": {
+      "label": { "ar": "المنتخب الوطني", "en": "National Team" },
+      "heading": { "ar": "أبطال المملكة على الساحة الدولية", "en": "Saudi Champions on the World Stage" },
+      "text": {
+        "ar": "رياضيو المنتخب الوطني السعودي يحملون علم المملكة في البطولات الدولية ويعكسون مستوى المواي تاي السعودي.",
+        "en": "Saudi national team athletes carry the Kingdom's flag in international championships, representing the highest level of Saudi Muaythai."
+      },
+      "athletes": [
+        { "name": { "ar": "هتان السف", "en": "Hattan Alsaif" }, "photo": "/assets/images/athlete-placeholder.svg" },
+        { "name": { "ar": "عناد باعويضان", "en": "Inad Baowaydhan" }, "photo": "/assets/images/athlete-placeholder.svg" },
+        { "name": { "ar": "البراء العمودي", "en": "Albaraa Alamoudi" }, "photo": "/assets/images/athlete-placeholder.svg" },
+        { "name": { "ar": "فاطمة كشميري", "en": "Fatimah Kashmiri" }, "photo": "/assets/images/athlete-placeholder.svg" }
+      ],
+      "primaryLabel": { "ar": "استعرض جميع الإنجازات", "en": "View All Achievements" },
+      "primaryUrl": "/organization/achievements",
+      "secondaryLabel": { "ar": "تعرف على قيادتنا", "en": "Meet Our Leadership" },
+      "secondaryUrl": "/governance/hq"
+    },
+    "activities": {
+      "eyebrow": { "ar": "تقويم 2026", "en": "Calendar 2026" },
+      "heading": { "ar": "الأنشطة والفعاليات 2026", "en": "Activities & Events 2026" },
+      "text": {
+        "ar": "أبرز فعاليات الاتحاد السعودي للملاكمة التايلندية للعام 2026 — بطولات، معسكرات، ورش عمل، وأنشطة مجتمعية",
+        "en": "Highlights from the SMF 2026 programme — championships, camps, workshops and community events"
+      },
+      "calendarButtonLabel": { "ar": "عرض التقويم الكامل", "en": "View Full Calendar" }
+    },
+    "news": {
+      "eyebrow": { "ar": "آخر الأخبار", "en": "Latest News" },
+      "heading": { "ar": "أخبار وإعلانات الاتحاد", "en": "News & Announcements" },
+      "viewAllLabel": { "ar": "جميع الأخبار", "en": "View All News" }
+    },
+    "registration": {
+      "eyebrow": { "ar": "التسجيل", "en": "Registration" },
+      "heading": {
+        "ar": "انضم إلى مجتمع الاتحاد السعودي للملاكمة التايلندية",
+        "en": "Join the Saudi Muaythai Federation (SMF) Community"
+      },
+      "note": {
+        "ar": "هذا النموذج تسجيل رسمي لدى الاتحاد. سيُحفظ طلبك وستتلقى رقماً مرجعياً فور الإرسال.",
+        "en": "This is an official registration form. Your application will be stored and reviewed by the federation. You will receive a reference number immediately upon submission."
+      },
+      "buttonLabel": { "ar": "سجّل الآن", "en": "Register Now" },
+      "cards": [
+        {
+          "title": { "ar": "تسجيل لاعب", "en": "Athlete Registration" },
+          "description": {
+            "ar": "سجّل بياناتك كرياضي لدى الاتحاد السعودي للملاكمة التايلندية.",
+            "en": "Submit your official registration as a Muaythai athlete with the Saudi Muaythai Federation (SMF)."
+          },
+          "url": "/registration/athlete"
+        },
+        {
+          "title": { "ar": "تسجيل نادي", "en": "Club Registration" },
+          "description": {
+            "ar": "سجّل ناديك أو مركزك التدريبي رسمياً لدى الاتحاد.",
+            "en": "Register your Muaythai club or training centre officially with the federation."
+          },
+          "url": "/registration/club"
+        },
+        {
+          "title": { "ar": "تسجيل مدرب", "en": "Coach Registration" },
+          "description": {
+            "ar": "سجّل بياناتك للحصول على ترخيص التدريب من الاتحاد.",
+            "en": "Submit your official application for a coaching licence from the federation."
+          },
+          "url": "/registration/coach"
+        },
+        {
+          "title": { "ar": "تسجيل حكم / مسؤول", "en": "Official Registration" },
+          "description": {
+            "ar": "سجّل بياناتك كحكم أو مسؤول رسمي لدى الاتحاد.",
+            "en": "Register as a referee, judge, or official with the Saudi Muaythai Federation (SMF)."
+          },
+          "url": "/registration/official"
+        }
+      ]
+    },
+    "whistleblower": {
+      "heading": { "ar": "الإبلاغ عن مخالفة", "en": "Report a Concern" },
+      "lead": {
+        "ar": "يوفر الاتحاد السعودي للملاكمة التايلندية قناة آمنة وسرية للإبلاغ عن المخاوف.",
+        "en": "The Saudi Muaythai Federation (SMF) provides a safe and confidential channel for reporting concerns."
+      },
+      "sub": {
+        "ar": "يمكن تقديم البلاغ بشكل مجهول. جميع الحقول الاختيارية ما عدا وصف المخاوف.",
+        "en": "Reports may be submitted anonymously. All contact fields are optional — only the description is required."
+      },
+      "buttonLabel": { "ar": "الإبلاغ عن مخالفة", "en": "Report a Concern" },
+      "buttonUrl": "/whistleblower"
+    },
+    "contact": {
+      "label": { "ar": "تواصل معنا", "en": "Get In Touch" },
+      "heading": { "ar": "تواصل معنا", "en": "Contact Us" },
+      "text": {
+        "ar": "نحن هنا للإجابة على استفساراتكم ودعم مسيرتكم في الميوي تاي.",
+        "en": "We are here to answer your enquiries and support your Muaythai journey."
+      },
+      "phoneLabel": { "ar": "هاتف", "en": "Phone" },
+      "whatsappLabel": { "ar": "WhatsApp", "en": "WhatsApp" },
+      "emailLabel": { "ar": "البريد الإلكتروني", "en": "Email" },
+      "communityLabel": { "ar": "مجتمع واتساب", "en": "WhatsApp Community" },
+      "communityValue": { "ar": "انضم إلى المجتمع", "en": "Join the Community" },
+      "whatsappQrCaption": { "ar": "امسح للتواصل عبر واتساب", "en": "Scan to message on WhatsApp" },
+      "communityQrCaption": { "ar": "انضم إلى مجتمع الاتحاد", "en": "Join the SMF community" },
+      "buttonLabel": { "ar": "تواصل معنا", "en": "Contact" }
+    }
+  }
+}

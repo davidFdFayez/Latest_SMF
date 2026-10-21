@@ -14,6 +14,23 @@ services:
       Jwt__Issuer: Smf.Api
       Jwt__Audience: Smf.Clients
       Jwt__ExpiryMinutes: "480"
+      # Where the console lives, for password-reset links.
+      Admin__BaseUrl: https://admin.187-124-4-73.sslip.io
+      # Where the public site lives. Membership-card links and the QR codes
+      # printed from them are built from this, so a wrong value prints cards
+      # that lead nowhere.
+      Site__BaseUrl: https://smf.187-124-4-73.sslip.io
+      # Applicant notifications (§6) are only delivered once a mail server is
+      # set here; until then each message is written to /app/data/outbox.
+      Email__Host: ""
+      Email__Port: "587"
+      Email__UseSsl: "true"
+      Email__User: ""
+      Email__Password: ""
+      Email__From: info@saudimuaythai.sa
+      # Set once an SMS gateway is contracted; until then messages go to
+      # /app/data/sms-outbox.
+      Sms__Provider: ""
     volumes:
       - smf-api-data:/app/data
     networks:

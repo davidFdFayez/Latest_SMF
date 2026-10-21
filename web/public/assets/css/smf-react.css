@@ -1327,13 +1327,42 @@ body.lang-ar {
 .news-article__figure {
   margin: 0 0 var(--space-lg, 1.5rem);
 }
+/* QA — the article image now shares the 16/9 window used by every news card, so
+   a portrait upload no longer stretches the column to its full height. `cover`
+   plus a focal point above centre keeps faces inside the crop. */
 .news-article__figure img {
   display: block;
   inline-size: 100%;
   block-size: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: 50% 30%;
+  background: var(--clr-grey-100, #f0f1f3);
   border-radius: var(--radius-lg, 12px);
   box-shadow: 0 10px 30px rgba(17, 55, 40, 0.12);
 }
+
+/* QA — card thumbnails inside a .fed-nav-card: the news listing, the related
+   stories on an article, and the banner on an event card or event page. These
+   replace per-page inline styles, so all four share one ratio and one crop.
+   A card with no image is untouched: the rule only exists where an <img> does. */
+.fed-nav-card__img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: 50% 30%;
+  /* The card is a column flex container, so the image is pinned to its own
+     height rather than being squeezed by its siblings. */
+  flex: none;
+  margin: 0 0 0.25rem;
+  border-radius: var(--radius-md, 8px);
+  background: var(--clr-grey-100, #f0f1f3);
+}
+/* The event page's own banner sits above a heading rather than a meta line, so
+   it takes a little more room beneath it. */
+.fed-nav-card__img--banner { margin-block-end: var(--space-md, 1rem); }
 
 .news-article__body p {
   margin: 0 0 1.1rem;
@@ -1519,6 +1548,223 @@ body.lang-ar {
   padding-block: 0.35rem;
 }
 
+/* ── activities calendar: the real twelve-month day grid (QA) ─────────────────
+   The "year grid" used to be twelve bullet lists, so the federation read it as a
+   list. It is now twelve month blocks, each a seven-column week grid with
+   weekday headings, the correct starting weekday and day count, and every day
+   that carries an event filled in its category colour.
+
+   Every rule below is scoped to .cal-year / .cal-month / .cal-legend, all new
+   here, so nothing else in either stylesheet is affected. Layout is written in
+   logical properties and the week grid is a table, so Arabic mirrors from the
+   document direction alone — Sunday falls on the right and the week reads
+   right-to-left with no direction-specific rules. */
+.cal-year {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-md, 1rem);
+  align-items: start;
+}
+@media (max-width: 1180px) {
+  .cal-year { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .cal-year { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .cal-year { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The colour key for the day cells. It repeats the filter labels, so it adds no
+   new wording; the day cells themselves carry the event names in a tooltip and
+   an accessible label, which is why the swatches are decorative. */
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.cal-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--clr-text-muted, #6b7280);
+}
+.cal-legend__dot {
+  inline-size: 0.7rem;
+  block-size: 0.7rem;
+  border-radius: 3px;
+  background: var(--clr-green, #0d613f);
+}
+.cal-year__hint {
+  margin: 0 0 var(--space-md, 1rem);
+  font-size: 0.8rem;
+  color: var(--clr-text-muted, #6b7280);
+  text-align: center;
+}
+
+.cal-month {
+  padding: 0.75rem;
+  border: 1px solid var(--clr-border, #e5e7eb);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--clr-white, #fff);
+}
+/* A month with nothing in it stays compact and quiet rather than reading as a
+   broken panel — the same treatment the summary cards already use. */
+.cal-month.is-empty {
+  background: var(--clr-offwhite, #f8f9fa);
+  border-style: dashed;
+}
+.cal-month.is-empty .cal-month__name { color: var(--clr-text-muted, #6b7280); }
+.cal-month__name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding-block-end: 0.4rem;
+  border-block-end: 2px solid var(--clr-green-light, #e6f5ee);
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--clr-green-dark, #084d31);
+}
+.cal-month__name span {
+  min-inline-size: 1.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--clr-green-light, #e6f5ee);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.cal-month__grid {
+  inline-size: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.cal-month__grid th {
+  padding: 0 0 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--clr-text-muted, #6b7280);
+  text-align: center;
+}
+.cal-month__cell { padding: 0; }
+
+/* One shared box for the three shapes a day can take — a link, a button, or
+   plain text — so they line up whatever a day happens to hold. */
+.cal-month__day {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  min-block-size: 1.7rem;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--clr-grey-700, #374151);
+  text-decoration: none;
+}
+.cal-month__day:is(a, button) { cursor: pointer; }
+.cal-month__day:focus-visible {
+  outline: 2px solid var(--clr-green-dark, #084d31);
+  outline-offset: 2px;
+}
+/* Today is ringed whether or not it carries an event — dark on an empty day,
+   white once the cell is filled with a category colour, so it stays visible
+   either way. */
+.cal-month__day.is-today { box-shadow: inset 0 0 0 2px var(--clr-charcoal, #1f2937); }
+
+.cal-month__day.is-marked {
+  background: var(--clr-green, #0d613f);
+  color: var(--clr-white, #fff);
+  font-weight: 800;
+}
+.cal-month__day.is-marked.is-today { box-shadow: inset 0 0 0 2px var(--clr-white, #fff); }
+.cal-month__day.is-marked:hover { filter: brightness(1.15); }
+/* A day holding more than one event gets a second cue beyond its colour. */
+.cal-month__day.is-multi::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 2px;
+  inset-inline-end: 2px;
+  inline-size: 3px;
+  block-size: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* The category colours, shared by the day cells and the legend. They repeat the
+   palette the month summary panels already use. */
+.cal-month__day.is-marked.cat--international,
+.cal-legend__dot.cat--international { background: #1d4ed8; }
+.cal-month__day.is-marked.cat--regional,
+.cal-legend__dot.cat--regional { background: #0d613f; }
+.cal-month__day.is-marked.cat--camp,
+.cal-legend__dot.cat--camp { background: #8a4008; }
+.cal-month__day.is-marked.cat--community,
+.cal-legend__dot.cat--community { background: #6d28d9; }
+.cal-month__day.is-marked.cat--workshop,
+.cal-legend__dot.cat--workshop { background: #0f766e; }
+
+/* A day with several events opens its list under the month rather than in a
+   floating popover: nothing to position, and it reads the same in both
+   directions and at phone width. */
+.cal-month__panel {
+  margin-block-start: 0.5rem;
+  padding-block-start: 0.5rem;
+  border-block-start: 1px dashed var(--clr-border, #e5e7eb);
+}
+.cal-month__panel-head {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--clr-text-muted, #6b7280);
+}
+.cal-month__panel ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cal-month__panel-item a {
+  display: block;
+  padding: 0.35rem 0.5rem;
+  border-inline-start: 3px solid var(--clr-green, #0d613f);
+  border-radius: 5px;
+  background: var(--clr-offwhite, #f8f9fa);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: inherit;
+  text-decoration: none;
+}
+.cal-month__panel-item a:hover { background: var(--clr-green-light, #e6f5ee); }
+.cal-month__panel-item.cat--international a { border-inline-start-color: #1d4ed8; }
+.cal-month__panel-item.cat--regional a { border-inline-start-color: #0d613f; }
+.cal-month__panel-item.cat--camp a { border-inline-start-color: #8a4008; }
+.cal-month__panel-item.cat--community a { border-inline-start-color: #6d28d9; }
+.cal-month__panel-item.cat--workshop a { border-inline-start-color: #0f766e; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-month__day.is-marked:hover { filter: none; }
+}
+
 /* ── results archive filter row (UX-02) ──────────────────────────────────── */
 .archive-filters {
   display: flex;
@@ -1577,3 +1823,547 @@ body.lang-ar {
   border-color: var(--clr-green, #0d613f);
   color: var(--clr-white, #fff);
 }
+
+/* ── Whistleblower confirmation (BUG-13) ─────────────────────────────────
+   The confirmation used to be one unstyled line above a long form: a reporter
+   who had scrolled to the bottom to submit never saw it. It is now a modal
+   dialog plus a panel that takes the form's place, so the reference number is
+   impossible to miss and survives closing the dialog. */
+.wb-success {
+  text-align: center;
+  padding: var(--space-xl, 2rem) var(--space-lg, 1.5rem);
+  border: 2px solid var(--clr-green-600, #0a7c4a);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--clr-green-50, #ecfdf5);
+}
+
+.wb-success__mark,
+.wb-dialog__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  margin-inline: auto;
+  margin-block-end: var(--space-md, 1rem);
+  border-radius: 50%;
+  background: var(--clr-green-600, #0a7c4a);
+  color: #fff;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.wb-success__title,
+.wb-dialog__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  color: var(--clr-green-800, #065f38);
+}
+
+.wb-success__ref,
+.wb-dialog__ref {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.wb-success__ref strong,
+.wb-dialog__ref strong {
+  display: inline-block;
+  margin-inline-start: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px dashed var(--clr-green-600, #0a7c4a);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.wb-success__note,
+.wb-dialog__note {
+  margin: 0 auto var(--space-lg, 1.5rem);
+  max-inline-size: 46ch;
+  color: var(--clr-grey-700, #374151);
+  line-height: 1.8;
+}
+
+.wb-success__actions,
+.wb-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.wb-dialog {
+  inline-size: min(34rem, calc(100vw - 2rem));
+  /* The site's reset zeroes margins on everything, which also disables the
+     `margin: auto` a modal <dialog> centres itself with. Put it back. */
+  margin: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 24px 60px rgba(6, 40, 26, 0.3);
+  color: inherit;
+}
+
+.wb-dialog::backdrop {
+  background: rgba(6, 40, 26, 0.55);
+}
+
+.wb-dialog__body {
+  padding: var(--space-xl, 2rem) var(--space-lg, 1.5rem);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wb-dialog[open] {
+    animation: wb-dialog-in 160ms ease-out;
+  }
+}
+
+@keyframes wb-dialog-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── News article image (BUG-07) ─────────────────────────────────────────
+   The client asks for the article page to show the uploaded image whole: no
+   crop, nothing cut off. So the 16/9 window the cards use is dropped here and
+   the image keeps its own proportions, scaled to the column. Card thumbnails
+   above keep their uniform window — a listing grid needs tiles of one shape. */
+.news-article__figure img {
+  aspect-ratio: auto;
+  object-fit: fill;
+  /* The box is the picture, not a window onto it: it shrinks to whatever shape
+     was uploaded, so a portrait photo leaves no bars and loses no edges. */
+  inline-size: auto;
+  max-inline-size: 100%;
+  block-size: auto;
+  max-block-size: min(80vh, 44rem);
+  margin-inline: auto;
+}
+
+/* ── Membership card (ISSUE-03) ──────────────────────────────────────────
+   A member's own copy of their membership, opened from a QR code and often
+   printed. It stands alone — no site chrome — so everything it needs is
+   here. */
+.mcard-page {
+  min-block-size: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-lg, 1.5rem);
+  background: linear-gradient(160deg, #0b3f2b 0%, #0a4a3a 55%, #073326 100%);
+}
+
+.mcard-page__status {
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.mcard {
+  inline-size: min(46rem, 100%);
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px rgba(3, 26, 17, 0.45);
+}
+
+/* A coloured spine states the answer before anything is read. */
+.mcard--valid { border-block-start: 6px solid #0a7c4a; }
+.mcard--expired,
+.mcard--cancelled { border-block-start: 6px solid #b91c1c; }
+.mcard--suspended { border-block-start: 6px solid #b45309; }
+.mcard--inactive,
+.mcard--unknown { border-block-start: 6px solid #64748b; }
+
+.mcard__head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.1rem var(--space-lg, 1.5rem);
+  border-block-end: 1px solid var(--clr-grey-200, #e5e7eb);
+}
+
+.mcard__crest {
+  inline-size: 3rem;
+  block-size: 3rem;
+  object-fit: contain;
+}
+
+.mcard__org {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--clr-green-800, #065f38);
+}
+
+.mcard__kind {
+  margin: 0.1rem 0 0;
+  font-size: 0.82rem;
+  color: var(--clr-grey-600, #4b5563);
+}
+
+.mcard__badge {
+  margin-inline-start: auto;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.mcard__badge--valid { background: #dcfce7; color: #065f38; }
+.mcard__badge--expired,
+.mcard__badge--cancelled { background: #fee2e2; color: #991b1b; }
+.mcard__badge--suspended { background: #fef3c7; color: #92400e; }
+.mcard__badge--inactive,
+.mcard__badge--unknown { background: #e2e8f0; color: #334155; }
+
+.mcard__body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-lg, 1.5rem);
+  align-items: start;
+  padding: var(--space-lg, 1.5rem);
+}
+
+.mcard__photo {
+  inline-size: 7.5rem;
+  block-size: 9.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--clr-grey-100, #f3f4f6);
+  display: grid;
+  place-items: center;
+}
+
+.mcard__photo img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.mcard__initials {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--clr-green-700, #0a7c4a);
+}
+
+.mcard__name {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  color: var(--clr-green-900, #04301d);
+}
+
+.mcard__name-alt {
+  margin: 0.15rem 0 0;
+  color: var(--clr-grey-600, #4b5563);
+}
+
+.mcard__licence {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--clr-grey-600, #4b5563);
+}
+
+.mcard__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.85rem 1.25rem;
+  margin: 1.1rem 0 0;
+}
+
+.mcard__facts dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--clr-grey-500, #6b7280);
+}
+
+.mcard__facts dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+  color: var(--clr-grey-800, #1f2937);
+}
+
+.mcard__facts code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.mcard__days { font-weight: 500; color: var(--clr-grey-600, #4b5563); }
+
+.mcard__qr {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+}
+
+.mcard__qr img {
+  inline-size: 7.5rem;
+  block-size: 7.5rem;
+}
+
+.mcard__qr span {
+  font-size: 0.72rem;
+  color: var(--clr-grey-500, #6b7280);
+}
+
+.mcard__foot {
+  padding: 1rem var(--space-lg, 1.5rem) 1.25rem;
+  border-block-start: 1px solid var(--clr-grey-200, #e5e7eb);
+  background: var(--clr-grey-50, #f9fafb);
+}
+
+.mcard__foot p {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--clr-grey-600, #4b5563);
+}
+
+.mcard__checked { font-variant-numeric: tabular-nums; }
+.mcard__print { margin-block-start: 0.6rem; }
+
+.mcard--unknown {
+  padding: var(--space-xl, 2rem);
+  text-align: center;
+}
+
+.mcard__title { margin: 0.75rem 0 0.5rem; font-size: 1.3rem; }
+.mcard__note { margin: 0; color: var(--clr-grey-600, #4b5563); line-height: 1.8; }
+
+@media (max-width: 640px) {
+  .mcard__body {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+  .mcard__facts { justify-items: center; }
+  .mcard__badge { margin-inline-start: 0; }
+  .mcard__head { flex-wrap: wrap; }
+}
+
+/* Printed onto a lanyard: ink-light, no background wash, no print button. */
+@media print {
+  .mcard-page { background: none; min-block-size: auto; padding: 0; }
+  .mcard { box-shadow: none; border: 1px solid #94a3b8; inline-size: 100%; }
+  .mcard__print { display: none; }
+}
+
+/* ── The member portal (Phase 3 REQ-05/06/07) ───────────────────────────
+   A signed-in area, not a page of the public site, so it carries its own
+   frame rather than the site header and footer. */
+.acct-page {
+  min-block-size: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-lg, 1.5rem);
+  background: linear-gradient(160deg, #0b3f2b 0%, #0a4a3a 55%, #073326 100%);
+}
+
+.acct-card {
+  inline-size: min(26rem, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: var(--space-xl, 2rem);
+  box-shadow: 0 24px 60px rgba(3, 26, 17, 0.4);
+  text-align: center;
+}
+
+.acct-crest { inline-size: 3.5rem; block-size: 3.5rem; object-fit: contain; }
+.acct-title { margin: 0.75rem 0 0.35rem; font-size: 1.3rem; color: var(--clr-green-800, #065f38); }
+.acct-sub { margin: 0 0 1.25rem; font-size: 0.86rem; color: var(--clr-grey-600, #4b5563); line-height: 1.7; }
+
+.acct-form { display: grid; gap: 0.9rem; text-align: start; }
+
+.acct-field { display: grid; gap: 0.3rem; }
+.acct-field > span:first-child { font-size: 0.82rem; font-weight: 600; }
+
+.acct-field input,
+.acct-field select {
+  inline-size: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--clr-grey-300, #d1d5db);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.acct-hint { font-size: 0.74rem; color: var(--clr-grey-500, #6b7280); line-height: 1.6; }
+.acct-submit { inline-size: 100%; }
+.acct-note { margin: 0; font-size: 0.78rem; color: var(--clr-grey-600, #4b5563); line-height: 1.7; }
+.acct-loading { color: #fff; }
+
+.acct-error,
+.acct-ok {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.acct-error { background: #fee2e2; color: #991b1b; }
+.acct-ok { background: #dcfce7; color: #065f38; }
+
+/* the portal itself */
+.portal {
+  max-inline-size: 60rem;
+  margin-inline: auto;
+  padding: var(--space-xl, 2rem) var(--space-lg, 1.5rem) var(--space-2xl, 3rem);
+}
+
+.portal__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block-end: 1rem;
+  border-block-end: 1px solid var(--clr-grey-200, #e5e7eb);
+}
+
+.portal__kind {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-green-700, #0a7c4a);
+}
+
+.portal__name { margin: 0.2rem 0 0; font-size: 1.5rem; }
+.portal__club { margin: 0.25rem 0 0; font-size: 0.85rem; color: var(--clr-grey-600, #4b5563); }
+
+.portal__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block: 1.1rem;
+}
+
+.portal__tab {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--clr-grey-300, #d1d5db);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.portal__tab.is-active {
+  background: var(--clr-green-700, #0a7c4a);
+  border-color: var(--clr-green-700, #0a7c4a);
+  color: #fff;
+}
+
+.portal__panel {
+  display: grid;
+  gap: 1rem;
+  padding: var(--space-lg, 1.5rem);
+  border: 1px solid var(--clr-grey-200, #e5e7eb);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.portal__h2 { margin: 0; font-size: 1.05rem; color: var(--clr-green-800, #065f38); }
+.portal__note { margin: 0; font-size: 0.84rem; color: var(--clr-grey-600, #4b5563); line-height: 1.7; }
+
+.portal__notice,
+.portal__missing,
+.portal__pending-note {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.portal__notice { background: var(--clr-grey-100, #f3f4f6); }
+.portal__missing { background: #fef3c7; color: #92400e; }
+.portal__pending-note { background: #dbeafe; color: #1e40af; }
+
+.portal__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.9rem;
+  margin: 0;
+}
+
+.portal__facts dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--clr-grey-500, #6b7280); }
+.portal__facts dd { margin: 0.15rem 0 0; font-weight: 600; }
+
+.portal__form { display: grid; gap: 0.8rem; max-inline-size: 28rem; }
+.portal__form--wide { max-inline-size: none; }
+
+.portal__people { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+
+.portal__person {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--clr-grey-200, #e5e7eb);
+  border-radius: 8px;
+}
+
+.portal__person-name { font-weight: 600; font-size: 0.9rem; }
+.portal__person-meta { font-size: 0.78rem; color: var(--clr-grey-500, #6b7280); }
+
+.portal__pending {
+  margin-inline-start: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.72rem;
+}
+
+.portal__question { padding-block: 0.5rem; border-block-end: 1px solid var(--clr-grey-100, #f3f4f6); }
+.portal__question p { margin: 0 0 0.35rem; font-size: 0.88rem; line-height: 1.7; }
+.portal__yesno { display: flex; gap: 1rem; font-size: 0.85rem; }
+.portal__yesno label { display: inline-flex; align-items: center; gap: 0.3rem; }
+.portal__detail { margin-block-start: 0.4rem; inline-size: min(20rem, 100%); padding: 0.4rem 0.6rem; border: 1px solid var(--clr-grey-300, #d1d5db); border-radius: 8px; }
+
+.portal__declaration {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding-block: 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.portal__tournament { padding-block: 1rem; border-block-start: 1px solid var(--clr-grey-200, #e5e7eb); }
+.portal__tournament:first-of-type { border-block-start: 0; padding-block-start: 0; }
+
+.portal__tournament-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.portal__entries { margin: 0.6rem 0 0; padding-inline-start: 1.1rem; font-size: 0.85rem; line-height: 1.9; }
+
+.portal__entering { margin-block-start: 0.8rem; display: grid; gap: 0.5rem; }
+
+.portal__candidate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--clr-grey-200, #e5e7eb);
+  border-radius: 8px;
+}
+
+.portal__candidate select { padding: 0.35rem 0.5rem; border: 1px solid var(--clr-grey-300, #d1d5db); border-radius: 8px; }
+.portal__barrier { font-size: 0.8rem; color: #92400e; }

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../context/LanguageContext';
 import { submitContact } from '../api/services';
-import { WHATSAPP_COMMUNITY, WHATSAPP_DIRECT } from '../data/socialLinks';
+import { usePageContent, useText } from '../content/useContent';
+import { useSiteContent } from '../content/site';
 
 const ico = {
   viewBox: '0 0 24 24',
@@ -24,16 +25,14 @@ const IconWa = () => (
   </svg>
 );
 
-const EMAIL = 'info@saudimuaythai.sa';
-const PHONE_DISPLAY = '+966 55 267 7377';
-const PHONE_TEL = '+966552677377';
-const WA = WHATSAPP_DIRECT;
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function Contact() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('contact');
+  const { site } = useSiteContent();
+  const tx = useText();
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState({ loading: false, error: '', ok: false });
   const [errors, setErrors] = useState({});
@@ -104,6 +103,12 @@ export default function Contact() {
     }
   }
 
+  if (!c) return fallback;
+
+  // The values live in site-wide content; this page only labels them.
+  const contact = site?.contact ?? {};
+  const details = c.details;
+
   return (
     <>
       <section className="page-header">
@@ -113,12 +118,8 @@ export default function Contact() {
             <span className="breadcrumb__sep" aria-hidden="true">›</span>
             <span>{ar ? 'تواصل معنا' : 'Contact'}</span>
           </nav>
-          <h1>{ar ? 'تواصل معنا' : 'Contact Us'}</h1>
-          <p>
-            {ar
-              ? 'يسعدنا تواصلكم مع الاتحاد السعودي للملاكمة التايلندية. فريقنا جاهز للإجابة عن استفساراتكم.'
-              : 'We welcome your enquiries. Our team is ready to respond to your questions and feedback.'}
-          </p>
+          <h1>{tx(c.header.title)}</h1>
+          <p>{tx(c.header.subtitle)}</p>
         </div>
       </section>
 
@@ -126,98 +127,104 @@ export default function Contact() {
         <div className="container">
           <div className="contact-grid">
             <div>
-              <h2>{ar ? 'بيانات التواصل' : 'Contact Information'}</h2>
+              <h2>{tx(details.heading)}</h2>
 
               <div className="contact-info-card">
-                <div className="contact-info-item">
-                  <div className="contact-info-item__icon" aria-hidden="true"><IconMail /></div>
-                  <div>
-                    <div className="contact-info-item__label">{ar ? 'البريد الإلكتروني' : 'Email'}</div>
-                    <div className="contact-info-item__value">
-                      <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+                {contact.email && (
+                  <div className="contact-info-item">
+                    <div className="contact-info-item__icon" aria-hidden="true"><IconMail /></div>
+                    <div>
+                      <div className="contact-info-item__label">{tx(details.emailLabel)}</div>
+                      <div className="contact-info-item__value">
+                        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="contact-info-item">
-                  <div className="contact-info-item__icon" aria-hidden="true"><IconPhone /></div>
-                  <div>
-                    <div className="contact-info-item__label">{ar ? 'هاتف' : 'Phone'}</div>
-                    <div className="contact-info-item__value">
-                      <a href={`tel:${PHONE_TEL}`} dir="ltr">{PHONE_DISPLAY}</a>
+                {contact.phoneDisplay && (
+                  <div className="contact-info-item">
+                    <div className="contact-info-item__icon" aria-hidden="true"><IconPhone /></div>
+                    <div>
+                      <div className="contact-info-item__label">{tx(details.phoneLabel)}</div>
+                      <div className="contact-info-item__value">
+                        <a href={`tel:${contact.phoneLink || contact.phoneDisplay}`} dir="ltr">{contact.phoneDisplay}</a>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="contact-info-item">
-                  <div className="contact-info-item__icon contact-info-item__icon--whatsapp" aria-hidden="true"><IconWa /></div>
-                  <div>
-                    <div className="contact-info-item__label">WhatsApp</div>
-                    <div className="contact-info-item__value">
-                      <a href={WA} target="_blank" rel="noopener noreferrer" dir="ltr">{PHONE_DISPLAY}</a>
+                {contact.whatsappUrl && (
+                  <div className="contact-info-item">
+                    <div className="contact-info-item__icon contact-info-item__icon--whatsapp" aria-hidden="true"><IconWa /></div>
+                    <div>
+                      <div className="contact-info-item__label">{tx(details.whatsappLabel)}</div>
+                      <div className="contact-info-item__value">
+                        <a href={contact.whatsappUrl} target="_blank" rel="noopener noreferrer" dir="ltr">{contact.phoneDisplay}</a>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="contact-info-item">
-                  <div className="contact-info-item__icon contact-info-item__icon--whatsapp" aria-hidden="true"><IconWa /></div>
-                  <div>
-                    <div className="contact-info-item__label">{ar ? 'مجتمع واتساب' : 'WhatsApp Community'}</div>
-                    <div className="contact-info-item__value">
-                      {/* CNT-05 — the community is live; this was a placeholder. */}
-                      <a href={WHATSAPP_COMMUNITY} target="_blank" rel="noopener noreferrer">
-                        {ar ? 'انضم إلى مجتمع الاتحاد' : 'Join the SMF community'}
-                      </a>
+                {contact.whatsappCommunityUrl && (
+                  <div className="contact-info-item">
+                    <div className="contact-info-item__icon contact-info-item__icon--whatsapp" aria-hidden="true"><IconWa /></div>
+                    <div>
+                      <div className="contact-info-item__label">{tx(details.communityLabel)}</div>
+                      <div className="contact-info-item__value">
+                        {/* CNT-05 — the community is live; this was a placeholder. */}
+                        <a href={contact.whatsappCommunityUrl} target="_blank" rel="noopener noreferrer">
+                          {tx(details.communityLinkText)}
+                        </a>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="contact-info-item">
-                  <div className="contact-info-item__icon" aria-hidden="true"><IconPin /></div>
-                  <div>
-                    <div className="contact-info-item__label">{ar ? 'العنوان' : 'Location'}</div>
-                    <div className="contact-info-item__value">
-                      {ar
-                        ? 'الرياض، حي الرفيعة، شارع الديوان، مجمع الأمير فيصل بن فهد الأولمبي'
-                        : 'Riyadh, Al Rafiah District, Al Diwan St., Prince Faisal bin Fahd Olympic Complex'}
+                {tx(contact.address) && (
+                  <div className="contact-info-item">
+                    <div className="contact-info-item__icon" aria-hidden="true"><IconPin /></div>
+                    <div>
+                      <div className="contact-info-item__label">{tx(details.addressLabel)}</div>
+                      <div className="contact-info-item__value">{tx(contact.address)}</div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="contact-info-item">
-                  <div className="contact-info-item__icon" aria-hidden="true"><IconClock /></div>
-                  <div>
-                    <div className="contact-info-item__label">{ar ? 'ساعات العمل' : 'Working Hours'}</div>
-                    <div className="contact-info-item__value">
-                      {ar ? 'من الساعة 10 ص وحتى الساعة 6 م' : '10:00 AM – 6:00 PM'}
+                {tx(contact.workingHours) && (
+                  <div className="contact-info-item">
+                    <div className="contact-info-item__icon" aria-hidden="true"><IconClock /></div>
+                    <div>
+                      <div className="contact-info-item__label">{tx(details.hoursLabel)}</div>
+                      <div className="contact-info-item__value">{tx(contact.workingHours)}</div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="contact-info-item">
-                  <div className="contact-info-item__icon" aria-hidden="true"><IconGlobe /></div>
-                  <div>
-                    <div className="contact-info-item__label">{ar ? 'الموقع الإلكتروني' : 'Website'}</div>
-                    <div className="contact-info-item__value">www.saudimuaythai.sa</div>
+                {contact.website && (
+                  <div className="contact-info-item">
+                    <div className="contact-info-item__icon" aria-hidden="true"><IconGlobe /></div>
+                    <div>
+                      <div className="contact-info-item__label">{tx(details.websiteLabel)}</div>
+                      <div className="contact-info-item__value">{contact.website}</div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              <div>
-                <p>
-                  {ar
-                    ? 'لمعرفة آخر الأخبار والفعاليات والإنجازات، تابعونا على منصات التواصل الاجتماعي عبر حسابات الاتحاد الرسمية.'
-                    : 'Follow us on our official social media channels to stay updated on the latest news, events, and achievements.'}
-                </p>
-              </div>
+              {tx(details.socialNote) && (
+                <div>
+                  <p>{tx(details.socialNote)}</p>
+                </div>
+              )}
             </div>
 
             <div>
-              <h2>{ar ? 'أرسل رسالتك' : 'Send a Message'}</h2>
+              <h2>{tx(c.form.heading)}</h2>
 
               {status.ok && (
                 <div className="contact-form__success" role="status">
-                  {ar ? 'تم إرسال رسالتك بنجاح' : 'Message sent successfully'}
+                  {tx(c.form.successMessage)}
                 </div>
               )}
               {status.error && (
@@ -227,7 +234,7 @@ export default function Contact() {
               <form className="contact-form" noValidate onSubmit={onSubmit}>
                 <div className="contact-form__field">
                   <label htmlFor="contact-name">
-                    {ar ? 'الاسم' : 'Your Name'} <span>*</span>
+                    {tx(c.form.nameLabel)} <span>*</span>
                   </label>
                   <input
                     id="contact-name"
@@ -243,7 +250,7 @@ export default function Contact() {
 
                 <div className="contact-form__field">
                   <label htmlFor="contact-email">
-                    {ar ? 'البريد الإلكتروني' : 'Your Email'} <span>*</span>
+                    {tx(c.form.emailLabel)} <span>*</span>
                   </label>
                   <input
                     id="contact-email"
@@ -258,14 +265,14 @@ export default function Contact() {
                 </div>
 
                 <div className="contact-form__field">
-                  <label htmlFor="contact-subject">{ar ? 'الموضوع' : 'Subject'}</label>
+                  <label htmlFor="contact-subject">{tx(c.form.subjectLabel)}</label>
                   <input id="contact-subject" name="subject" type="text" value={form.subject} onChange={update} />
                   {errors.subject && <span className="contact-form__field-error" role="alert">{errors.subject}</span>}
                 </div>
 
                 <div className="contact-form__field">
                   <label htmlFor="contact-message">
-                    {ar ? 'رسالتك' : 'Your Message'} <span>*</span>
+                    {tx(c.form.messageLabel)} <span>*</span>
                   </label>
                   <textarea
                     id="contact-message"
@@ -280,7 +287,7 @@ export default function Contact() {
                 </div>
 
                 <button type="submit" className="btn btn--green" disabled={status.loading}>
-                  {status.loading ? (ar ? 'جاري الإرسال…' : 'Sending…') : (ar ? 'إرسال الرسالة' : 'Send Message')}
+                  {status.loading ? (ar ? 'جاري الإرسال…' : 'Sending…') : tx(c.form.submitLabel)}
                 </button>
               </form>
             </div>
@@ -290,7 +297,7 @@ export default function Contact() {
 
       <section className="section--grey">
         <div className="container">
-          <Link to="/whistleblower" className="btn btn--outline">{ar ? 'الإبلاغ عن مخالفة' : 'Report a Concern'}</Link>
+          <Link to="/whistleblower" className="btn btn--outline">{tx(c.whistleblowerButton)}</Link>
         </div>
       </section>
     </>

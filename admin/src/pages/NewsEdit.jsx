@@ -5,6 +5,8 @@ import { extractErrorMessage, pick, toDateInputValue } from '../api/utils'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
 import Alert from '../components/Alert'
+import MediaPicker from '../components/MediaPicker'
+import FocalPointPicker from '../components/FocalPointPicker'
 
 const emptyForm = {
   titleEn: '',
@@ -15,6 +17,7 @@ const emptyForm = {
   bodyAr: '',
   category: 'news',
   imageUrl: '',
+  imageFocus: '',
   publishedAt: toDateInputValue(new Date()),
   isPublished: true,
   source: 'SMF',
@@ -32,6 +35,7 @@ function normalize(item) {
     bodyAr: pick(item, ['bodyAr', 'contentAr'], ''),
     category: pick(item, ['category'], 'news'),
     imageUrl: pick(item, ['imageUrl', 'image'], ''),
+    imageFocus: pick(item, ['imageFocus'], ''),
     publishedAt: toDateInputValue(pick(item, ['publishedAt', 'publishDate', 'date'], '')) || toDateInputValue(new Date()),
     isPublished: pick(item, ['isPublished', 'published'], true),
     source: pick(item, ['source'], 'SMF'),
@@ -77,6 +81,7 @@ export default function NewsEdit() {
       publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : new Date().toISOString(),
       externalUrl: form.externalUrl || null,
       imageUrl: form.imageUrl || null,
+      imageFocus: form.imageFocus || null,
     }
 
     try {
@@ -168,14 +173,28 @@ export default function NewsEdit() {
           </label>
         </div>
 
-        <label className="field">
-          <span>Image URL</span>
-          <input type="text" value={form.imageUrl} onChange={(e) => updateField('imageUrl', e.target.value)} placeholder="/assets/images/news/example.jpg" />
-        </label>
+        <div className="field">
+          <span>Image</span>
+          <MediaPicker
+            value={form.imageUrl}
+            onChange={(url) => updateField('imageUrl', url)}
+            placeholder="/assets/images/news/example.jpg, or upload"
+          />
+          <span className="field__hint">
+            The article page shows the picture whole; list and home-page cards crop it to a 16/9 tile.
+          </span>
+        </div>
 
+        {/* The card crop has to lose the edges of a photo that is not already
+            16/9. This is where the editor says what it must not lose. */}
         {form.imageUrl && (
-          <div className="image-preview">
-            <img src={form.imageUrl} alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+          <div className="field">
+            <span>Focal point for cards</span>
+            <FocalPointPicker
+              src={form.imageUrl}
+              value={form.imageFocus}
+              onChange={(next) => updateField('imageFocus', next)}
+            />
           </div>
         )}
 

@@ -1,0 +1,160 @@
+{
+  "key": "organization-initiatives",
+  "group": "federation",
+  "order": 50,
+  "titleEn": "Initiatives",
+  "titleAr": "المبادرات",
+  "route": "/organization/initiatives",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    { "name": "intro", "type": "textarea", "label": "Introduction" },
+    {
+      "name": "initiatives",
+      "type": "group",
+      "label": "Initiatives",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "activeBadge", "type": "text", "label": "Status badge for active initiatives" },
+        { "name": "pendingBadge", "type": "text", "label": "Status badge for initiatives with KPIs in development" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Initiative cards",
+          "itemLabel": "Initiative",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "category", "type": "text", "label": "Category" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Description" },
+            { "name": "pending", "type": "boolean", "label": "KPIs still in development", "help": "Shows the “in development” badge instead of the “active” badge." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "مبادراتنا الرئيسية", "en": "Our Key Initiatives" },
+      "subtitle": {
+        "ar": "يُكرّس الاتحاد السعودي للملاكمة التايلندية جهوده لبناء منظومة رياضية متكاملة ومستدامة للمواي تاي في المملكة.",
+        "en": "The Saudi Muaythai Federation is dedicated to building a strong and inclusive Muaythai ecosystem across the Kingdom."
+      }
+    },
+    "intro": {
+      "ar": "صُمِّمت مبادرات الاتحاد لتحريك عجلة النمو والتطوير الرياضي في جميع مناطق المملكة العربية السعودية، مع التركيز على رعاية المواهب وتعزيز الروح الرياضية وتوسيع الحضور الدولي للمواي تاي.",
+      "en": "Our initiatives are designed to drive the growth and development of the sport across all regions of Saudi Arabia, with a focus on nurturing talent, promoting sportsmanship, and enhancing global recognition."
+    },
+    "initiatives": {
+      "label": { "ar": "المبادرات النشطة", "en": "Active Initiatives" },
+      "heading": { "ar": "مبادرات الاتحاد السعودي للملاكمة التايلندية", "en": "SMF Initiatives" },
+      "activeBadge": { "ar": "جارٍ التنفيذ", "en": "Active" },
+      "pendingBadge": { "ar": "KPI قيد التطوير", "en": "KPI In Development" },
+      "items": [
+        {
+          "category": { "ar": "المشاركة المجتمعية", "en": "Community Participation" },
+          "title": { "ar": "1. حملات تنشيط المشاركة الشعبية", "en": "1. Activation Campaigns" },
+          "body": {
+            "ar": "تنظيم حملات موجّهة لتعزيز المشاركة وزيادة الوعي وتطوير المهارات لدى مختلف الفئات العمرية والجنسين، بما في ذلك الفعاليات المفتوحة والمعارض الرياضية والدورات التمهيدية للمبتدئين.",
+            "en": "Organised targeted campaigns to promote participation, increase awareness, and develop skills across age groups and genders, including open events, sports exhibitions, and introductory workshops for beginners."
+          },
+          "pending": false
+        },
+        {
+          "category": { "ar": "الرياضة المدرسية", "en": "School Sports" },
+          "title": { "ar": "2. إدراج المواي تاي في المناهج المدرسية", "en": "2. Muaythai in Schools" },
+          "body": {
+            "ar": "إدخال رياضة المواي تاي في المدارس ضمن مناهج التربية البدنية أو الأنشطة اللاصفية، بهدف تعزيز اللياقة البدنية وتطوير المهارات واستقطاب المواهب الشابة.",
+            "en": "Introduce Muaythai in schools as part of the PE curriculum or as after-school activities, promoting physical fitness, skill development, and student interest."
+          },
+          "pending": false
+        },
+        {
+          "category": { "ar": "اكتشاف المواهب", "en": "Talent Identification" },
+          "title": { "ar": "3. برنامج الكشف الوطني عن المواهب", "en": "3. National Talent Scouting Program" },
+          "body": {
+            "ar": "إنشاء برنامج وطني متكامل لاكتشاف المواهب الواعدة وصقلها في مختلف أنحاء المملكة، وبناء خط تغذية مستدام للرياضيين المستقبليين عبر شبكة من المراقبين المتخصصين.",
+            "en": "Establish a national scouting program to identify and nurture promising talent across the country and build a pipeline for future athletes through a network of specialist scouts."
+          },
+          "pending": false
+        },
+        {
+          "category": { "ar": "الرعاية والتطوير", "en": "Nurturing & Development" },
+          "title": { "ar": "4. نظام اختيار المنتخب الوطني الشفّاف", "en": "4. Transparent National Team Selection" },
+          "body": {
+            "ar": "وضع نظام واضح ومنصف لاختيار أعضاء المنتخب الوطني، يكفل تقييماً موضوعياً شفافاً للرياضيين، مما يعزز الثقة ويُحفّز الجميع على بلوغ أعلى مستويات الأداء.",
+            "en": "Develop a structured and transparent selection process for the national team to ensure fair and objective evaluation of athletes, building trust and motivating all athletes to achieve peak performance."
+          },
+          "pending": false
+        },
+        {
+          "category": { "ar": "المدربون والحكام", "en": "Coaches & Officials" },
+          "title": { "ar": "5. المسار الوطني لتطوير المدربين", "en": "5. National Coaching Pathway" },
+          "body": {
+            "ar": "إرساء مسار وطني لتدريب المدربين وفق معايير الاتحاد الدولي، يشمل برامج تدريبية منظّمة وشهادات اعتماد وفرص تطوير مستمر.",
+            "en": "Establish a national coaching pathway aligned with international federation standards, with structured training programs, certification, and ongoing development."
+          },
+          "pending": false
+        },
+        {
+          "category": { "ar": "المدربون والحكام", "en": "Coaches & Officials" },
+          "title": { "ar": "6. المسار الوطني لتأهيل الحكام والمسؤولين", "en": "6. National Officials' Pathway" },
+          "body": {
+            "ar": "تأسيس مسار وطني لتأهيل الحكام والمسؤولين الرياضيين، يتضمن برامج تدريبية وشهادات اعتماد دولية وآليات للتطوير المستمر.",
+            "en": "Establish a national officials' pathway with structured training, international certification, and ongoing development to enhance refereeing standards."
+          },
+          "pending": false
+        },
+        {
+          "category": { "ar": "المنافسات الوطنية والدولية", "en": "National & International Competitions" },
+          "title": { "ar": "7. إعادة هيكلة التقويم البطولي الوطني", "en": "7. Redesigning the Competition Calendar" },
+          "body": {
+            "ar": "إعادة تصميم هيكل البطولات الوطنية السنوية لتكون أكثر تنظيماً وشمولاً واستراتيجية من حيث التوقيت، بما يخدم الرياضيين ويُسهم في رفع مستوى التنافسية الدولية.",
+            "en": "Redesign the structure and calendar of yearly domestic competitions to create a more organised, accessible, and strategically timed schedule that prepares teams for international participation."
+          },
+          "pending": false
+        },
+        {
+          "category": { "ar": "الرياضة الشاملة", "en": "Inclusive Sport" },
+          "title": { "ar": "8. مبادرة تطوير بارا مواي تاي", "en": "8. Para Muaythai Development Initiative" },
+          "body": {
+            "ar": "مبادرة مخصصة لتطوير بارا مواي تاي بوصفها أحد الأولويات الاستراتيجية للاتحاد، انسجاماً مع التزامات IFMA الدولية نحو شمولية الرياضة. تُعدّ مؤشرات الأداء الرئيسية (KPI) والأهداف التفصيلية حالياً.",
+            "en": "A dedicated initiative aligned with IFMA's international commitments to inclusive sport. KPIs and detailed objectives are currently being developed in partnership with the national Para sport framework."
+          },
+          "pending": true
+        }
+      ]
+    },
+    "cta": {
+      "text": {
+        "ar": "كن جزءاً من هذه المبادرات وأسهم في تشكيل مستقبل المواي تاي في المملكة العربية السعودية.",
+        "en": "Be part of our initiatives and help shape the future of Muaythai in Saudi Arabia."
+      },
+      "primaryLabel": { "ar": "سجّل الآن", "en": "Register Now" },
+      "primaryUrl": "/registration",
+      "secondaryLabel": { "ar": "الأهداف", "en": "Our Goals" },
+      "secondaryUrl": "/organization/goals"
+    }
+  }
+}

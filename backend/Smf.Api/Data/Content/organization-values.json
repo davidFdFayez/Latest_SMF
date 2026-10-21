@@ -1,0 +1,143 @@
+{
+  "key": "organization-values",
+  "group": "federation",
+  "order": 30,
+  "titleEn": "Values",
+  "titleAr": "القيم",
+  "route": "/organization/values",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    { "name": "intro", "type": "textarea", "label": "Introduction" },
+    {
+      "name": "pillars",
+      "type": "group",
+      "label": "The five pillars",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Pillars",
+          "itemLabel": "Pillar",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "number", "type": "string", "label": "Number", "help": "For example: 01" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Description" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ifma",
+      "type": "group",
+      "label": "International reference",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "linkLabel", "type": "text", "label": "Button label" },
+        { "name": "linkUrl", "type": "url", "label": "Button link" }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "الركائز الخمس للمواي تاي", "en": "The 5 Pillars of Muaythai" },
+      "subtitle": {
+        "ar": "الركائز الخمس هي القيم الجوهرية التي تُعرّف روح المواي تاي وترسم فلسفتها الحضارية العميقة.",
+        "en": "The 5 Pillars are the core values that define the spirit of Muaythai and shape the philosophy of the sport."
+      }
+    },
+    "intro": {
+      "ar": "تمثّل هذه الركائز الروح الجوهرية التي تنبثق منها رياضة المواي تاي، وتُشكّل الأساس المتين لبناء رياضيين يتمتعون بالشخصية القويمة والشرف والانضباط الرفيع. كلّ ركيزة من هذه الركائز تعكس جوهر رسالة الاتحاد في إرساء مجتمع مزدهر للمواي تاي في المملكة العربية السعودية وما وراءها.",
+      "en": "These pillars represent the spirit from which Muaythai emerges, forming the foundation for building athletes of character, honour, and discipline. Each pillar reflects the essence of our mission in developing a thriving Muaythai community in Saudi Arabia and beyond."
+    },
+    "pillars": {
+      "label": { "ar": "القيم الجوهرية", "en": "Core Values" },
+      "heading": { "ar": "الركائز الخمس", "en": "The 5 Pillars" },
+      "items": [
+        {
+          "number": "01",
+          "title": { "ar": "التميّز", "en": "Excellence" },
+          "body": {
+            "ar": "نسعى إلى التميّز في كل ما نضطلع به؛ من تدريب الرياضيين وتأهيل المدربين، إلى تنظيم البطولات على أعلى مستوى. يعني التميّز تخطّي الحدود والارتقاء بمعايير الأداء داخل الحلبة وخارجها.",
+            "en": "We strive for excellence in everything we do — from training athletes and coaches to organising world-class championships. Excellence means pushing boundaries and fostering the highest standards of performance on and off the ring."
+          }
+        },
+        {
+          "number": "02",
+          "title": { "ar": "الاحترام", "en": "Respect" },
+          "body": {
+            "ar": "الاحترام ركيزة المواي تاي الأساسية؛ ندرّب رياضيينا على احترام منافسيهم وحكّامهم ومدربيهم والتقاليد العريقة لهذه الرياضة. إذ يُدرك الأبطال الحقيقيون أن الاحترام يبني مجتمعات متماسكة ويعزز قيم الروح الرياضية.",
+            "en": "Respect is the cornerstone of Muaythai. We teach our athletes to show respect to their opponents, referees, coaches, and traditions. True champions understand that respect builds stronger communities and promotes sportsmanship."
+          }
+        },
+        {
+          "number": "03",
+          "title": { "ar": "الشرف", "en": "Honour" },
+          "body": {
+            "ar": "تُجسّد المواي تاي مفهوم الشرف المتجذّر في التواضع والفخر معاً؛ نُكرم ثقافتنا وتقاليدنا والتضحيات التي قدّمها من سبقونا. وكلّ منافسة هي فرصة للتمسك بقيم العدالة والكرامة.",
+            "en": "Muaythai embodies a sense of honour rooted in humility and pride. We honour our culture, traditions, and the sacrifices of those who paved the way. Every competition is an opportunity to uphold the values of fairness and dignity."
+          }
+        },
+        {
+          "number": "04",
+          "title": { "ar": "التقاليد", "en": "Tradition" },
+          "body": {
+            "ar": "تُذكّرنا التقاليد بالإرث الثقافي الثري لرياضة المواي تاي؛ فمن الوي كرو إلى الممارسات الطقوسية، نصون هذه الأعراف التي منحت المواي تاي خصوصيتها وعمقها.",
+            "en": "Tradition reminds us of the rich cultural heritage of Muaythai. From the Wai Kru to ceremonial practices, we preserve the customs that make Muaythai unique and meaningful."
+          }
+        },
+        {
+          "number": "05",
+          "title": { "ar": "اللعب النظيف", "en": "Fair Play" },
+          "body": {
+            "ar": "يعني اللعب النظيف المنافسةَ بصدق ونزاهة واحترامٍ تام للقواعد والأنظمة. نؤمن بتهيئة بيئة تسود فيها العدالة والإنصاف في كل قرار ومنافسة.",
+            "en": "Fair play means competing with honesty, integrity, and respect for the rules. We believe in fostering an environment where fairness and justice are at the core of every competition and decision."
+          }
+        }
+      ]
+    },
+    "ifma": {
+      "label": { "ar": "المرجعية الدولية", "en": "International Reference" },
+      "text": {
+        "ar": "تستند الركائز الخمس للمواي تاي إلى الإطار القيمي الذي أرسته IFMA — الاتحاد الدولي لجمعيات المواي تاي — باعتباره المرجعية الدولية العليا لهذه الرياضة.",
+        "en": "The 5 Pillars of Muaythai are drawn from the value framework established by IFMA — the International Federation of Muaythai Associations — as the supreme international authority for the sport."
+      },
+      "linkLabel": { "ar": "IFMA — قيم المواي تاي", "en": "IFMA — Muaythai Values" },
+      "linkUrl": "https://muaythai.sport/organisation/values/"
+    },
+    "cta": {
+      "text": {
+        "ar": "انضم إلينا في الحفاظ على هذه القيم الجوهرية والاحتفاء بروح المواي تاي في أرجاء المملكة العربية السعودية كافة.",
+        "en": "Join us in upholding these core values as we continue to grow and celebrate the spirit of Muaythai across Saudi Arabia."
+      },
+      "primaryLabel": { "ar": "تاريخ الاتحاد", "en": "SMF History" },
+      "primaryUrl": "/organization/history",
+      "secondaryLabel": { "ar": "المبادرات", "en": "Initiatives" },
+      "secondaryUrl": "/organization/initiatives"
+    }
+  }
+}

@@ -19,7 +19,11 @@ import {
   TYPE_ROUTE_ALIASES,
   ageFrom,
   categoryFor,
+  categoryLabel,
+  competitionAge,
+  eligibleCategories,
   isMinor,
+  trackOf,
   weightDivisionFor,
   weightRangeFor,
 } from '../data/registrationPortal';
@@ -109,6 +113,29 @@ const VALIDATORS = {
     message: () => bilingual('يرجى الكتابة بالأحرف اللاتينية.', 'Please write this in Latin script.'),
   },
 
+  /* BUG-10 — every numeric field in the portal used to accept a negative
+     value, both typed and through the stepper. `min` on the input stops the
+     stepper; these rules stop a typed or pasted one, and the API repeats the
+     check. */
+  wholeYears: {
+    test: (value) => /^\d+$/.test(value) && Number(value) <= 70,
+    message: () =>
+      bilingual('يرجى إدخال عدد صحيح بين 0 و70.', 'Please enter a whole number between 0 and 70.'),
+  },
+  wholeCount: {
+    test: (value) => /^\d+$/.test(value),
+    message: () =>
+      bilingual('يرجى إدخال عدد صحيح موجب.', 'Please enter a whole number that is not negative.'),
+  },
+  height: {
+    test: (value) => {
+      const height = Number(value);
+      return Number.isFinite(height) && height > 0 && height <= 260;
+    },
+    message: () =>
+      bilingual('يرجى إدخال طول بين 1 و260 سم.', 'Please enter a height between 1 and 260 cm.'),
+  },
+
   // REG-11 — a plausible competition weight for the athlete's age band.
   weight: {
     test: (value, values) => {
@@ -126,18 +153,35 @@ const VALIDATORS = {
   },
 };
 
-/* REG-05 — one date-of-birth rule per category, built from the shared limits. */
+/*
+ * REG-05 — one date-of-birth rule per type, built from the shared limits.
+ *
+ * An athlete is measured in competition age (the year difference the IFMA
+ * eligibility rules are written in), so that the age check and the category
+ * calculation can never disagree about who may register. Everyone else is
+ * measured by their actual age on the day. BUG-08 leaves the coach rule with a
+ * floor and no ceiling.
+ */
 for (const [type, limits] of Object.entries(AGE_LIMITS)) {
+  const ageOf = type === 'athlete' ? competitionAge : ageFrom;
+
   VALIDATORS[`dob_${type}`] = {
     test: (value) => {
-      const age = ageFrom(value);
-      return age !== null && age >= limits.min && age <= limits.max;
+      const age = ageOf(value);
+      if (age === null) return false;
+      if (age < limits.min) return false;
+      return limits.max === null || age <= limits.max;
     },
     message: () =>
-      bilingual(
-        `العمر المقبول لهذا التسجيل من ${limits.min} إلى ${limits.max} سنة.`,
-        `The eligible age for this registration is ${limits.min} to ${limits.max}.`,
-      ),
+      limits.max === null
+        ? bilingual(
+            `الحد الأدنى للعمر في هذا التسجيل هو ${limits.min} سنة.`,
+            `The minimum age for this registration is ${limits.min} years.`,
+          )
+        : bilingual(
+            `العمر المقبول لهذا التسجيل من ${limits.min} إلى ${limits.max} سنة.`,
+            `The eligible age for this registration is ${limits.min} to ${limits.max}.`,
+          ),
   };
 }
 
@@ -389,8 +433,25 @@ function FieldControl({ field, value, values, error, ar, onChange, onBlur }) {
               {...shared}
               type={field.control === 'number' ? 'number' : field.control || 'text'}
               step={field.step}
+              min={field.control === 'number' ? (field.min ?? 0) : undefined}
               placeholder={field.placeholder}
-              max={field.control === 'date' ? new Date().toISOString().slice(0, 10) : undefined}
+              max={
+                field.control === 'date'
+                  ? new Date().toISOString().slice(0, 10)
+                  : field.control === 'number'
+                    ? field.max
+                    : undefined
+              }
+              /* BUG-10 — `min` disarms the stepper, but a minus sign can still
+                 be typed or pasted into a number input; this refuses it at the
+                 keystroke so the field never shows a value the form rejects. */
+              onKeyDown={
+                field.control === 'number'
+                  ? (event) => {
+                      if (event.key === '-' || event.key === 'e' || event.key === 'E') event.preventDefault();
+                    }
+                  : undefined
+              }
             />
           )}
         </>
@@ -521,17 +582,34 @@ export default function Registration() {
   }, [typeParam, routedType, navigate]);
 
   /*
-   * REG-05 — the competition category follows from age, weight, gender, and the
-   * para declaration. It is written back into the form so the applicant sees
-   * (and the federation receives) the value, and stays editable afterwards.
+   * Items 00 and BUG-15 — the competition category is calculated from the date
+   * of birth alone and is no longer a question on the form. It is written into
+   * the values so the applicant can see it on the review step and so it reaches
+   * the API with the request; the API derives it again and keeps its own answer,
+   * so nothing here is trusted.
    */
   useEffect(() => {
     if (type !== 'athlete') return;
     setValues((current) => {
-      const next = categoryFor(current);
-      return next && next !== current.athleteCategory ? { ...current, athleteCategory: next } : current;
+      const category = categoryFor(current);
+      const track = trackOf(category);
+      const eligible = eligibleCategories(current.dateOfBirth).map((entry) => entry.value);
+
+      if (
+        category === (current.athleteCategory || '') &&
+        track === (current.competitionTrack || '') &&
+        eligible.join(',') === (current.eligibleCategories || []).join(',')
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        athleteCategory: category,
+        competitionTrack: track,
+        eligibleCategories: eligible,
+      };
     });
-  }, [type, values.dateOfBirth, values.currentWeight, values.gender, values.paraAthlete]);
+  }, [type, values.dateOfBirth]);
 
   const goToStep = useCallback((next) => {
     setStep(next);
@@ -1008,12 +1086,19 @@ export default function Registration() {
                     </p>
                   )}
 
-                  {step === 3 && type === 'athlete' && division && (
+                  {step === 3 && type === 'athlete' && (division || values.athleteCategory) && (
                     <p className="registration-note" role="note">
                       <span>
-                        {ar
-                          ? `وزن المنافسة المحتسب: ${division}. تُحدد الفئة التنافسية تلقائياً من العمر والوزن والجنس، ويراجعها الاتحاد قبل الاعتماد.`
-                          : `Calculated competition division: ${division}. The competition category is derived from age, weight, and gender, and is reviewed by the federation before approval.`}
+                        {division
+                          ? ar
+                            ? `وزن المنافسة المحتسب: ${division}. `
+                            : `Calculated competition division: ${division}. `
+                          : ''}
+                        {values.athleteCategory
+                          ? ar
+                            ? `الفئة التنافسية المحتسبة: ${categoryLabel(values.athleteCategory, true)} — تُحتسب من سنة الميلاد وفق قواعد الاتحاد الدولي، ويراجعها الاتحاد قبل الاعتماد.`
+                            : `Calculated competition category: ${categoryLabel(values.athleteCategory, false)} — derived from the year of birth under the IFMA eligibility rules and reviewed by the federation before approval.`
+                          : ''}
                       </span>
                     </p>
                   )}
@@ -1123,6 +1208,9 @@ export default function Registration() {
                         const allFields = [...fieldSets.identity, ...fieldSets.contact, ...fieldSets.details];
                         const text = row.from
                           .map((name) => {
+                            // Item 00 — the category has no field of its own any
+                            // more, so its label comes from the category table.
+                            if (name === 'athleteCategory') return categoryLabel(values[name], ar);
                             const field = allFields.find((entry) => entry.name === name);
                             return field ? displayValue(field, values, ar) : values[name] || '';
                           })

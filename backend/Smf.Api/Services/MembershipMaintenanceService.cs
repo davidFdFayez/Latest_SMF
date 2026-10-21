@@ -5,7 +5,7 @@ namespace Smf.Api.Services;
 /// <summary>
 /// Runs the membership lifecycle's time-based rules.
 ///
-/// §1 and §6 describe a membership that expires after three years and a
+/// §1 and §6 describe a membership that expires at the end of its term and a
 /// completion window that runs out after seven working days, but nothing in an
 /// HTTP API notices time passing. Without this, a term could lapse and the
 /// member would never be told, and the "expire lapsed" endpoint would only ever
@@ -51,7 +51,7 @@ public class MembershipMaintenanceService(
 
     /// <summary>The sweep acts on the system's behalf, not a signed-in person.</summary>
     private static readonly AdminIdentity.Actor System =
-        new(null, "system", AdminRoles.SuperAdmin, MembershipRoles.FinalApprover);
+        new(null, "system", "system", new HashSet<string> { AdminPermissions.All });
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

@@ -1,0 +1,68 @@
+{
+  "key": "about-disciplines",
+  "group": "about",
+  "order": 30,
+  "titleEn": "Disciplines",
+  "titleAr": "التخصصات",
+  "route": "/about-muaythai/disciplines",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" }
+      ]
+    },
+    {
+      "name": "comingSoon",
+      "type": "group",
+      "label": "Coming soon notice",
+      "fields": [
+        { "name": "badge", "type": "text", "label": "Badge text" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        {
+          "name": "tags",
+          "type": "list",
+          "label": "Discipline tags",
+          "itemLabel": "Tag",
+          "itemTitle": "name",
+          "fields": [
+            { "name": "name", "type": "text", "label": "Discipline" }
+          ]
+        },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "تخصصات المواي تاي", "en": "Muaythai Disciplines" }
+    },
+    "comingSoon": {
+      "badge": { "ar": "قريباً", "en": "Coming Soon" },
+      "title": { "ar": "تخصصات المواي تاي", "en": "Muaythai Disciplines" },
+      "text": {
+        "ar": "يُعدّ المحتوى التفصيلي لتخصصات المواي تاي حالياً، وسيُتاح للعموم فور الاعتماد. يشمل هذا القسم الأنواع والتخصصات الرسمية المعتمدة من قِبل الاتحاد الدولي للمواي تاي IFMA.",
+        "en": "Detailed content for Muaythai disciplines is currently being prepared and will be published upon approval. This section will cover the official disciplines and formats recognised by the International Federation of Muaythai Associations (IFMA)."
+      },
+      "tags": [
+        { "name": { "ar": "المواي تاي", "en": "Muaythai" } },
+        { "name": { "ar": "مواي بوران", "en": "Muay Boran" } },
+        { "name": { "ar": "مواي إيروبيك", "en": "Muay Aerobic" } },
+        { "name": { "ar": "بارا مواي تاي", "en": "Para Muaythai" } },
+        { "name": { "ar": "واي كرو", "en": "Wai Khru" } },
+        { "name": { "ar": "مواي تالاي", "en": "Muay Talay" } },
+        { "name": { "ar": "مواي كيتا", "en": "Muay Keta" } }
+      ],
+      "primaryLabel": { "ar": "الركائز الخمس للمواي تاي", "en": "5 Pillars of Muaythai" },
+      "primaryUrl": "/about-muaythai/pillars",
+      "secondaryLabel": { "ar": "قواعد المواي تاي", "en": "Muaythai Rules" },
+      "secondaryUrl": "/about-muaythai/rules"
+    }
+  }
+}

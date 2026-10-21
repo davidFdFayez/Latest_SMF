@@ -5,6 +5,7 @@ import { extractErrorMessage, pick, toDateInputValue } from '../api/utils'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
 import Alert from '../components/Alert'
+import MediaPicker from '../components/MediaPicker'
 
 function defaultDate(daysFromNow) {
   const date = new Date()
@@ -18,6 +19,7 @@ const emptyForm = {
   descriptionEn: '',
   descriptionAr: '',
   category: 'community',
+  imageUrl: '',
   startDate: defaultDate(7),
   endDate: defaultDate(9),
   locationEn: '',
@@ -34,6 +36,7 @@ function normalize(item) {
     descriptionEn: pick(item, ['descriptionEn', 'description'], ''),
     descriptionAr: pick(item, ['descriptionAr'], ''),
     category: pick(item, ['category'], 'community'),
+    imageUrl: pick(item, ['imageUrl', 'image'], ''),
     startDate: toDateInputValue(pick(item, ['startDate', 'date'], '')) || defaultDate(7),
     endDate: toDateInputValue(pick(item, ['endDate'], '')) || defaultDate(9),
     locationEn: pick(item, ['locationEn', 'location'], ''),
@@ -80,6 +83,7 @@ export default function EventEdit() {
       ...form,
       startDate: form.startDate ? new Date(form.startDate).toISOString() : new Date().toISOString(),
       endDate: form.endDate ? new Date(form.endDate).toISOString() : new Date().toISOString(),
+      imageUrl: form.imageUrl || null,
     }
 
     try {
@@ -175,6 +179,18 @@ export default function EventEdit() {
             <span>Description (Arabic)</span>
             <textarea rows={6} dir="rtl" value={form.descriptionAr} onChange={(e) => updateField('descriptionAr', e.target.value)} required />
           </label>
+        </div>
+
+        <div className="field">
+          <span>Banner image</span>
+          <MediaPicker
+            value={form.imageUrl}
+            onChange={(url) => updateField('imageUrl', url)}
+            placeholder="/assets/images/events/example.jpg, or upload"
+          />
+          <span className="field__hint">
+            Shown on the calendar and at the top of the event page. Events without one render as plain text.
+          </span>
         </div>
 
         <div className="form-actions">

@@ -141,6 +141,39 @@ public sealed class RegistrationAttachmentStore
         }
     }
 
+    /// <summary>
+    /// Removes a stored document and its sidecar (BUG-11).
+    ///
+    /// Returns false when the identifier resolves to nothing, so a double
+    /// submit is a no-op rather than an error. Deletion is best effort on the
+    /// bytes: the record in the payload is what the reviewer sees, and a file
+    /// left behind by a transient lock must not fail the request that already
+    /// removed it from the registration.
+    /// </summary>
+    public bool Delete(string? id)
+    {
+        if (!TryResolve(id, out var path, out _)) return false;
+
+        foreach (var target in new[] { path, Path.Combine(_root, id + ".meta.json") })
+        {
+            try
+            {
+                if (File.Exists(target)) File.Delete(target);
+            }
+            catch (IOException exception)
+            {
+                _logger.LogWarning(exception, "Could not delete attachment file {Path}.", target);
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                _logger.LogWarning(exception, "Could not delete attachment file {Path}.", target);
+            }
+        }
+
+        _logger.LogInformation("Deleted registration attachment {AttachmentId}.", id);
+        return true;
+    }
+
     public record AttachmentMeta(
         string StoredName,
         string FileName,

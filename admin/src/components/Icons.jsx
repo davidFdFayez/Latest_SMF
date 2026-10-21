@@ -95,6 +95,48 @@ export function SettingsIcon(props) {
   )
 }
 
+export function UsersIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20a5.7 5.7 0 0 1 11 0" />
+      <path d="M16 4.6a3.2 3.2 0 0 1 0 6.3M17.5 14.3A5.7 5.7 0 0 1 20.5 20" />
+    </svg>
+  )
+}
+
+/** A trophy — running tournaments (Phase 3). */
+export function TournamentIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
+      <path d="M7 5.5H4.5V7a3 3 0 0 0 3 3M17 5.5h2.5V7a3 3 0 0 1-3 3" />
+      <path d="M12 14v3M9 20h6M10 17h4l.6 3h-5.2z" />
+    </svg>
+  )
+}
+
+/** A person on a card — the beneficiary directory (ISSUE-03). */
+export function MemberCardIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
+      <circle cx="8.5" cy="10.5" r="2.2" />
+      <path d="M5 16.4a3.8 3.8 0 0 1 7 0" />
+      <path d="M14.5 9.5h4.5M14.5 13h4.5" />
+    </svg>
+  )
+}
+
+export function KeyIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="8" cy="15" r="4" />
+      <path d="m10.8 12.2 9.2-9.2M16 7l3 3M13.5 9.5l2 2" />
+    </svg>
+  )
+}
+
 export function LogoutIcon(props) {
   return (
     <svg {...base} {...props}>
@@ -134,6 +176,40 @@ export function TrashIcon(props) {
     <svg {...base} {...props}>
       <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" />
       <path d="M10 11v6M14 11v6" />
+    </svg>
+  )
+}
+
+export function HistoryIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5M12 7v5l3 2" />
+    </svg>
+  )
+}
+
+export function ArrowUpIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m6 15 6-6 6 6" />
+    </svg>
+  )
+}
+
+export function ArrowDownIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  )
+}
+
+export function ExternalIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <path d="M15 3h6v6M10 14 21 3" />
     </svg>
   )
 }

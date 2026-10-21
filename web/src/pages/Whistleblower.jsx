@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../context/LanguageContext';
 import { submitWhistleblower } from '../api/services';
+import { usePageContent, useText } from '../content/useContent';
 
 const ico = {
   viewBox: '0 0 24 24',
@@ -13,80 +14,19 @@ const ico = {
   'aria-hidden': true,
 };
 
-const TRUST = [
-  {
-    icon: <svg {...ico}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>,
-    titleAr: 'سري وآمن',
-    titleEn: 'Confidential & Secure',
-    bodyAr: 'جميع البلاغات تُعامَل بسرية تامة وأمان كامل.',
-    bodyEn: 'All reports are handled with complete confidentiality and security.',
-  },
-  {
-    icon: <svg {...ico}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
-    titleAr: 'يمكن تقديمه بشكل مجهول',
-    titleEn: 'Anonymous Option',
-    bodyAr: 'بيانات الاتصال اختيارية تماماً.',
-    bodyEn: 'Contact details are entirely optional.',
-  },
-  {
-    icon: <svg {...ico}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>,
-    titleAr: 'مراجعة رسمية',
-    titleEn: 'Official Review',
-    bodyAr: 'يُراجَع كل بلاغ من قِبل الجهة المختصة في الاتحاد.',
-    bodyEn: 'Every report is reviewed by the appropriate federation authority.',
-  },
-  {
-    icon: <svg {...ico}><polyline points="20 6 9 17 4 12" /></svg>,
-    titleAr: 'حماية المُبلِّغ',
-    titleEn: 'Whistleblower Protection',
-    bodyAr: 'يلتزم الاتحاد بحماية كل من يُبلّغ عن مخالفة بحسن نية.',
-    bodyEn: 'SMF is committed to protecting anyone who reports a concern in good faith.',
-  },
-];
-
-const PROCESS = [
-  {
-    num: '1',
-    titleAr: 'تقديم البلاغ',
-    titleEn: 'Submit Your Report',
-    bodyAr: 'أكمل النموذج أدناه بتفاصيل المخالفة. البيانات الشخصية اختيارية — يمكنك الإبلاغ بشكل مجهول تماماً.',
-    bodyEn: 'Complete the form below with details of the concern. Personal details are optional — you may report entirely anonymously.',
-  },
-  {
-    num: '2',
-    titleAr: 'الاستلام والتصنيف',
-    titleEn: 'Receipt & Classification',
-    bodyAr: 'يتلقى الفريق المختص في الاتحاد البلاغ ويصنّفه وفق طبيعة المخالفة في غضون 3 أيام عمل.',
-    bodyEn: 'The designated SMF team receives and classifies the report by concern type within 3 business days.',
-  },
-  {
-    num: '3',
-    titleAr: 'التحقيق والمعالجة',
-    titleEn: 'Investigation & Review',
-    bodyAr: 'تُجرى مراجعة داخلية شاملة للبلاغ. في حال كان المبلّغ قد ذكر بياناته، قد يتم التواصل معه لمزيد من التفاصيل.',
-    bodyEn: 'A thorough internal review is conducted. If you provided contact details, we may reach out for further information.',
-  },
-  {
-    num: '4',
-    titleAr: 'الإجراء والمتابعة',
-    titleEn: 'Action & Follow-up',
-    bodyAr: 'تتخذ الجهة المختصة الإجراء المناسب. إذا وفّرت بريدًا إلكترونيًا، ستتلقى إشعارًا بنتيجة المراجعة.',
-    bodyEn: 'The appropriate authority takes action. If you provided an email, you will receive notification of the review outcome.',
-  },
-];
-
-const CONCERN_TYPES = [
-  { value: 'doping', ar: 'المنشطات', en: 'Doping' },
-  { value: 'match_fixing', ar: 'تلاعب في النتائج', en: 'Match Fixing' },
-  { value: 'misconduct', ar: 'سوء سلوك', en: 'Misconduct' },
-  { value: 'financial', ar: 'مخالفات مالية', en: 'Financial Irregularity' },
-  { value: 'harassment', ar: 'تحرش أو مضايقة', en: 'Harassment' },
-  { value: 'other', ar: 'أخرى', en: 'Other' },
+/* One icon per assurance card, by position; extra cards reuse them in turn. */
+const TRUST_ICONS = [
+  <svg key="lock" {...ico}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>,
+  <svg key="person" {...ico}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+  <svg key="shield" {...ico}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>,
+  <svg key="check" {...ico}><polyline points="20 6 9 17 4 12" /></svg>,
 ];
 
 export default function Whistleblower() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('whistleblower');
+  const tx = useText();
 
   const [form, setForm] = useState({
     concernType: '',
@@ -96,6 +36,36 @@ export default function Whistleblower() {
     email: '',
   });
   const [status, setStatus] = useState({ loading: false, error: '', reference: '' });
+  const [copied, setCopied] = useState(false);
+  const successRef = useRef(null);
+
+  /*
+   * BUG-13 — the confirmation used to be one unstyled line above a long form,
+   * so a reporter who had just scrolled to the bottom to press Submit never saw
+   * it and could not tell whether the report had gone anywhere. It is now a
+   * modal dialog, and the panel it leaves behind replaces the form, so the
+   * reference number cannot be missed or scrolled past.
+   */
+  useEffect(() => {
+    const dialog = successRef.current;
+    if (!dialog || !status.reference) return;
+    if (!dialog.open && typeof dialog.showModal === 'function') dialog.showModal();
+  }, [status.reference]);
+
+  function closeSuccess() {
+    successRef.current?.close();
+  }
+
+  async function copyReference() {
+    try {
+      await navigator.clipboard.writeText(status.reference);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Clipboard access is blocked in some browsers; the number is on screen
+      // either way, so this is not worth an error message.
+    }
+  }
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -105,8 +75,8 @@ export default function Whistleblower() {
 
     // The API stores a description plus a single optional-contact string, so the
     // concern type and the individual contact fields are folded into those two.
-    const type = CONCERN_TYPES.find((t) => t.value === form.concernType);
-    const typeLabel = type ? (ar ? type.ar : type.en) : '';
+    const type = (c?.form.concernTypes ?? []).find((t) => t.value === form.concernType);
+    const typeLabel = type ? tx(type.label) : '';
     const description = typeLabel ? `[${typeLabel}] ${form.description}` : form.description;
     const optionalContact = [form.name, form.phone, form.email].filter(Boolean).join(' · ') || null;
 
@@ -123,6 +93,8 @@ export default function Whistleblower() {
     }
   }
 
+  if (!c) return fallback;
+
   return (
     <>
       <section className="page-header">
@@ -132,23 +104,19 @@ export default function Whistleblower() {
             <span className="breadcrumb__sep" aria-hidden="true">›</span>
             <span>{ar ? 'الإبلاغ عن مخالفة' : 'Report a Concern'}</span>
           </nav>
-          <h1>{ar ? 'الإبلاغ عن مخالفة' : 'Report a Concern'}</h1>
-          <p>
-            {ar
-              ? 'يوفر الاتحاد السعودي للملاكمة التايلندية قناة آمنة وسرية للإبلاغ عن المخاوف.'
-              : 'The Saudi Muaythai Federation (SMF) provides a safe and confidential channel for reporting concerns.'}
-          </p>
+          <h1>{tx(c.header.title)}</h1>
+          {tx(c.header.subtitle) && <p>{tx(c.header.subtitle)}</p>}
         </div>
       </section>
 
       <section className="section--white">
         <div className="container">
           <div className="trust-grid">
-            {TRUST.map((t) => (
-              <div className="trust-card" key={t.titleEn}>
-                <div className="trust-card__icon">{t.icon}</div>
-                <h2>{ar ? t.titleAr : t.titleEn}</h2>
-                <p>{ar ? t.bodyAr : t.bodyEn}</p>
+            {c.trust.map((t, i) => (
+              <div className="trust-card" key={`${i}-${t.title?.en ?? ''}`}>
+                <div className="trust-card__icon">{TRUST_ICONS[i % TRUST_ICONS.length]}</div>
+                <h2>{tx(t.title)}</h2>
+                <p>{tx(t.body)}</p>
               </div>
             ))}
           </div>
@@ -158,19 +126,19 @@ export default function Whistleblower() {
       <section className="section--grey">
         <div className="container">
           <div className="section-header section-header--center">
-            <span className="section-label section-label--green">{ar ? 'كيف يعمل النظام' : 'How It Works'}</span>
-            <h2>{ar ? 'مسار معالجة البلاغات' : 'Report Processing Process'}</h2>
+            <span className="section-label section-label--green">{tx(c.process.label)}</span>
+            <h2>{tx(c.process.heading)}</h2>
           </div>
 
           <div className="wb-process">
-            {PROCESS.map((p, i) => (
-              <div key={p.num} style={{ display: 'contents' }}>
+            {c.process.items.map((p, i) => (
+              <div key={`${p.number}-${i}`} style={{ display: 'contents' }}>
                 {i > 0 && <div className="wb-process__connector" />}
                 <div className="wb-process__step">
-                  <div className="wb-process__num">{p.num}</div>
+                  <div className="wb-process__num">{p.number}</div>
                   <div className="wb-process__body">
-                    <h3>{ar ? p.titleAr : p.titleEn}</h3>
-                    <p>{ar ? p.bodyAr : p.bodyEn}</p>
+                    <h3>{tx(p.title)}</h3>
+                    <p>{tx(p.body)}</p>
                   </div>
                 </div>
               </div>
@@ -189,12 +157,8 @@ export default function Whistleblower() {
               </svg>
             </div>
             <div>
-              <h3>{ar ? 'بيان السرية والحماية' : 'Confidentiality & Protection Statement'}</h3>
-              <p>
-                {ar
-                  ? 'يلتزم الاتحاد السعودي للملاكمة التايلندية بالحفاظ على سرية جميع البلاغات وهوية المُبلِّغين. لن يُفصح عن أي معلومات شخصية لأطراف ثالثة خارج نطاق الفريق المعالج للبلاغ. كل من يُبلّغ عن مخالفة بحسن نية يحظى بحماية كاملة من أي انتقام أو إجراء تأديبي. إساءة استخدام هذا النظام أو تقديم بلاغات كيدية يُعرّض صاحبها للمساءلة.'
-                  : 'The Saudi Muaythai Federation is committed to maintaining the confidentiality of all reports and the identity of reporters. No personal information will be disclosed to any third party outside the designated review team. Anyone who reports a concern in good faith is fully protected against any form of retaliation or disciplinary action. Misuse of this system or submission of knowingly false reports may result in appropriate action.'}
-              </p>
+              <h3>{tx(c.confidentiality.title)}</h3>
+              <p>{tx(c.confidentiality.text)}</p>
             </div>
           </div>
         </div>
@@ -204,28 +168,43 @@ export default function Whistleblower() {
         <div className="container">
           <div className="wb-form-wrapper">
             <div className="wb-form-wrapper__header">
-              <h2>{ar ? 'نموذج البلاغ' : 'Report Form'}</h2>
-              <p>
-                {ar
-                  ? 'يُرجى وصف المخالفة بأكبر قدر ممكن من التفاصيل. كلما كانت المعلومات أكثر دقة، كانت المعالجة أسرع وأكثر فاعلية.'
-                  : 'Please describe the concern with as much detail as possible. The more specific the information, the faster and more effectively we can act.'}
-              </p>
+              <h2>{tx(c.form.heading)}</h2>
+              {tx(c.form.text) && <p>{tx(c.form.text)}</p>}
             </div>
 
             <div className="wb-form-card">
-              {status.reference && (
-                <div className="wb-form__success" role="status">
-                  {ar ? 'تم استلام البلاغ. الرقم المرجعي:' : 'Report received. Reference:'} <strong>{status.reference}</strong>
-                </div>
-              )}
               {status.error && (
                 <div className="wb-form__error" role="alert">{status.error}</div>
               )}
 
+              {status.reference ? (
+                <div className="wb-success" role="status">
+                  <span className="wb-success__mark" aria-hidden="true">✓</span>
+                  <h3 className="wb-success__title">{tx(c.form.successTitle)}</h3>
+                  <p className="wb-success__ref">
+                    {tx(c.form.successPrefix)} <strong>{status.reference}</strong>
+                  </p>
+                  <p className="wb-success__note">{tx(c.form.successNote)}</p>
+                  <div className="wb-success__actions">
+                    <button type="button" className="btn btn--outline" onClick={copyReference}>
+                      {copied
+                        ? ar ? 'تم النسخ' : 'Copied'
+                        : ar ? 'نسخ الرقم المرجعي' : 'Copy reference'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--green"
+                      onClick={() => setStatus({ loading: false, error: '', reference: '' })}
+                    >
+                      {ar ? 'إرسال بلاغ آخر' : 'Submit another report'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <form className="wb-form" onSubmit={onSubmit}>
                 <div className="wb-form__field">
                   <label htmlFor="wb-concern-type">
-                    {ar ? 'نوع المخالفة' : 'Concern Type'}
+                    {tx(c.form.concernTypeLabel)}
                     <span className="wb-form__required">*</span>
                   </label>
                   <select
@@ -235,16 +214,16 @@ export default function Whistleblower() {
                     value={form.concernType}
                     onChange={set('concernType')}
                   >
-                    <option value="">{ar ? '— اختر نوع المخالفة —' : '— Select concern type —'}</option>
-                    {CONCERN_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>{ar ? t.ar : t.en}</option>
+                    <option value="">{tx(c.form.concernTypePlaceholder)}</option>
+                    {c.form.concernTypes.map((t, i) => (
+                      <option key={`${t.value}-${i}`} value={t.value}>{tx(t.label)}</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="wb-form__field">
                   <label htmlFor="wb-description">
-                    {ar ? 'وصف المخاوف' : 'Description of Concern'}
+                    {tx(c.form.descriptionLabel)}
                     <span className="wb-form__required">*</span>
                   </label>
                   <textarea
@@ -256,48 +235,67 @@ export default function Whistleblower() {
                     value={form.description}
                     onChange={set('description')}
                   />
-                  <span className="wb-form__hint">
-                    {ar
-                      ? 'الحد الأدنى 20 حرفاً. كلما كانت التفاصيل أكثر، كانت المعالجة أسرع.'
-                      : 'Minimum 20 characters. More detail helps us act faster and more effectively.'}
-                  </span>
+                  {tx(c.form.descriptionHint) && (
+                    <span className="wb-form__hint">{tx(c.form.descriptionHint)}</span>
+                  )}
                 </div>
 
                 <div className="wb-form__divider">
-                  <span>{ar ? 'بيانات التواصل — اختياري' : 'Contact Details — Optional'}</span>
+                  <span>{tx(c.form.contactDivider)}</span>
                 </div>
-                <p className="wb-form__divider-note">
-                  {ar
-                    ? 'هذه البيانات اختيارية بالكامل. يمكنك تقديم البلاغ بشكل مجهول دون ذكر أي من هذه المعلومات.'
-                    : 'These fields are entirely optional. You can submit this report completely anonymously without providing any of this information.'}
-                </p>
+                {tx(c.form.contactNote) && (
+                  <p className="wb-form__divider-note">{tx(c.form.contactNote)}</p>
+                )}
 
                 <div className="wb-form__row">
                   <div className="wb-form__field">
-                    <label htmlFor="wb-name">{ar ? 'الاسم (اختياري)' : 'Your Name (optional)'}</label>
+                    <label htmlFor="wb-name">{tx(c.form.nameLabel)}</label>
                     <input id="wb-name" name="reporter_name" type="text" value={form.name} onChange={set('name')} />
                   </div>
                   <div className="wb-form__field">
-                    <label htmlFor="wb-phone">{ar ? 'رقم الهاتف (اختياري)' : 'Your Phone (optional)'}</label>
+                    <label htmlFor="wb-phone">{tx(c.form.phoneLabel)}</label>
                     <input id="wb-phone" name="reporter_phone" type="tel" value={form.phone} onChange={set('phone')} />
                   </div>
                 </div>
 
                 <div className="wb-form__field">
-                  <label htmlFor="wb-email">{ar ? 'البريد الإلكتروني (اختياري)' : 'Your Email (optional)'}</label>
+                  <label htmlFor="wb-email">{tx(c.form.emailLabel)}</label>
                   <input id="wb-email" name="reporter_email" type="email" value={form.email} onChange={set('email')} />
-                  <span className="wb-form__hint">
-                    {ar
-                      ? 'إذا أضفت بريدك الإلكتروني، سنُخطرك بنتيجة المراجعة.'
-                      : 'If you provide your email, we will notify you of the review outcome.'}
-                  </span>
+                  {tx(c.form.emailHint) && (
+                    <span className="wb-form__hint">{tx(c.form.emailHint)}</span>
+                  )}
                 </div>
 
                 <button type="submit" className="btn btn--green wb-form__submit" disabled={status.loading}>
-                  {status.loading ? (ar ? 'جاري الإرسال…' : 'Submitting…') : (ar ? 'إرسال البلاغ' : 'Submit Report')}
+                  {status.loading ? (ar ? 'جاري الإرسال…' : 'Submitting…') : tx(c.form.submitLabel)}
                 </button>
               </form>
+              )}
             </div>
+
+            {/* BUG-13 — the popup the client asked for. It is a native <dialog>,
+                so the browser traps focus, Escape closes it, and the page behind
+                is inert while it is open. The panel above stays afterwards. */}
+            <dialog className="wb-dialog" ref={successRef} onClose={() => setCopied(false)}>
+              <div className="wb-dialog__body">
+                <span className="wb-dialog__mark" aria-hidden="true">✓</span>
+                <h2 className="wb-dialog__title">{tx(c.form.successTitle)}</h2>
+                <p className="wb-dialog__ref">
+                  {tx(c.form.successPrefix)} <strong>{status.reference}</strong>
+                </p>
+                <p className="wb-dialog__note">{tx(c.form.successNote)}</p>
+                <div className="wb-dialog__actions">
+                  <button type="button" className="btn btn--outline" onClick={copyReference}>
+                    {copied
+                      ? ar ? 'تم النسخ' : 'Copied'
+                      : ar ? 'نسخ الرقم المرجعي' : 'Copy reference'}
+                  </button>
+                  <button type="button" className="btn btn--green" onClick={closeSuccess} autoFocus>
+                    {tx(c.form.successCloseLabel)}
+                  </button>
+                </div>
+              </div>
+            </dialog>
           </div>
         </div>
       </section>

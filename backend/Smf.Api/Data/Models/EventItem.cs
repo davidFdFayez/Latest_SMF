@@ -15,6 +15,9 @@ public class EventItem
     public string LocationAr { get; set; } = string.Empty;
     public string LocationEn { get; set; } = string.Empty;
 
+    /// <summary>Banner image path, e.g. /api/media/… or /assets/images/…; empty for none.</summary>
+    public string? ImageUrl { get; set; }
+
     /// <summary>confirmed | tentative | completed</summary>
     public string Status { get; set; } = "confirmed";
     public bool IsPublished { get; set; } = true;

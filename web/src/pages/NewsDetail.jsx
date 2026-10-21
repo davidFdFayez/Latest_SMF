@@ -190,12 +190,14 @@ export default function NewsDetail() {
                 const otherTitle = entry.title || (ar ? entry.titleAr : entry.titleEn);
                 return (
                   <Link key={entry.id} to={`/news/${entry.id}`} className="fed-nav-card">
+                    {/* QA — same 16/9 thumbnail window as the news listing cards. */}
                     {entry.imageUrl && (
                       <img
+                        className="fed-nav-card__img"
                         src={entry.imageUrl}
                         alt=""
-                        style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 8, marginBottom: '0.75rem' }}
                         loading="lazy"
+                        style={entry.imageFocus ? { objectPosition: entry.imageFocus } : undefined}
                       />
                     )}
                     <div className="fed-nav-card__cat">

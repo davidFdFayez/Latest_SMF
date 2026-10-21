@@ -1,0 +1,86 @@
+{
+  "key": "contact",
+  "group": "participation",
+  "order": 50,
+  "titleEn": "Contact Us",
+  "titleAr": "تواصل معنا",
+  "route": "/contact",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Introduction" }
+      ]
+    },
+    {
+      "name": "details",
+      "type": "group",
+      "label": "Contact information panel",
+      "help": "The email, numbers, links, and address themselves are edited under Site settings & contact details.",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "emailLabel", "type": "text", "label": "Email label" },
+        { "name": "phoneLabel", "type": "text", "label": "Phone label" },
+        { "name": "whatsappLabel", "type": "text", "label": "WhatsApp label" },
+        { "name": "communityLabel", "type": "text", "label": "WhatsApp community label" },
+        { "name": "communityLinkText", "type": "text", "label": "WhatsApp community link text" },
+        { "name": "addressLabel", "type": "text", "label": "Address label" },
+        { "name": "hoursLabel", "type": "text", "label": "Working hours label" },
+        { "name": "websiteLabel", "type": "text", "label": "Website label" },
+        { "name": "socialNote", "type": "textarea", "label": "Social media note" }
+      ]
+    },
+    {
+      "name": "form",
+      "type": "group",
+      "label": "Message form",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "nameLabel", "type": "text", "label": "Name field" },
+        { "name": "emailLabel", "type": "text", "label": "Email field" },
+        { "name": "subjectLabel", "type": "text", "label": "Subject field" },
+        { "name": "messageLabel", "type": "text", "label": "Message field" },
+        { "name": "submitLabel", "type": "text", "label": "Send button" },
+        { "name": "successMessage", "type": "text", "label": "Message shown after sending" }
+      ]
+    },
+    { "name": "whistleblowerButton", "type": "text", "label": "“Report a concern” button" }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "تواصل معنا", "en": "Contact Us" },
+      "subtitle": {
+        "ar": "يسعدنا تواصلكم مع الاتحاد السعودي للملاكمة التايلندية. فريقنا جاهز للإجابة عن استفساراتكم.",
+        "en": "We welcome your enquiries. Our team is ready to respond to your questions and feedback."
+      }
+    },
+    "details": {
+      "heading": { "ar": "بيانات التواصل", "en": "Contact Information" },
+      "emailLabel": { "ar": "البريد الإلكتروني", "en": "Email" },
+      "phoneLabel": { "ar": "هاتف", "en": "Phone" },
+      "whatsappLabel": { "ar": "WhatsApp", "en": "WhatsApp" },
+      "communityLabel": { "ar": "مجتمع واتساب", "en": "WhatsApp Community" },
+      "communityLinkText": { "ar": "انضم إلى مجتمع الاتحاد", "en": "Join the SMF community" },
+      "addressLabel": { "ar": "العنوان", "en": "Location" },
+      "hoursLabel": { "ar": "ساعات العمل", "en": "Working Hours" },
+      "websiteLabel": { "ar": "الموقع الإلكتروني", "en": "Website" },
+      "socialNote": {
+        "ar": "لمعرفة آخر الأخبار والفعاليات والإنجازات، تابعونا على منصات التواصل الاجتماعي عبر حسابات الاتحاد الرسمية.",
+        "en": "Follow us on our official social media channels to stay updated on the latest news, events, and achievements."
+      }
+    },
+    "form": {
+      "heading": { "ar": "أرسل رسالتك", "en": "Send a Message" },
+      "nameLabel": { "ar": "الاسم", "en": "Your Name" },
+      "emailLabel": { "ar": "البريد الإلكتروني", "en": "Your Email" },
+      "subjectLabel": { "ar": "الموضوع", "en": "Subject" },
+      "messageLabel": { "ar": "رسالتك", "en": "Your Message" },
+      "submitLabel": { "ar": "إرسال الرسالة", "en": "Send Message" },
+      "successMessage": { "ar": "تم إرسال رسالتك بنجاح", "en": "Message sent successfully" }
+    },
+    "whistleblowerButton": { "ar": "الإبلاغ عن مخالفة", "en": "Report a Concern" }
+  }
+}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
+import { SmartLink, usePageContent, useText } from '../../content/useContent';
 
 function IconDoc() {
   return (
@@ -32,54 +33,13 @@ function IconExternal({ className }) {
   );
 }
 
-/* Official IFMA rule books — linked to the international federation's own site. */
-const DOCS = [
-  {
-    href: 'https://muaythai.sport/wp-content/uploads/2026/05/IFMA-Rules-and-Regulations-v3.057_110526.pdf',
-    titleAr: 'قواعد وأنظمة IFMA (الإصدار 3.057)',
-    titleEn: 'IFMA Rules and Regulations v3.057',
-    descAr: 'الوثيقة الرسمية الشاملة لقواعد وأنظمة المواي تاي المعتمدة من الاتحاد الدولي IFMA.',
-    descEn: 'The official comprehensive rules and regulations document approved by the International Federation of Muaythai Associations.',
-  },
-  {
-    href: 'https://muaythai.sport/wp-content/uploads/2025/07/IFMA-Muaythai-Lor-Pao-v1.03.3_060325.pdf',
-    titleAr: 'أنظمة مواي تاي لور باو',
-    titleEn: 'IFMA Muaythai Lor Pao Rules',
-    descAr: 'أنظمة مواي تاي لور باو الصادرة عن IFMA.',
-    descEn: 'Official IFMA Muaythai Lor Pao rules and regulations.',
-  },
-  {
-    href: 'https://muaythai.sport/wp-content/uploads/2025/03/IFMA-Chok-Lom-Muaythai-v1.02.3_060325.pdf',
-    titleAr: 'أنظمة تشوك لوم المواي تاي',
-    titleEn: 'IFMA Chok Lom Muaythai Rules',
-    descAr: 'أنظمة تشوك لوم المواي تاي الصادرة عن IFMA.',
-    descEn: 'Official IFMA Chok Lom Muaythai rules and regulations.',
-  },
-  /* TXT-05 — the WKMM "Turkey Special Edition" document was removed: the
-     federation publishes the IFMA rulebooks only, not a single tournament's
-     special edition. */
-];
-
-const LINKS = [
-  {
-    href: 'https://muaythai.sport/about-muaythai/muaythai-rules/a-coach-and-managers-guide/',
-    titleAr: 'دليل المدربين والمديرين — IFMA',
-    titleEn: "A Coach & Manager's Guide — IFMA",
-    descAr: 'دليل شامل للمدربين ومديري الفرق من الاتحاد الدولي IFMA.',
-    descEn: 'Comprehensive guide for coaches and team managers from IFMA.',
-  },
-  {
-    href: 'https://muaythai.sport/about-muaythai/muaythai-rules/',
-    titleAr: 'قواعد المواي تاي — موقع IFMA',
-    titleEn: 'Muaythai Rules — IFMA Website',
-    descAr: 'صفحة قواعد المواي تاي الرسمية على الموقع الدولي لـ IFMA.',
-    descEn: 'Official Muaythai rules page on the IFMA international website.',
-  },
-];
-
 export default function AboutRules() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('about-rules');
+  const tx = useText();
+
+  if (!c) return fallback;
 
   return (
     <>
@@ -92,38 +52,34 @@ export default function AboutRules() {
             <span className="breadcrumb__sep" aria-hidden="true">›</span>
             <span>{ar ? 'القواعد والأنظمة' : 'Muaythai Rules'}</span>
           </nav>
-          <h1>{ar ? 'قواعد المواي تاي وأنظمة التحكيم' : 'Muaythai Rules & Officiating Standards'}</h1>
-          <p>
-            {ar
-              ? 'القواعد والأنظمة الرسمية المعتمدة التي تحكم ممارسة رياضة المواي تاي في المملكة العربية السعودية، مع المرجعية الدولية لـ IFMA.'
-              : "Official rules and standards governing Muaythai in the Kingdom of Saudi Arabia, with reference to IFMA's international framework."}
-          </p>
+          <h1>{tx(c.header.title)}</h1>
+          {tx(c.header.subtitle) && <p>{tx(c.header.subtitle)}</p>}
         </div>
       </section>
 
       <section className="section--grey">
         <div className="container">
           <div className="section-header section-header--center">
-            <span className="section-label section-label--green">{ar ? 'وثائق IFMA الرسمية' : 'Official IFMA Documents'}</span>
-            <h2>{ar ? 'قواعد وأنظمة المواي تاي' : 'Rules & Regulations Documents'}</h2>
-            <p>
-              {ar
-                ? 'وثائق PDF الرسمية الصادرة عن الاتحاد الدولي IFMA'
-                : 'Official PDF documents published by the International Federation of Muaythai Associations'}
-            </p>
+            <span className="section-label section-label--green">{tx(c.documents.label)}</span>
+            <h2>{tx(c.documents.heading)}</h2>
+            {tx(c.documents.subtitle) && <p>{tx(c.documents.subtitle)}</p>}
           </div>
 
+          {/* Official IFMA rule books — by default linked to the international federation's own site.
+              TXT-05 — the WKMM "Turkey Special Edition" document was removed: the
+              federation publishes the IFMA rulebooks only, not a single tournament's
+              special edition. */}
           <div className="rules-doc-grid">
-            {DOCS.map((d) => (
-              <a key={d.href} className="rules-doc-card" href={d.href} target="_blank" rel="noopener noreferrer">
+            {c.documents.items.map((d, i) => (
+              <SmartLink key={`${i}-${d.link}`} className="rules-doc-card" to={d.link}>
                 <div className="rules-doc-card__icon" aria-hidden="true"><IconDoc /></div>
                 <div className="rules-doc-card__body">
-                  <span className="rules-doc-card__type">PDF</span>
-                  <h3>{ar ? d.titleAr : d.titleEn}</h3>
-                  <p>{ar ? d.descAr : d.descEn}</p>
+                  {tx(c.documents.typeBadge) && <span className="rules-doc-card__type">{tx(c.documents.typeBadge)}</span>}
+                  <h3>{tx(d.title)}</h3>
+                  <p>{tx(d.description)}</p>
                 </div>
                 <div className="rules-doc-card__arrow" aria-hidden="true"><IconExternal /></div>
-              </a>
+              </SmartLink>
             ))}
           </div>
         </div>
@@ -132,20 +88,20 @@ export default function AboutRules() {
       <section className="section--white">
         <div className="container">
           <div className="section-header section-header--center">
-            <span className="section-label section-label--green">{ar ? 'روابط مرجعية' : 'Reference Links'}</span>
-            <h2>{ar ? 'موارد إضافية من IFMA' : 'Additional IFMA Resources'}</h2>
+            <span className="section-label section-label--green">{tx(c.links.label)}</span>
+            <h2>{tx(c.links.heading)}</h2>
           </div>
 
           <div className="rules-link-grid">
-            {LINKS.map((l) => (
-              <a key={l.href} className="rules-link-card" href={l.href} target="_blank" rel="noopener noreferrer">
+            {c.links.items.map((l, i) => (
+              <SmartLink key={`${i}-${l.url}`} className="rules-link-card" to={l.url}>
                 <div className="rules-link-card__icon" aria-hidden="true"><IconGlobe /></div>
                 <div className="rules-link-card__body">
-                  <h3>{ar ? l.titleAr : l.titleEn}</h3>
-                  <p>{ar ? l.descAr : l.descEn}</p>
+                  <h3>{tx(l.title)}</h3>
+                  <p>{tx(l.description)}</p>
                 </div>
                 <IconExternal className="rules-link-card__arrow" />
-              </a>
+              </SmartLink>
             ))}
           </div>
         </div>
@@ -153,13 +109,11 @@ export default function AboutRules() {
 
       <section className="section--green-gradient values-cta">
         <div className="container">
-          <h2>{ar ? 'تعرّف على معدات المواي تاي' : 'Explore Muaythai Equipment'}</h2>
-          <p className="values-cta__text">
-            {ar
-              ? 'اطّلع على متطلبات المعدات والتجهيزات المعتمدة لمنافسات المواي تاي.'
-              : 'Learn about the approved equipment requirements for Muaythai competitions.'}
-          </p>
-          <Link to="/about-muaythai/equipment" className="btn btn--gold">{ar ? 'المعدات والتجهيزات' : 'Equipment & Gear'}</Link>
+          <h2>{tx(c.cta.heading)}</h2>
+          <p className="values-cta__text">{tx(c.cta.text)}</p>
+          {c.cta.buttonUrl && (
+            <SmartLink to={c.cta.buttonUrl} className="btn btn--gold">{tx(c.cta.buttonLabel)}</SmartLink>
+          )}
         </div>
       </section>
     </>

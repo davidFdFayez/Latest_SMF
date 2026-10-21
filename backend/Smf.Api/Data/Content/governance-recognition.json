@@ -1,0 +1,116 @@
+{
+  "key": "governance-recognition",
+  "group": "governance",
+  "order": 10,
+  "titleEn": "Official Recognition",
+  "titleAr": "الاعتراف الرسمي",
+  "route": "/governance/recognition",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    { "name": "intro", "type": "textarea", "label": "Introduction" },
+    {
+      "name": "milestones",
+      "type": "group",
+      "label": "Recognition milestones",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "cards",
+          "type": "list",
+          "label": "Recognition cards",
+          "itemLabel": "Recognition",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "year", "type": "text", "label": "Date", "help": "For example: December 2020" },
+            { "name": "organisation", "type": "text", "label": "Organisation" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Description" },
+            {
+              "name": "benefits",
+              "type": "list",
+              "label": "Benefits",
+              "itemLabel": "Benefit",
+              "help": "Optional ticked points under the description.",
+              "fields": [
+                { "name": "text", "type": "text", "label": "Benefit" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "supervision",
+      "type": "group",
+      "label": "Supervising bodies strip",
+      "help": "The logos and names are edited in Site settings › Supervising bodies.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Label above the logos" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "الاعتراف الرسمي والانتماء الدولي", "en": "Official Recognition & International Affiliation" },
+      "subtitle": {
+        "ar": "يحظى الاتحاد السعودي للملاكمة التايلندية باعتراف رسمي من المنظمات الرياضية الدولية والوطنية، مما يُعزز مكانته ووزنه على الساحة الرياضية العالمية.",
+        "en": "The Saudi Muaythai Federation holds official recognition from international and national sports organizations, solidifying its standing on the global sporting stage."
+      }
+    },
+    "intro": {
+      "ar": "شكّل الاعتراف الرسمي الذي ناله الاتحاد السعودي للملاكمة التايلندية من المنظمات الرياضية الدولية والوطنية خطوةً محوريةً في مسيرته، إذ أتاح للرياضيين السعوديين تمثيل بلادهم على أرفع المحافل الدولية بصفة رسمية معترف بها.",
+      "en": "The official recognition received by SMF from international and national sporting organizations was a pivotal step, enabling Saudi athletes to officially represent their country at the highest international competitions."
+    },
+    "milestones": {
+      "label": { "ar": "مؤسسي ودولي", "en": "Institutional & International" },
+      "heading": { "ar": "مراحل الاعتراف", "en": "Recognition Milestones" },
+      "cards": [
+        {
+          "year": { "ar": "2019", "en": "2019" },
+          "organisation": { "ar": "المملكة العربية السعودية", "en": "Kingdom of Saudi Arabia" },
+          "title": { "ar": "اللجنة الأولمبية والبارالمبية السعودية", "en": "Saudi Olympic & Paralympic Committee" },
+          "body": {
+            "ar": "أُسِّس الاتحاد رسمياً عام 2019 تحت مظلة اللجنة الأولمبية والبارالمبية السعودية، مما أضفى عليه الشرعية المؤسسية الرسمية بوصفه الجهة الحاكمة المعتمدة للمواي تاي في المملكة.",
+            "en": "SMF was officially established in 2019 under the SOPC, conferring institutional legitimacy as the recognized governing body for Muaythai in the Kingdom."
+          },
+          "benefits": []
+        },
+        {
+          "year": { "ar": "ديسمبر 2020", "en": "December 2020" },
+          "organisation": { "ar": "IFMA", "en": "IFMA" },
+          "title": { "ar": "عضوية الاتحاد الدولي لجمعيات الملاكمة التايلندية", "en": "IFMA International Membership" },
+          "body": {
+            "ar": "انضم الاتحاد إلى أسرة IFMA، الاتحادِ الدولي الأعلى للمواي تاي المعترَف به من اللجنة الأولمبية الدولية. ومنذ ذلك الحين، بات الرياضيون السعوديون يتنافسون في بطولات العالم الرسمية تحت اعتراف دولي كامل.",
+            "en": "SMF joined the IFMA family — the global governing body recognized by the International Olympic Committee — enabling Saudi athletes to compete in official World Championships under full international recognition."
+          },
+          "benefits": [
+            { "text": { "ar": "المشاركة في بطولات العالم الرسمية", "en": "Participation in official World Championships" } },
+            { "text": { "ar": "أعلى معايير الحوكمة الدولية", "en": "Highest international governance standards" } },
+            { "text": { "ar": "الوصول إلى برامج التدريب الدولية", "en": "Access to international training programs" } }
+          ]
+        },
+        {
+          "year": { "ar": "2023", "en": "2023" },
+          "organisation": { "ar": "IFMA — قيادة دولية", "en": "IFMA — International Leadership" },
+          "title": { "ar": "نيابة رئاسة IFMA الدولية", "en": "IFMA International Vice Presidency" },
+          "body": {
+            "ar": "تعيين سمو الأمير فهد بن منصور بن سعد بن سعود بن عبدالعزيز آل سعود نائباً لرئيس IFMA — أول قيادي سعودي يتولى هذا المنصب الدولي الرفيع، تعبيراً عن الثقة الدولية في القيادة السعودية للمواي تاي.",
+            "en": "HRH Prince Fahad Bin Mansour Bin Saad Bin Saud Bin Abdulaziz Al Saud was appointed Vice President of IFMA — the first Saudi official to hold this senior international position, reflecting global confidence in Saudi Muaythai leadership."
+          },
+          "benefits": []
+        }
+      ]
+    },
+    "supervision": { "label": { "ar": "تحت الإشراف الرسمي لـ", "en": "Under the Official Supervision of" } }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "key": "governance-reports",
+  "group": "governance",
+  "order": 50,
+  "titleEn": "Reports",
+  "titleAr": "التقارير",
+  "route": "/governance/reports",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" }
+      ]
+    },
+    {
+      "name": "comingSoon",
+      "type": "group",
+      "label": "“Coming soon” block",
+      "help": "Shown while there are no published documents below.",
+      "fields": [
+        { "name": "badge", "type": "text", "label": "Badge" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "backLabel", "type": "text", "label": "“Back to home” button label" }
+      ]
+    },
+    {
+      "name": "documents",
+      "type": "group",
+      "label": "Published reports",
+      "help": "Add a document to replace the “coming soon” block with the list of documents.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Documents",
+          "itemLabel": "Document",
+          "itemTitle": "title",
+          "help": "Documents without a file are not shown.",
+          "fields": [
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "description", "type": "textarea", "label": "Description" },
+            { "name": "file", "type": "file", "label": "PDF file" },
+            { "name": "date", "type": "string", "label": "Date", "help": "Optional, shown next to “PDF” — for example: 2026 or March 2026" }
+          ]
+        }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "التقارير والوثائق الرسمية", "en": "Official Reports & Documents" }
+    },
+    "comingSoon": {
+      "badge": { "ar": "قريباً", "en": "Coming Soon" },
+      "title": { "ar": "التقارير والوثائق", "en": "Reports & Documents" },
+      "text": {
+        "ar": "تُعدّ التقارير والوثائق الرسمية للاتحاد وستُتاح للعموم فور اعتمادها من الجهات المختصة. يلتزم الاتحاد السعودي للملاكمة التايلندية بأعلى معايير الشفافية المؤسسية.",
+        "en": "Official federation reports and documents are being prepared and will be made publicly available upon formal approval from the relevant authorities. SMF is committed to the highest standards of institutional transparency."
+      },
+      "backLabel": { "ar": "العودة للرئيسية", "en": "Back to Home" }
+    },
+    "documents": {
+      "label": { "ar": "الحوكمة", "en": "Governance" },
+      "heading": { "ar": "التقارير والوثائق", "en": "Reports & Documents" },
+      "items": []
+    }
+  }
+}

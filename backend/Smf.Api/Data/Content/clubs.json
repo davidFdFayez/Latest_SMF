@@ -1,0 +1,51 @@
+{
+  "key": "clubs",
+  "group": "participation",
+  "order": 20,
+  "titleEn": "Try Muaythai",
+  "titleAr": "جرب المواي تاي",
+  "route": "/clubs",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "help": "The club list itself comes from approved club registrations.",
+      "fields": [
+        { "name": "tag", "type": "text", "label": "Small label above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Introduction" }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action (register a club)",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "buttonLabel", "type": "text", "label": "Button label" },
+        { "name": "buttonUrl", "type": "url", "label": "Button link" }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "tag": { "ar": "جرب المواي تاي", "en": "Try Muaythai" },
+      "title": { "ar": "الأندية والمراكز المعتمدة", "en": "Approved Clubs & Centres" },
+      "subtitle": {
+        "ar": "ابحث عن نادٍ أو مركز معتمد قريب منك وابدأ تدريب المواي تاي. جميع الجهات المعروضة معتمدة لدى الاتحاد السعودي للمواي تاي.",
+        "en": "Find an approved club or centre near you and start training Muaythai. Every facility listed here is approved by the Saudi Muaythai Federation."
+      }
+    },
+    "cta": {
+      "heading": { "ar": "تمتلك نادياً أو مركزاً تدريبياً؟", "en": "Run a club or training centre?" },
+      "text": {
+        "ar": "سجّل منشأتك لدى الاتحاد السعودي للمواي تاي لتظهر في هذا الدليل.",
+        "en": "Register your facility with the Saudi Muaythai Federation to appear in this directory."
+      },
+      "buttonLabel": { "ar": "تسجيل نادي / منشأة", "en": "Register a club" },
+      "buttonUrl": "/registration/club"
+    }
+  }
+}

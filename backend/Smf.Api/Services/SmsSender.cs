@@ -33,20 +33,26 @@ public sealed class SmsSender
     /// <summary>Set <c>Sms:Provider</c> once a gateway exists; until then, outbox mode.</summary>
     private string? Provider => _configuration["Sms:Provider"];
 
-    public async Task SendAsync(string? to, string message, CancellationToken cancellationToken = default)
+    /// <summary>True once a gateway is configured; otherwise messages go to the outbox.</summary>
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(Provider);
+
+    /// <summary>Where outbox files are written, for the delivery status screen.</summary>
+    public string OutboxPath => _outboxPath;
+
+    public async Task<DeliveryResult> SendAsync(string? to, string message, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(to))
         {
             _logger.LogWarning("Skipped SMS — no recipient number.");
-            return;
+            return DeliveryResult.Skipped("No mobile number on the request.");
         }
 
         try
         {
             if (string.IsNullOrWhiteSpace(Provider))
             {
-                await WriteToOutboxAsync(to, message, cancellationToken);
-                return;
+                var file = await WriteToOutboxAsync(to, message, cancellationToken);
+                return DeliveryResult.Outbox(file);
             }
 
             // No gateway is integrated yet. Reaching here means Sms:Provider was
@@ -55,16 +61,18 @@ public sealed class SmsSender
             _logger.LogError(
                 "SMS provider '{Provider}' is configured but not implemented; message to {To} was not sent.",
                 Provider, Mask(to));
+            return DeliveryResult.Failed($"SMS provider '{Provider}' is configured but no gateway is implemented.");
         }
         catch (Exception ex)
         {
             // A lost notification must never fail the decision that triggered it:
             // the status change is already committed by this point.
             _logger.LogError(ex, "Failed to send SMS to {To}.", Mask(to));
+            return DeliveryResult.Failed(ex.Message);
         }
     }
 
-    private async Task WriteToOutboxAsync(string to, string message, CancellationToken cancellationToken)
+    private async Task<string> WriteToOutboxAsync(string to, string message, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(_outboxPath);
 
@@ -75,6 +83,8 @@ public sealed class SmsSender
         await File.WriteAllTextAsync(path, contents, cancellationToken);
 
         _logger.LogInformation("SMS to {To} written to the outbox at {Path}.", Mask(to), path);
+
+        return name;
     }
 
     /// <summary>

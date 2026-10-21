@@ -1,0 +1,238 @@
+{
+  "key": "whistleblower",
+  "group": "participation",
+  "order": 60,
+  "titleEn": "Report a Violation",
+  "titleAr": "الإبلاغ عن مخالفة",
+  "route": "/whistleblower",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    {
+      "name": "trust",
+      "type": "list",
+      "label": "Assurance cards",
+      "itemLabel": "Card",
+      "itemTitle": "title",
+      "help": "Icons follow the order of the list.",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "body", "type": "textarea", "label": "Text" }
+      ]
+    },
+    {
+      "name": "process",
+      "type": "group",
+      "label": "How reports are handled",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Steps",
+          "itemLabel": "Step",
+          "itemTitle": "title",
+          "fields": [
+            { "name": "number", "type": "string", "label": "Number", "help": "For example: 1" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "body", "type": "textarea", "label": "Description" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "confidentiality",
+      "type": "group",
+      "label": "Confidentiality & protection statement",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "text", "type": "textarea", "label": "Statement", "rows": 6 }
+      ]
+    },
+    {
+      "name": "form",
+      "type": "group",
+      "label": "Report form",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "text", "type": "textarea", "label": "Introduction" },
+        { "name": "concernTypeLabel", "type": "text", "label": "Concern type field" },
+        { "name": "concernTypePlaceholder", "type": "text", "label": "Concern type placeholder (nothing chosen)" },
+        {
+          "name": "concernTypes",
+          "type": "list",
+          "label": "Concern types",
+          "itemLabel": "Concern type",
+          "itemTitle": "label",
+          "help": "The code is internal and should not change once reports use it. The label is what visitors choose and what is recorded at the start of the report.",
+          "fields": [
+            { "name": "value", "type": "string", "label": "Code", "help": "Lowercase, no spaces, for example: match_fixing" },
+            { "name": "label", "type": "text", "label": "Label" }
+          ]
+        },
+        { "name": "descriptionLabel", "type": "text", "label": "Description field" },
+        {
+          "name": "descriptionHint",
+          "type": "textarea",
+          "label": "Hint under the description",
+          "help": "The form always requires at least 20 characters."
+        },
+        { "name": "contactDivider", "type": "text", "label": "Contact details divider" },
+        { "name": "contactNote", "type": "textarea", "label": "Note under the divider" },
+        { "name": "nameLabel", "type": "text", "label": "Name field" },
+        { "name": "phoneLabel", "type": "text", "label": "Phone field" },
+        { "name": "emailLabel", "type": "text", "label": "Email field" },
+        { "name": "emailHint", "type": "textarea", "label": "Hint under the email" },
+        { "name": "submitLabel", "type": "text", "label": "Submit button" },
+        {
+          "name": "successPrefix",
+          "type": "text",
+          "label": "Message shown after submitting",
+          "help": "The reference number is shown after this text."
+        },
+        { "name": "successTitle", "type": "text", "label": "Confirmation heading" },
+        {
+          "name": "successNote",
+          "type": "textarea",
+          "label": "Note under the reference number",
+          "help": "Tell the reporter to keep the reference; it is the only way to follow the report up."
+        },
+        { "name": "successCloseLabel", "type": "text", "label": "Confirmation close button" }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "الإبلاغ عن مخالفة", "en": "Report a Concern" },
+      "subtitle": {
+        "ar": "يوفر الاتحاد السعودي للملاكمة التايلندية قناة آمنة وسرية للإبلاغ عن المخاوف.",
+        "en": "The Saudi Muaythai Federation (SMF) provides a safe and confidential channel for reporting concerns."
+      }
+    },
+    "trust": [
+      {
+        "title": { "ar": "سري وآمن", "en": "Confidential & Secure" },
+        "body": {
+          "ar": "جميع البلاغات تُعامَل بسرية تامة وأمان كامل.",
+          "en": "All reports are handled with complete confidentiality and security."
+        }
+      },
+      {
+        "title": { "ar": "يمكن تقديمه بشكل مجهول", "en": "Anonymous Option" },
+        "body": {
+          "ar": "بيانات الاتصال اختيارية تماماً.",
+          "en": "Contact details are entirely optional."
+        }
+      },
+      {
+        "title": { "ar": "مراجعة رسمية", "en": "Official Review" },
+        "body": {
+          "ar": "يُراجَع كل بلاغ من قِبل الجهة المختصة في الاتحاد.",
+          "en": "Every report is reviewed by the appropriate federation authority."
+        }
+      },
+      {
+        "title": { "ar": "حماية المُبلِّغ", "en": "Whistleblower Protection" },
+        "body": {
+          "ar": "يلتزم الاتحاد بحماية كل من يُبلّغ عن مخالفة بحسن نية.",
+          "en": "SMF is committed to protecting anyone who reports a concern in good faith."
+        }
+      }
+    ],
+    "process": {
+      "label": { "ar": "كيف يعمل النظام", "en": "How It Works" },
+      "heading": { "ar": "مسار معالجة البلاغات", "en": "Report Processing Process" },
+      "items": [
+        {
+          "number": "1",
+          "title": { "ar": "تقديم البلاغ", "en": "Submit Your Report" },
+          "body": {
+            "ar": "أكمل النموذج أدناه بتفاصيل المخالفة. البيانات الشخصية اختيارية — يمكنك الإبلاغ بشكل مجهول تماماً.",
+            "en": "Complete the form below with details of the concern. Personal details are optional — you may report entirely anonymously."
+          }
+        },
+        {
+          "number": "2",
+          "title": { "ar": "الاستلام والتصنيف", "en": "Receipt & Classification" },
+          "body": {
+            "ar": "يتلقى الفريق المختص في الاتحاد البلاغ ويصنّفه وفق طبيعة المخالفة في غضون 3 أيام عمل.",
+            "en": "The designated SMF team receives and classifies the report by concern type within 3 business days."
+          }
+        },
+        {
+          "number": "3",
+          "title": { "ar": "التحقيق والمعالجة", "en": "Investigation & Review" },
+          "body": {
+            "ar": "تُجرى مراجعة داخلية شاملة للبلاغ. في حال كان المبلّغ قد ذكر بياناته، قد يتم التواصل معه لمزيد من التفاصيل.",
+            "en": "A thorough internal review is conducted. If you provided contact details, we may reach out for further information."
+          }
+        },
+        {
+          "number": "4",
+          "title": { "ar": "الإجراء والمتابعة", "en": "Action & Follow-up" },
+          "body": {
+            "ar": "تتخذ الجهة المختصة الإجراء المناسب. إذا وفّرت بريدًا إلكترونيًا، ستتلقى إشعارًا بنتيجة المراجعة.",
+            "en": "The appropriate authority takes action. If you provided an email, you will receive notification of the review outcome."
+          }
+        }
+      ]
+    },
+    "confidentiality": {
+      "title": { "ar": "بيان السرية والحماية", "en": "Confidentiality & Protection Statement" },
+      "text": {
+        "ar": "يلتزم الاتحاد السعودي للملاكمة التايلندية بالحفاظ على سرية جميع البلاغات وهوية المُبلِّغين. لن يُفصح عن أي معلومات شخصية لأطراف ثالثة خارج نطاق الفريق المعالج للبلاغ. كل من يُبلّغ عن مخالفة بحسن نية يحظى بحماية كاملة من أي انتقام أو إجراء تأديبي. إساءة استخدام هذا النظام أو تقديم بلاغات كيدية يُعرّض صاحبها للمساءلة.",
+        "en": "The Saudi Muaythai Federation is committed to maintaining the confidentiality of all reports and the identity of reporters. No personal information will be disclosed to any third party outside the designated review team. Anyone who reports a concern in good faith is fully protected against any form of retaliation or disciplinary action. Misuse of this system or submission of knowingly false reports may result in appropriate action."
+      }
+    },
+    "form": {
+      "heading": { "ar": "نموذج البلاغ", "en": "Report Form" },
+      "text": {
+        "ar": "يُرجى وصف المخالفة بأكبر قدر ممكن من التفاصيل. كلما كانت المعلومات أكثر دقة، كانت المعالجة أسرع وأكثر فاعلية.",
+        "en": "Please describe the concern with as much detail as possible. The more specific the information, the faster and more effectively we can act."
+      },
+      "concernTypeLabel": { "ar": "نوع المخالفة", "en": "Concern Type" },
+      "concernTypePlaceholder": { "ar": "— اختر نوع المخالفة —", "en": "— Select concern type —" },
+      "concernTypes": [
+        { "value": "doping", "label": { "ar": "المنشطات", "en": "Doping" } },
+        { "value": "match_fixing", "label": { "ar": "تلاعب في النتائج", "en": "Match Fixing" } },
+        { "value": "misconduct", "label": { "ar": "سوء سلوك", "en": "Misconduct" } },
+        { "value": "financial", "label": { "ar": "مخالفات مالية", "en": "Financial Irregularity" } },
+        { "value": "harassment", "label": { "ar": "تحرش أو مضايقة", "en": "Harassment" } },
+        { "value": "other", "label": { "ar": "أخرى", "en": "Other" } }
+      ],
+      "descriptionLabel": { "ar": "وصف المخاوف", "en": "Description of Concern" },
+      "descriptionHint": {
+        "ar": "الحد الأدنى 20 حرفاً. كلما كانت التفاصيل أكثر، كانت المعالجة أسرع.",
+        "en": "Minimum 20 characters. More detail helps us act faster and more effectively."
+      },
+      "contactDivider": { "ar": "بيانات التواصل — اختياري", "en": "Contact Details — Optional" },
+      "contactNote": {
+        "ar": "هذه البيانات اختيارية بالكامل. يمكنك تقديم البلاغ بشكل مجهول دون ذكر أي من هذه المعلومات.",
+        "en": "These fields are entirely optional. You can submit this report completely anonymously without providing any of this information."
+      },
+      "nameLabel": { "ar": "الاسم (اختياري)", "en": "Your Name (optional)" },
+      "phoneLabel": { "ar": "رقم الهاتف (اختياري)", "en": "Your Phone (optional)" },
+      "emailLabel": { "ar": "البريد الإلكتروني (اختياري)", "en": "Your Email (optional)" },
+      "emailHint": {
+        "ar": "إذا أضفت بريدك الإلكتروني، سنُخطرك بنتيجة المراجعة.",
+        "en": "If you provide your email, we will notify you of the review outcome."
+      },
+      "submitLabel": { "ar": "إرسال البلاغ", "en": "Submit Report" },
+      "successPrefix": { "ar": "تم استلام البلاغ. الرقم المرجعي:", "en": "Report received. Reference:" },
+      "successTitle": { "ar": "تم استلام بلاغك", "en": "Your report has been received" },
+      "successNote": {
+        "ar": "يرجى الاحتفاظ بالرقم المرجعي؛ فهو الوسيلة الوحيدة لمتابعة البلاغ. سيراجع الاتحاد البلاغ بسرّية تامة.",
+        "en": "Please keep this reference number — it is the only way to follow the report up. The federation will review it in complete confidence."
+      },
+      "successCloseLabel": { "ar": "إغلاق", "en": "Close" }
+    }
+  }
+}

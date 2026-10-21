@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { extractErrorMessage } from '../api/utils'
 import Alert from '../components/Alert'
@@ -71,8 +71,8 @@ export default function Login() {
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
 
-          <p className="login-form__hint">
-            Default credentials: <code>admin</code> / <code>Admin@123</code>
+          <p className="form-card__intro" style={{ textAlign: 'center', margin: '14px 0 0' }}>
+            <Link to="/forgot-password">Forgot your password?</Link>
           </p>
         </form>
       </div>

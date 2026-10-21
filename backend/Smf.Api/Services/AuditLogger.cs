@@ -48,7 +48,7 @@ public class AuditLogger(SmfDbContext db)
         {
             ActorId = actor.Id,
             ActorName = actor.Username,
-            ActorRole = actor.MembershipRole ?? actor.Role,
+            ActorRole = actor.RoleKeys,
             Action = action,
             EntityType = entityType,
             EntityId = entityId,
@@ -74,13 +74,15 @@ public class AuditLogger(SmfDbContext db)
         string attemptedAction,
         string entityType,
         int entityId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? entityRef = null)
     {
         Write(
             actor,
             AuditActions.PermissionDenied,
             entityType,
             entityId,
+            entityRef,
             details: $"Attempted: {attemptedAction}");
 
         await db.SaveChangesAsync(cancellationToken);

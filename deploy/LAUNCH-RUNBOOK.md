@@ -78,11 +78,21 @@ straight to the origin IP is refused, not the particular tool.
 - Add the production origins to the API's CORS policy in
   `backend/Smf.Api/Program.cs` (`https://saudimuaythai.sa`, the admin host) and
   drop the sslip.io entries once staging is retired.
-- Configure outbound mail so registration confirmations (REG-06) actually send:
-  `Email__Host`, `Email__Port`, `Email__User`, `Email__Password`,
-  `Email__From`. Without `Email__Host` the API writes each message to
-  `Email__OutboxPath` (default `<contentRoot>/data/outbox`) and logs it — useful
-  for staging, not acceptable for launch.
+- **Configure outbound mail.** Until `Email__Host` is set, every applicant
+  notification (§6: submission, completion request, approval, rejection,
+  renewal, expiry, suspension) is written to `Email__OutboxPath`
+  (default `/app/data/outbox`) instead of being sent, and the API logs a warning
+  at startup saying so. Set `Email__Host`, `Email__Port`, `Email__User`,
+  `Email__Password`, `Email__From` in `docker-compose.yml` (placeholders are
+  there). Confirm afterwards in the console: **Memberships → open a request →
+  Notifications** should read "Sent", not "Held in outbox".
+- **Configure SMS** the same way once a gateway is contracted (`Sms__Provider`);
+  until then SMS messages go to `/app/data/sms-outbox`. The approved workflow
+  asks for both channels, so leaving this unset is a known gap, not a silent one.
+- **Set `Admin__BaseUrl`** to the console's public address. Password-reset links
+  are built from it, so a wrong value emails an unusable link.
+- **Give each administrator an email address** (Users → edit → Email). An account
+  without one cannot use the self-service password reset.
 
 ---
 

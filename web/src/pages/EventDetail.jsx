@@ -60,6 +60,10 @@ export default function EventDetail() {
   const title = ev.title || (ar ? ev.titleAr : ev.titleEn);
   const cat = CATEGORY[ev.category] || { ar: ev.category, en: ev.category };
   const status = STATUS[ev.status] || { ar: ev.status, en: ev.status };
+  /* QA — events now carry a banner image. When there is none the card keeps its
+     current shape exactly, with no placeholder box. The title sits right below
+     it, so the image is decorative and takes an empty alt. */
+  const banner = String(ev.imageUrl || '').trim();
 
   return (
     <>
@@ -75,6 +79,14 @@ export default function EventDetail() {
       <section className="section--white">
         <div className="container" style={{ maxWidth: 760 }}>
           <div className="fed-nav-card" style={{ padding: '1.5rem' }}>
+            {banner && (
+              <img
+                className="fed-nav-card__img fed-nav-card__img--banner"
+                src={banner}
+                alt=""
+                loading="lazy"
+              />
+            )}
             <div className="fed-nav-card__cat">
               {ar ? cat.ar : cat.en} · {ar ? status.ar : status.en}
             </div>

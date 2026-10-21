@@ -2,17 +2,27 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLang } from '../../context/LanguageContext';
+import { SmartLink } from '../../content/useContent';
+import { useSiteContent } from '../../content/site';
 import { IconChevron } from '../icons/Icons';
 
 export default function Header() {
   const { t } = useTranslation();
   const { lang, toggleLang } = useLang();
+  const { site, navigation, navLabel, tx } = useSiteContent();
   const location = useLocation();
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const headerRef = useRef(null);
+
+  // Name, logo, and button link come from site content (Website Content in the
+  // admin console); the built-in wording stands in until it has loaded.
+  const brandName = (site && tx(site.identity?.name)) || t('govtBar.name');
+  const brandAlt = (site && site.identity?.name?.[lang === 'ar' ? 'en' : 'ar']) || t('govtBar.nameAlt');
+  const brandLogo = site?.identity?.logo || '/assets/images/logo.png';
+  const ctaUrl = navigation?.header?.tryMuaythaiUrl || '/try-muaythai';
 
   useEffect(() => {
     function onScroll() {
@@ -77,65 +87,65 @@ export default function Header() {
   }
 
   const navItems = [
-    { key: 'home', to: '/', label: t('nav.home') },
+    { key: 'home', to: '/', label: navLabel('home') },
     {
       key: 'federation',
-      label: t('nav.federation'),
+      label: navLabel('federation'),
       dropdown: [
         {
-          heading: t('nav.federation'),
+          heading: navLabel('federation'),
           links: [
-            { to: '/organization/overview', label: t('nav.federationOverview') },
-            { to: '/organization/history', label: t('nav.federationHistory') },
-            { to: '/organization/values', label: t('nav.federationValues') },
-            { to: '/organization/strategy', label: t('nav.federationStrategy') },
-            { to: '/organization/initiatives', label: t('nav.federationInitiatives') },
-            { to: '/organization/goals', label: t('nav.federationGoals') },
-            { to: '/organization/achievements', label: t('nav.federationAchievements') },
-            { to: '/organization/results-archive', label: t('nav.federationResultsArchive') },
-            { label: t('nav.pathways'), soon: true },
+            { to: '/organization/overview', label: navLabel('federationOverview') },
+            { to: '/organization/history', label: navLabel('federationHistory') },
+            { to: '/organization/values', label: navLabel('federationValues') },
+            { to: '/organization/strategy', label: navLabel('federationStrategy') },
+            { to: '/organization/initiatives', label: navLabel('federationInitiatives') },
+            { to: '/organization/goals', label: navLabel('federationGoals') },
+            { to: '/organization/achievements', label: navLabel('federationAchievements') },
+            { to: '/organization/results-archive', label: navLabel('federationResultsArchive') },
+            { label: navLabel('pathways'), soon: true },
           ],
         },
         {
-          heading: t('nav.governance'),
+          heading: navLabel('governance'),
           links: [
-            { to: '/governance/recognition', label: t('nav.governanceRecognition') },
-            { to: '/governance/hq', label: t('nav.governanceHq') },
-            { to: '/governance/committees', label: t('nav.governanceCommittees') },
-            { to: '/governance/health-doping', label: t('nav.governanceHealth') },
-            { to: '/governance/reports', label: t('nav.governanceReports') },
-            { to: '/governance/policies', label: t('nav.governancePolicies') },
+            { to: '/governance/recognition', label: navLabel('governanceRecognition') },
+            { to: '/governance/hq', label: navLabel('governanceHq') },
+            { to: '/governance/committees', label: navLabel('governanceCommittees') },
+            { to: '/governance/health-doping', label: navLabel('governanceHealth') },
+            { to: '/governance/reports', label: navLabel('governanceReports') },
+            { to: '/governance/policies', label: navLabel('governancePolicies') },
           ],
         },
       ],
     },
     {
       key: 'about-muaythai',
-      label: t('nav.aboutMuaythai'),
+      label: navLabel('aboutMuaythai'),
       dropdown: [
         {
           links: [
-            { to: '/about-muaythai/history', label: t('nav.aboutHistory') },
-            { to: '/about-muaythai/pillars', label: t('nav.aboutPillars') },
-            { to: '/about-muaythai/disciplines', label: t('nav.aboutDisciplines') },
-            { to: '/about-muaythai/rules', label: t('nav.aboutRules') },
-            { to: '/about-muaythai/equipment', label: t('nav.aboutEquipment') },
+            { to: '/about-muaythai/history', label: navLabel('aboutHistory') },
+            { to: '/about-muaythai/pillars', label: navLabel('aboutPillars') },
+            { to: '/about-muaythai/disciplines', label: navLabel('aboutDisciplines') },
+            { to: '/about-muaythai/rules', label: navLabel('aboutRules') },
+            { to: '/about-muaythai/equipment', label: navLabel('aboutEquipment') },
           ],
         },
       ],
     },
-    { key: 'news', to: '/news', label: t('nav.news') },
-    { key: 'activities', to: '/activities/calendar', label: t('nav.activities') },
+    { key: 'news', to: '/news', label: navLabel('news') },
+    { key: 'activities', to: '/activities/calendar', label: navLabel('activities') },
     {
       key: 'registration',
-      label: t('nav.registration'),
+      label: navLabel('registration'),
       dropdown: [
         {
           links: [
-            { to: '/registration/athlete', label: t('nav.registrationAthlete') },
-            { to: '/registration/club', label: t('nav.registrationClub') },
-            { to: '/registration/coach', label: t('nav.registrationCoach') },
-            { to: '/registration/official', label: t('nav.registrationOfficial') },
+            { to: '/registration/athlete', label: navLabel('registrationAthlete') },
+            { to: '/registration/club', label: navLabel('registrationClub') },
+            { to: '/registration/coach', label: navLabel('registrationCoach') },
+            { to: '/registration/official', label: navLabel('registrationOfficial') },
           ],
         },
       ],
@@ -148,8 +158,8 @@ export default function Header() {
    * appended to the drawer so a phone still reaches them from the one menu.
    */
   const drawerUtilityItems = [
-    { key: 'whistleblower', to: '/whistleblower', label: t('nav.whistleblower'), whistle: true },
-    { key: 'contact', to: '/contact', label: t('nav.contact') },
+    { key: 'whistleblower', to: '/whistleblower', label: navLabel('whistleblower'), whistle: true },
+    { key: 'contact', to: '/contact', label: navLabel('contact') },
   ];
 
   return (
@@ -157,11 +167,11 @@ export default function Header() {
       <header ref={headerRef} className={`site-header${scrolled ? ' scrolled' : ''}`}>
         <nav className="main-nav container">
           <div className="main-nav__inner">
-            <Link to="/" className="main-nav__brand" aria-label={t('govtBar.name')}>
-              <img className="main-nav__brand-mark" src="/assets/images/logo.png" alt="" />
+            <Link to="/" className="main-nav__brand" aria-label={brandName}>
+              <img className="main-nav__brand-mark" src={brandLogo} alt="" />
               <span className="main-nav__brand-text">
-                <span className="main-nav__brand-name">{t('govtBar.name')}</span>
-                <span className="main-nav__brand-alt">{t('govtBar.nameAlt')}</span>
+                <span className="main-nav__brand-name">{brandName}</span>
+                <span className="main-nav__brand-alt">{brandAlt}</span>
               </span>
             </Link>
 
@@ -172,7 +182,7 @@ export default function Header() {
                     <li key={item.key} className="main-nav__item">
                       <span className="main-nav__link main-nav__coming-soon">
                         {item.label}
-                        <span>{t('common.comingSoon')}</span>
+                        <span>{navLabel('comingSoon')}</span>
                       </span>
                     </li>
                   );
@@ -206,7 +216,7 @@ export default function Header() {
                                   link.soon ? (
                                     <li key={link.label} className="main-nav__coming-soon">
                                       <span>
-                                        {link.label} <span>{t('common.comingSoon')}</span>
+                                        {link.label} <span>{navLabel('comingSoon')}</span>
                                       </span>
                                     </li>
                                   ) : (
@@ -256,16 +266,16 @@ export default function Header() {
                   inside the drawer because the desktop button is hidden on
                   phones — the Arabic label is too long to sit beside the logo. */}
               <li className="main-nav__item main-nav__item--cta">
-                <Link to="/try-muaythai" className="nav-cta nav-cta--block">
-                  {t('nav.tryMuaythai')}
-                </Link>
+                <SmartLink to={ctaUrl} className="nav-cta nav-cta--block">
+                  {navLabel('tryMuaythai')}
+                </SmartLink>
               </li>
             </ul>
 
             <div className="main-nav__controls">
-              <Link to="/try-muaythai" className="nav-cta nav-cta--inline">
-                {t('nav.tryMuaythai')}
-              </Link>
+              <SmartLink to={ctaUrl} className="nav-cta nav-cta--inline">
+                {navLabel('tryMuaythai')}
+              </SmartLink>
               <button type="button" className="lang-toggle" onClick={toggleLang}>
                 {lang === 'ar' ? 'English' : 'عربي'}
               </button>

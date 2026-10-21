@@ -89,13 +89,16 @@ export function useScrollReveal(key) {
  * Animates `.kpi-counter` elements from 0 up to their `data-count-to` value
  * (falling back to their rendered text) the first time they become visible.
  * Preserves any thousands separators in the original string.
+ *
+ * Counters rendered after navigation — page content arrives from the API — are
+ * picked up as they appear, the same way useScrollReveal catches late cards.
  */
 export function useCountUp(key) {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    const counters = Array.from(document.querySelectorAll('.kpi-counter:not([data-counted])'));
-    if (!counters.length) return undefined;
+    const unwatched = () =>
+      Array.from(document.querySelectorAll('.kpi-counter:not([data-counted]):not([data-count-watched])'));
 
     const finalise = (el, text) => {
       el.textContent = text;
@@ -103,8 +106,11 @@ export function useCountUp(key) {
     };
 
     if (prefersReducedMotion() || !('IntersectionObserver' in window)) {
-      counters.forEach((el) => finalise(el, el.dataset.countTo ?? el.textContent));
-      return undefined;
+      const settle = () => unwatched().forEach((el) => finalise(el, el.dataset.countTo ?? el.textContent));
+      settle();
+      const mutation = new MutationObserver(settle);
+      mutation.observe(document.body, { childList: true, subtree: true });
+      return () => mutation.disconnect();
     }
 
     const run = (el) => {
@@ -144,7 +150,19 @@ export function useCountUp(key) {
       { threshold: 0.4 },
     );
 
-    counters.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    const watch = () =>
+      unwatched().forEach((el) => {
+        el.setAttribute('data-count-watched', '');
+        observer.observe(el);
+      });
+    watch();
+
+    const mutation = new MutationObserver(watch);
+    mutation.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      mutation.disconnect();
+    };
   }, [key]);
 }

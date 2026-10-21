@@ -1,0 +1,185 @@
+{
+  "key": "registration-hub",
+  "group": "participation",
+  "order": 10,
+  "titleEn": "Registration",
+  "titleAr": "التسجيل",
+  "route": "/registration",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "tag", "type": "text", "label": "Small label above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "text", "type": "textarea", "label": "Introduction" },
+        {
+          "name": "numbers",
+          "type": "list",
+          "label": "Key numbers",
+          "itemLabel": "Number",
+          "itemTitle": "label",
+          "fields": [
+            { "name": "value", "type": "string", "label": "Value", "help": "For example: 1,300+" },
+            { "name": "label", "type": "text", "label": "Label" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "steps",
+      "type": "group",
+      "label": "How it works",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Steps",
+          "itemLabel": "Step",
+          "itemTitle": "title",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "number", "type": "string", "label": "Number", "help": "For example: 1" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "text", "type": "textarea", "label": "Description" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "types",
+      "type": "group",
+      "label": "Registration types",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "note", "type": "textarea", "label": "Information note" },
+        { "name": "refPrefixLabel", "type": "text", "label": "Label before the reference prefix" },
+        { "name": "buttonLabel", "type": "text", "label": "Card button label" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Registration cards",
+          "itemLabel": "Registration type",
+          "itemTitle": "title",
+          "fields": [
+            { "name": "image", "type": "image", "label": "Image" },
+            { "name": "prefix", "type": "string", "label": "Reference prefix", "help": "For example: SMF-A" },
+            { "name": "title", "type": "text", "label": "Title" },
+            { "name": "description", "type": "textarea", "label": "Description" },
+            { "name": "url", "type": "url", "label": "Button link" }
+          ]
+        }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "tag": { "ar": "الاتحاد السعودي للملاكمة التايلندية", "en": "Saudi Muaythai Federation" },
+      "title": { "ar": "التسجيل الرسمي", "en": "Official Registration" },
+      "text": {
+        "ar": "اختر نوع التسجيل المناسب. يُخزّن كل طلب في قاعدة بيانات الاتحاد وتتلقى رقماً مرجعياً فور الإرسال.",
+        "en": "Choose your registration type below. All applications are stored in the SMF database and you will receive a reference number immediately upon submission."
+      },
+      "numbers": [
+        { "value": "1,300+", "label": { "ar": "رياضي مسجّل", "en": "Registered Athletes" } },
+        { "value": "4", "label": { "ar": "أنواع تسجيل", "en": "Registration Types" } },
+        { "value": "13", "label": { "ar": "منطقة نشطة", "en": "Active Regions" } },
+        { "value": "2019", "label": { "ar": "عام التأسيس", "en": "Founded" } }
+      ]
+    },
+    "steps": {
+      "label": { "ar": "كيف يعمل", "en": "How it Works" },
+      "heading": { "ar": "كيف تسير العملية", "en": "How It Works" },
+      "items": [
+        {
+          "number": "1",
+          "title": { "ar": "أكمل النموذج", "en": "Complete the Form" },
+          "text": {
+            "ar": "اختر نوع التسجيل المناسب وأدخل بياناتك بدقة.",
+            "en": "Select your registration type and enter your details accurately."
+          }
+        },
+        {
+          "number": "2",
+          "title": { "ar": "استلم الرقم المرجعي", "en": "Receive Reference Number" },
+          "text": {
+            "ar": "يصدر رقم مرجعي فور إرسال الطلب لمتابعة حالته.",
+            "en": "A reference number is issued immediately upon submission to track your application."
+          }
+        },
+        {
+          "number": "3",
+          "title": { "ar": "مراجعة الاتحاد", "en": "SMF Review" },
+          "text": {
+            "ar": "يراجع فريق الاتحاد طلبك والوثائق المرفقة.",
+            "en": "The federation team reviews your application and supporting documents."
+          }
+        },
+        {
+          "number": "4",
+          "title": { "ar": "إشعار بالقرار", "en": "Decision Notification" },
+          "text": {
+            "ar": "تصلك النتيجة رسمياً وتستطيع استلام وثائق التسجيل.",
+            "en": "You receive the official outcome and can collect your registration documents."
+          }
+        }
+      ]
+    },
+    "types": {
+      "label": { "ar": "التسجيل", "en": "Registration" },
+      "heading": { "ar": "اختر نوع التسجيل", "en": "Choose Your Registration Type" },
+      "note": {
+        "ar": "هذا النموذج تسجيل رسمي لدى الاتحاد. سيُحفظ طلبك وستتلقى رقماً مرجعياً فور الإرسال.",
+        "en": "This is an official registration form. Your application will be stored and reviewed by the federation. You will receive a reference number immediately upon submission."
+      },
+      "refPrefixLabel": { "ar": "رمز الطلب:", "en": "Reference prefix:" },
+      "buttonLabel": { "ar": "سجّل الآن", "en": "Register Now" },
+      "items": [
+        {
+          "image": "/assets/images/reg-athlete.svg",
+          "prefix": "SMF-A",
+          "title": { "ar": "تسجيل لاعب", "en": "Athlete Registration" },
+          "description": {
+            "ar": "سجّل بياناتك كرياضي لدى الاتحاد السعودي للملاكمة التايلندية.",
+            "en": "Submit your official registration as a Muaythai athlete with the Saudi Muaythai Federation (SMF)."
+          },
+          "url": "/registration/athlete"
+        },
+        {
+          "image": "/assets/images/reg-club.svg",
+          "prefix": "SMF-C",
+          "title": { "ar": "تسجيل نادي", "en": "Club Registration" },
+          "description": {
+            "ar": "سجّل ناديك أو مركزك التدريبي رسمياً لدى الاتحاد.",
+            "en": "Register your Muaythai club or training centre officially with the federation."
+          },
+          "url": "/registration/club"
+        },
+        {
+          "image": "/assets/images/reg-coach.svg",
+          "prefix": "SMF-T",
+          "title": { "ar": "تسجيل مدرب", "en": "Coach Registration" },
+          "description": {
+            "ar": "سجّل بياناتك للحصول على ترخيص التدريب من الاتحاد.",
+            "en": "Submit your official application for a coaching licence from the federation."
+          },
+          "url": "/registration/coach"
+        },
+        {
+          "image": "/assets/images/reg-official.svg",
+          "prefix": "SMF-O",
+          "title": { "ar": "تسجيل حكم / مسؤول", "en": "Official Registration" },
+          "description": {
+            "ar": "سجّل بياناتك كحكم أو مسؤول رسمي لدى الاتحاد.",
+            "en": "Register as a referee, judge, or official with the Saudi Muaythai Federation (SMF)."
+          },
+          "url": "/registration/official"
+        }
+      ]
+    }
+  }
+}

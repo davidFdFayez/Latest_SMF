@@ -7,7 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5080',
+        // Point the dev server at another API without editing this file:
+        //   SMF_API_PROXY=http://127.0.0.1:5198 npm run dev
+        target: process.env.SMF_API_PROXY || 'http://localhost:5080',
         changeOrigin: true,
       },
     },

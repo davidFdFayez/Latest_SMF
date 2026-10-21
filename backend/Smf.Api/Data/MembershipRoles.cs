@@ -4,7 +4,7 @@ namespace Smf.Api.Data;
 /// الأدوار والصلاحيات وقواعد الاعتماد — the membership approval matrix from §6
 /// of the Phase 2 workflow document.
 ///
-/// This is deliberately separate from <see cref="AdminRoles"/>. That type says
+/// These were designed separately from <see cref="AdminRoles"/>. That type says
 /// which <em>areas of the site</em> a federation employee administers (news,
 /// events, HR…). This one says what a person may do to a <em>membership
 /// request</em>, which §6 grants along a different axis entirely — most notably,
@@ -103,26 +103,9 @@ public static class MembershipRoles
     public static RoleDefinition? Get(string? role) =>
         role is null ? null : Definitions.FirstOrDefault(d => d.Key == role);
 
-    public static bool IsValid(string? role) => Get(role) is not null;
-
-    /// <summary>
-    /// Whether <paramref name="membershipRole"/> may perform <paramref name="action"/>.
-    ///
-    /// <paramref name="adminRole"/> is consulted only to honour the existing
-    /// super admin, who administers everything by definition
-    /// (<see cref="AdminRoles.SuperAdmin"/>). Every other site role grants
-    /// nothing here — §6 permissions are held solely through a membership role,
-    /// so an events or HR account cannot touch the register by side effect.
-    /// </summary>
-    public static bool Can(string? membershipRole, string? adminRole, string action)
-    {
-        if (adminRole == AdminRoles.SuperAdmin) return true;
-        return Get(membershipRole)?.Grants.Contains(action) ?? false;
-    }
-
-    /// <summary>The effective grants for a user, for the admin UI to render against.</summary>
-    public static string[] GrantsFor(string? membershipRole, string? adminRole) =>
-        adminRole == AdminRoles.SuperAdmin
-            ? Actions.All
-            : Get(membershipRole)?.Grants ?? [];
+    // These five roles are seeded into the database alongside the site roles
+    // (see SeedData). Each §6 action becomes the permission
+    // AdminPermissions.ForMembershipAction(action), so the separation above —
+    // reviewing without approving — survives as distinct permissions, and a
+    // role without them cannot reach the register however else it is granted.
 }

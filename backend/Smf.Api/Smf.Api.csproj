@@ -14,7 +14,10 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
-    <PackageReference Include="Microsoft.OpenApi" Version="2.3.0" />
+    <!-- Pinned above the version EF Core pulls in: 2.1.11 carries a high-severity
+         SQLite advisory (GHSA-2m69-gcr7-jv3q). -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.13" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,5 +30,13 @@
     <Content Update="ifma-news.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Website content definitions (schema + default text per page), embedded
+         so the API can never start without them. See Data/ContentCatalog.cs. -->
+    <Content Remove="Data\Content\**" />
+    <None Remove="Data\Content\**" />
+    <EmbeddedResource Include="Data\Content\*.json" LogicalName="content/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

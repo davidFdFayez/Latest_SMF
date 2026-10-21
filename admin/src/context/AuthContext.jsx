@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { login as loginRequest } from '../api/auth'
-import { clearSession, getStoredUser, getToken, onUnauthorized } from '../api/client'
+import { fetchProfile, login as loginRequest } from '../api/auth'
+import { clearSession, getStoredUser, getToken, onUnauthorized, setStoredUser } from '../api/client'
 
 const AuthContext = createContext(null)
 
@@ -29,6 +29,23 @@ export function AuthProvider({ children }) {
     setUserState(null)
   }, [])
 
+  /** Pulls the account's current roles and permissions from the API. */
+  const refreshUser = useCallback(async () => {
+    const profile = await fetchProfile()
+    setUserState((previous) => {
+      const next = { ...profile, expiresAt: previous?.expiresAt ?? null }
+      setStoredUser(next)
+      return next
+    })
+    return profile
+  }, [])
+
+  // A session restored from storage may predate a role change, so refresh it
+  // once per load. Failures are ignored: a 401 already signs the user out.
+  useEffect(() => {
+    if (token) refreshUser().catch(() => {})
+  }, [token, refreshUser])
+
   /**
    * Whether the signed-in user holds a §6 membership permission.
    *
@@ -41,16 +58,41 @@ export function AuthProvider({ children }) {
     [user],
   )
 
+  /** Whether the user holds any of the given permissions ("*" holds them all). Presentation only. */
+  const hasPermission = useCallback(
+    (...permissions) => {
+      const held = Array.isArray(user?.permissions) ? user.permissions : []
+      return held.includes('*') || permissions.flat().some((permission) => held.includes(permission))
+    },
+    [user],
+  )
+
+  /**
+   * Whether a console section is open to the user. A section names either a
+   * site permission or, for the membership register, a §6 action; one naming
+   * neither is open to every signed-in account.
+   */
+  const canAccess = useCallback(
+    ({ permission, membershipAction } = {}) => {
+      if (membershipAction) return can(membershipAction)
+      return !permission || hasPermission(permission)
+    },
+    [can, hasPermission],
+  )
+
   const value = useMemo(
     () => ({
       token,
       user,
       isAuthenticated: Boolean(token),
       can,
+      hasPermission,
+      canAccess,
       login,
       logout,
+      refreshUser,
     }),
-    [token, user, can, login, logout],
+    [token, user, can, hasPermission, canAccess, login, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

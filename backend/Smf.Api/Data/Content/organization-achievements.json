@@ -1,0 +1,673 @@
+{
+  "key": "organization-achievements",
+  "group": "federation",
+  "order": 70,
+  "titleEn": "Achievements",
+  "titleAr": "الإنجازات",
+  "route": "/organization/achievements",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "help": "The three numbers are counted from the results archive; only their labels are edited here.",
+      "fields": [
+        { "name": "tag", "type": "text", "label": "Small tag above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        { "name": "goldsLabel", "type": "text", "label": "Label under the international golds count" },
+        { "name": "medalsLabel", "type": "text", "label": "Label under the total medals count" },
+        { "name": "championshipsLabel", "type": "text", "label": "Label under the championships count" }
+      ]
+    },
+    {
+      "name": "medals",
+      "type": "group",
+      "label": "Medal count banner",
+      "help": "The gold, silver and bronze counts are counted from the results archive.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        { "name": "period", "type": "string", "label": "Period shown under each count", "help": "For example: 2020–2026" },
+        { "name": "goldLabel", "type": "text", "label": "Gold label" },
+        { "name": "silverLabel", "type": "text", "label": "Silver label" },
+        { "name": "bronzeLabel", "type": "text", "label": "Bronze label" }
+      ]
+    },
+    {
+      "name": "champions",
+      "type": "group",
+      "label": "National team champions",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "intro", "type": "textarea", "label": "Introduction" },
+        {
+          "name": "rows",
+          "type": "list",
+          "label": "Athlete rows",
+          "itemLabel": "Row",
+          "itemTitle": "label",
+          "help": "Row labels alternate amber and green, in list order.",
+          "fields": [
+            { "name": "label", "type": "text", "label": "Row label" },
+            {
+              "name": "athletes",
+              "type": "list",
+              "label": "Athletes",
+              "itemLabel": "Athlete",
+              "itemTitle": "name",
+              "fields": [
+                {
+                  "name": "photo",
+                  "type": "image",
+                  "label": "Photo",
+                  "help": "Only a licensed photograph of this athlete. Keep the placeholder silhouette until one is supplied."
+                },
+                { "name": "tag", "type": "text", "label": "Medal tag", "help": "Shown over the photo, for example: 🥇 World Champion" },
+                { "name": "category", "type": "text", "label": "Team" },
+                { "name": "name", "type": "text", "label": "Name" },
+                { "name": "detail", "type": "text", "label": "Division or weight class" },
+                {
+                  "name": "achievements",
+                  "type": "list",
+                  "label": "Achievement lines",
+                  "itemLabel": "Line",
+                  "fields": [
+                    { "name": "text", "type": "text", "label": "Line" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "international",
+      "type": "group",
+      "label": "International achievements",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "years",
+          "type": "list",
+          "label": "Year blocks",
+          "itemLabel": "Year block",
+          "itemTitle": "year",
+          "fields": [
+            { "name": "year", "type": "string", "label": "Year", "help": "For example: 2026" },
+            {
+              "name": "style",
+              "type": "select",
+              "label": "Colour",
+              "help": "Colour of the year badge and the side border.",
+              "options": [
+                { "value": "gold", "label": "Gold" },
+                { "value": "silver", "label": "Silver" },
+                { "value": "bronze", "label": "Bronze" },
+                { "value": "institutional", "label": "Institutional (green)" }
+              ]
+            },
+            { "name": "title", "type": "text", "label": "Title" },
+            {
+              "name": "items",
+              "type": "list",
+              "label": "Achievements",
+              "itemLabel": "Achievement",
+              "fields": [
+                { "name": "icon", "type": "string", "label": "Icon (emoji)" },
+                { "name": "text", "type": "text", "label": "Text" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "saudiGames",
+      "type": "group",
+      "label": "Saudi Games",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "intro", "type": "textarea", "label": "Introduction" },
+        {
+          "name": "editions",
+          "type": "list",
+          "label": "Editions",
+          "itemLabel": "Edition",
+          "itemTitle": "edition",
+          "fields": [
+            { "name": "edition", "type": "text", "label": "Edition title" },
+            {
+              "name": "medalists",
+              "type": "list",
+              "label": "Gold medalists",
+              "itemLabel": "Medalist",
+              "fields": [
+                { "name": "name", "type": "text", "label": "Name — weight class" }
+              ]
+            }
+          ]
+        },
+        { "name": "highlightTitle", "type": "text", "label": "Highlight box title" },
+        { "name": "highlightBody", "type": "textarea", "label": "Highlight box text" }
+      ]
+    },
+    {
+      "name": "development",
+      "type": "group",
+      "label": "Developmental achievements",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "badge", "type": "string", "label": "Period badge", "help": "For example: 2019–2026" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Achievements",
+          "itemLabel": "Achievement",
+          "fields": [
+            { "name": "icon", "type": "string", "label": "Icon (emoji)" },
+            { "name": "text", "type": "text", "label": "Text" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "institutional",
+      "type": "group",
+      "label": "Institutional milestones",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Timeline entries",
+          "itemLabel": "Milestone",
+          "fields": [
+            { "name": "year", "type": "string", "label": "Year" },
+            { "name": "text", "type": "text", "label": "Text" }
+          ]
+        }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "tag": { "ar": "الإنجازات الدولية والوطنية", "en": "International & National Achievements" },
+      "title": { "ar": "إنجازات الاتحاد السعودي للملاكمة التايلندية", "en": "Federation Achievements" },
+      "subtitle": {
+        "ar": "سجلٌ يوثق البطولات والميداليات والمحطات المؤسسية التي شكّلت مسيرة الاتحاد السعودي للمواي تاي ورسّخت حضوره على المستويين المحلي والدولي",
+        "en": "A record of championships, medals, and institutional milestones that have defined SMF's growing presence locally and internationally."
+      },
+      "goldsLabel": { "ar": "ميدالية ذهبية دولية", "en": "International Golds" },
+      "medalsLabel": { "ar": "ميدالية دولية إجمالية", "en": "International Medals" },
+      "championshipsLabel": { "ar": "بطولة دولية", "en": "Championships" }
+    },
+    "medals": {
+      "label": { "ar": "الحصيلة الدولية 2020–2026", "en": "International Medal Count 2020–2026" },
+      "title": { "ar": "الميداليات السعودية على الساحة العالمية", "en": "Saudi Medals on the World Stage" },
+      "subtitle": {
+        "ar": "منذ أولى مشاركاتها الدولية، أثبتت المواي تاي السعودية حضورها القوي في أكبر بطولات العالم.",
+        "en": "Since its first international appearances, Saudi Muaythai has established a powerful presence at the world's biggest championships."
+      },
+      "period": "2020–2026",
+      "goldLabel": { "ar": "ذهبية", "en": "Gold" },
+      "silverLabel": { "ar": "فضية", "en": "Silver" },
+      "bronzeLabel": { "ar": "برونزية", "en": "Bronze" }
+    },
+    "champions": {
+      "label": { "ar": "أبطالنا", "en": "Our Champions" },
+      "heading": { "ar": "أبطال المنتخب الوطني", "en": "National Team Champions" },
+      "intro": {
+        "ar": "رياضيون سعوديون رفعوا علم المملكة في أبرز البطولات الدولية.",
+        "en": "Saudi athletes who have flown the Kingdom's flag at the world's biggest championships."
+      },
+      "rows": [
+        {
+          "label": { "ar": "أبطال العالم المميزون", "en": "Featured World Champions" },
+          "athletes": [
+            {
+              "photo": "/assets/images/athlete-placeholder.svg",
+              "tag": { "ar": "🥇 بطلة العالم مرتين", "en": "🥇 2× World Champion" },
+              "category": { "ar": "المنتخب الوطني النسائي", "en": "Women's National Team" },
+              "name": { "ar": "هتان السف", "en": "Hattan Alsaif" },
+              "detail": { "ar": "فئة 54 كجم", "en": "54 kg Category" },
+              "achievements": [
+                {
+                  "text": {
+                    "ar": "🥇 بطلة العالم IFMA 2023 (بانكوك) — أول بطلة عالمية سعودية",
+                    "en": "🥇 IFMA World Champion 2023 (Bangkok) — First Saudi Female World Champion"
+                  }
+                },
+                { "text": { "ar": "🥇 بطلة ألعاب القتال العالمية 2023 (الرياض)", "en": "🥇 World Combat Games Champion 2023 (Riyadh)" } }
+              ]
+            },
+            {
+              "photo": "/assets/images/athlete-placeholder.svg",
+              "tag": { "ar": "🥇 بطل ألعاب القتال", "en": "🥇 WCG Champion" },
+              "category": { "ar": "المنتخب الوطني الرجالي", "en": "Men's National Team" },
+              "name": { "ar": "عناد باعويضان", "en": "Inad Baowaydhan" },
+              "detail": { "ar": "فئة الكبار", "en": "Senior Division" },
+              "achievements": [
+                { "text": { "ar": "🥇 بطل ألعاب القتال العالمية 2023 (الرياض)", "en": "🥇 World Combat Games Gold Medalist 2023 (Riyadh)" } }
+              ]
+            },
+            {
+              "photo": "/assets/images/athlete-placeholder.svg",
+              "tag": { "ar": "🥇 بطل العالم", "en": "🥇 World Champion" },
+              "category": { "ar": "المنتخب الوطني الرجالي", "en": "Men's National Team" },
+              "name": { "ar": "البراء العمودي", "en": "Albaraa Alamoudi" },
+              "detail": { "ar": "فئة 57 كجم", "en": "57 kg Category" },
+              "achievements": [
+                {
+                  "text": {
+                    "ar": "🥇 بطل العالم IFMA للكبار 2024 — أول رياضي سعودي ذكر يُحرز ذهبية العالم",
+                    "en": "🥇 IFMA Senior World Champion 2024 — First Saudi Male World Champion"
+                  }
+                },
+                { "text": { "ar": "🥈 فضية ألعاب القتال العالمية 2023 (الرياض)", "en": "🥈 World Combat Games Silver Medalist 2023 (Riyadh)" } }
+              ]
+            }
+          ]
+        },
+        {
+          "label": { "ar": "أبطال الشباب والبارا", "en": "Youth & Para World Champions" },
+          "athletes": [
+            {
+              "photo": "/assets/images/athlete-placeholder.svg",
+              "tag": { "ar": "🥇 بطلة العالم للشباب", "en": "🥇 Youth World Champion" },
+              "category": { "ar": "منتخب الشباب النسائي", "en": "Women's Youth National Team" },
+              "name": { "ar": "فاطمة كشميري", "en": "Fatimah Kashmiri" },
+              "detail": { "ar": "فئة الشباب", "en": "Youth Division" },
+              "achievements": [
+                { "text": { "ar": "🥇 بطلة العالم للشباب IFMA 2025 (أبوظبي)", "en": "🥇 IFMA Youth World Champion 2025 (Abu Dhabi)" } }
+              ]
+            },
+            {
+              "photo": "/assets/images/athlete-placeholder.svg",
+              "tag": { "ar": "🥇 بطلة العالم للبارا", "en": "🥇 Para World Champion" },
+              "category": { "ar": "المنتخب الوطني — بارا", "en": "National Team — Para" },
+              "name": { "ar": "الجوهرة الهزاء", "en": "Aljawhara Alhazza" },
+              "detail": { "ar": "بارا — إعاقة بصرية", "en": "Para Visual Impairment" },
+              "achievements": [
+                {
+                  "text": {
+                    "ar": "🥇 بطلة العالم IFMA للشباب 2025 (أبوظبي) — فئة بارا الإعاقة البصرية",
+                    "en": "🥇 IFMA Youth World Champion 2025 (Abu Dhabi) — Para Visual Impairment"
+                  }
+                }
+              ]
+            },
+            {
+              "photo": "/assets/images/athlete-placeholder.svg",
+              "tag": { "ar": "🥇 ذهبيتان عالميتان", "en": "🥇 2× Gold Medalist" },
+              "category": { "ar": "المنتخب الوطني — بارا", "en": "National Team — Para" },
+              "name": { "ar": "علي الناصر", "en": "Ali Alnasser" },
+              "detail": { "ar": "بارا مواي تاي", "en": "Para Muaythai" },
+              "achievements": [
+                { "text": { "ar": "🥇 ذهبية ألعاب القتال العالمية 2023 (الرياض)", "en": "🥇 World Combat Games Gold 2023 (Riyadh)" } },
+                { "text": { "ar": "🥇 بطل العالم للبارا مواي تاي IFMA 2024", "en": "🥇 IFMA Para World Champion 2024" } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "international": {
+      "label": { "ar": "دولي", "en": "International" },
+      "heading": { "ar": "الإنجازات الدولية", "en": "International Achievements" },
+      "years": [
+        {
+          "year": "2026",
+          "style": "gold",
+          "title": { "ar": "أول مشاركة جامعية سعودية — البرازيل 2026", "en": "FISU World University Combat Sports Championships — Brazil 2026" },
+          "items": [
+            {
+              "icon": "🏅",
+              "text": {
+                "ar": "أول مشاركة سعودية في المواي تاي تحت رعاية الاتحاد الدولي للرياضة الجامعية (FISU).",
+                "en": "First Saudi Muaythai participation under FISU — University World Championships."
+              }
+            },
+            {
+              "icon": "🥉",
+              "text": {
+                "ar": "3 رياضيين سعوديين — 3 ميداليات برونزية — نسبة تأهل لمنصة التتويج 100%.",
+                "en": "3 athletes represented Saudi Arabia — 3 bronze medals — 100% podium conversion rate."
+              }
+            }
+          ]
+        },
+        {
+          "year": "2025",
+          "style": "gold",
+          "title": { "ar": "بطولة العالم للشباب — أبوظبي 2025", "en": "IFMA Youth World Championships — Abu Dhabi 2025" },
+          "items": [
+            {
+              "icon": "🥇",
+              "text": { "ar": "فاطمة كشميري: بطلة العالم للشباب IFMA 2025.", "en": "Fatimah Kashmiri: IFMA Youth World Champion 2025." }
+            },
+            {
+              "icon": "🥇",
+              "text": {
+                "ar": "الجوهرة الهزاء: بطلة العالم للشباب IFMA 2025 — فئة بارا الإعاقة البصرية.",
+                "en": "Aljawhara Alhazza: IFMA Youth World Champion 2025 (Abu Dhabi) — Para Visual Impairment."
+              }
+            },
+            {
+              "icon": "🥈",
+              "text": { "ar": "لولوة الطيار: فضية بطولة العالم للشباب 2025.", "en": "Lulwa Al-Tayyar: Youth World Silver Medalist 2025." }
+            },
+            {
+              "icon": "🥉",
+              "text": { "ar": "8 ميداليات برونزية إضافية في البطولة.", "en": "8 additional Bronze medals at the IFMA Youth Championship." }
+            },
+            {
+              "icon": "📊",
+              "text": {
+                "ar": "11 ميدالية إجمالاً — أفضل أداء تاريخي للمنتخب الشبابي السعودي.",
+                "en": "11 medals total — historic performance by the Saudi Youth National Team."
+              }
+            },
+            {
+              "icon": "🥉",
+              "text": {
+                "ar": "ألعاب CISM العالمية العسكرية — يوليو 2025: 3 ميداليات برونزية.",
+                "en": "CISM World Military Games — July 2025: 3 Bronze medals."
+              }
+            }
+          ]
+        },
+        {
+          "year": "2024",
+          "style": "gold",
+          "title": { "ar": "بطولة العالم للكبار — أول ذهبية ذكور سعودية", "en": "IFMA Senior World Championship — First Saudi Male Gold" },
+          "items": [
+            {
+              "icon": "🥇",
+              "text": {
+                "ar": "البراء العمودي: أول رياضي سعودي ذكر يُحرز ذهبية بطولة العالم للكبار.",
+                "en": "Albaraa Alamoudi: first Saudi male IFMA Senior World Champion."
+              }
+            },
+            { "icon": "🥇", "text": { "ar": "علي الناصر: ذهبية في فئة البارا مواي تاي.", "en": "Ali Alnasser: gold in Para Muaythai." } },
+            {
+              "icon": "🏅",
+              "text": {
+                "ar": "تمثيل في الفعالية الاستعراضية بالقرية الأولمبية — باريس 2024.",
+                "en": "Olympic Village exhibition participation — Paris 2024."
+              }
+            },
+            {
+              "icon": "📊",
+              "text": { "ar": "الحصيلة الدولية: 2 ذهبية، 1 فضية، 11 برونزية.", "en": "International total: 2 gold, 1 silver, 11 bronze medals." }
+            }
+          ]
+        },
+        {
+          "year": "2023",
+          "style": "gold",
+          "title": { "ar": "ذهب عالمي وألعاب القتال العالمية في الرياض", "en": "World Gold & World Combat Games in Riyadh" },
+          "items": [
+            {
+              "icon": "🥇",
+              "text": {
+                "ar": "هتان السف: أول رياضية سعودية تُحرز ذهبية بطولة العالم للكبار تحت إشراف IFMA.",
+                "en": "Hattan Alsaif: first Saudi female IFMA Senior World Champion."
+              }
+            },
+            {
+              "icon": "🥇",
+              "text": {
+                "ar": "ألعاب القتال العالمية — الرياض: 3 ذهبيات (هتان السف، عناد باعويضان، علي الناصر).",
+                "en": "World Combat Games — Riyadh: 3 gold medals (Hattan Alsaif, Inad Baowaydhan, Ali Alnasser)."
+              }
+            },
+            {
+              "icon": "⭐",
+              "text": {
+                "ar": "تعيين سمو الأمير فهد نائباً لرئيس IFMA — أول سعودي في قيادة الاتحاد الدولي.",
+                "en": "HRH Prince Fahad appointed Vice President of IFMA — first Saudi in IFMA leadership."
+              }
+            }
+          ]
+        },
+        {
+          "year": "2022",
+          "style": "silver",
+          "title": { "ar": "أول مشاركة عربية وكأس الملك", "en": "Arab Championship Debut & King's Cup" },
+          "items": [
+            { "icon": "🌍", "text": { "ar": "أول مشاركة في البطولة العربية للملاكمة التايلندية.", "en": "Arab Muaythai Championship debut." } },
+            {
+              "icon": "🥈",
+              "text": {
+                "ar": "بطولة العالم للشباب — كوالالمبور: 9 برونزيات و3 فضيات.",
+                "en": "Youth World Championship — Kuala Lumpur: 9 bronze and 3 silver medals."
+              }
+            },
+            { "icon": "🏆", "text": { "ar": "كأس الملك — بانكوك: لقب دولي مرموق.", "en": "King's Cup — Bangkok: prestigious international title." } }
+          ]
+        },
+        {
+          "year": "2021",
+          "style": "silver",
+          "title": { "ar": "بطولة العالم IFMA — بانكوك 2021", "en": "IFMA World Championship — Bangkok 2021" },
+          "items": [
+            {
+              "icon": "🥈",
+              "text": {
+                "ar": "عزام العمري: فضية بطولة العالم — أول ميدالية للمنتخب الرجالي في بطولة العالم IFMA.",
+                "en": "Azzam Al Omary: World Championship silver — the men's squad's first IFMA World Championship medal."
+              }
+            },
+            {
+              "icon": "🥉",
+              "text": { "ar": "ميداليتان برونزيتان إضافيتان للمنتخب الوطني.", "en": "2 additional bronze medals for the national team." }
+            }
+          ]
+        },
+        {
+          "year": "2020",
+          "style": "institutional",
+          "title": { "ar": "المنافسة الافتراضية لـ IFMA وتحدي Max Fit", "en": "IFMA Virtual Competition & Max Fit Challenge" },
+          "items": [
+            {
+              "icon": "🏅",
+              "text": {
+                "ar": "مشاركة فاعلة في المنافسة الافتراضية الدولية وإبراز قدرات الرياضيين السعوديين.",
+                "en": "Active participation in the international virtual competition, showcasing Saudi athletes' capabilities."
+              }
+            }
+          ]
+        },
+        {
+          "year": "2019",
+          "style": "bronze",
+          "title": { "ar": "أول ميدالية على الساحة الدولية — تشونغجو، كوريا الجنوبية", "en": "First Medal on the International Stage — Chungju, South Korea" },
+          "items": [
+            {
+              "icon": "🥉",
+              "text": {
+                "ar": "عبدالله القحطاني، سلطان مؤمن، يوسف الحربي: 3 ميداليات برونزية في بطولة العالم لفنون القتال (Chungju World Martial Arts Masterships).",
+                "en": "Abdullah Alkahtani, Sultan Momen, Yousif Alharby: 3 bronze medals at the Chungju World Martial Arts Masterships."
+              }
+            },
+            {
+              "icon": "🏅",
+              "text": {
+                "ar": "أول ميداليات دولية للاتحاد السعودي للملاكمة التايلندية، تحققت في عام تأسيسه.",
+                "en": "SMF's first international medals, won in its founding year."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "saudiGames": {
+      "label": { "ar": "وطني", "en": "National" },
+      "heading": { "ar": "المواي تاي في الألعاب السعودية", "en": "Muaythai at the Saudi Games" },
+      "intro": {
+        "ar": "الحاصدين على الذهب في المواي تاي في الألعاب السعودية الثلاث.",
+        "en": "Muaythai gold medalists across three editions of the Saudi Games."
+      },
+      "editions": [
+        {
+          "edition": { "ar": "النسخة الأولى — 2022", "en": "1st Edition — 2022" },
+          "medalists": [
+            { "name": { "ar": "هتان السف — 51 كجم", "en": "Hattan Alsaif — 51kg" } },
+            { "name": { "ar": "خالد الدواليبي — 57 كجم", "en": "Khalid Aldawalibi — 57kg" } },
+            { "name": { "ar": "عبدالله القحطاني — 67 كجم", "en": "Abdullah Alqahtani — 67kg" } },
+            { "name": { "ar": "عمر الصوم — 77 كجم", "en": "Omar Alsoum — 77kg" } }
+          ]
+        },
+        {
+          "edition": { "ar": "النسخة الثانية — 2023", "en": "2nd Edition — 2023" },
+          "medalists": [
+            { "name": { "ar": "هتان السف — 54 كجم", "en": "Hattan Alsaif — 54kg" } },
+            { "name": { "ar": "أحمد روسلي — 57 كجم", "en": "Ahmed Rosly — 57kg" } },
+            { "name": { "ar": "عثمان إسادوي — 63.5 كجم", "en": "Othmane Essadouie — 63.5kg" } },
+            { "name": { "ar": "سفيان مرزق — 75 كجم", "en": "Soufian Merzaq — 75kg" } }
+          ]
+        },
+        {
+          "edition": { "ar": "النسخة الثالثة — 2024", "en": "3rd Edition — 2024" },
+          "medalists": [
+            { "name": { "ar": "هتان السف — 54 كجم", "en": "Hattan Alsaif — 54kg" } },
+            { "name": { "ar": "البراء العمودي — 57 كجم", "en": "Albaraa Alamoudi — 57kg" } },
+            { "name": { "ar": "راعد المصطفى — 75 كجم", "en": "Raed Almostafa — 75kg" } }
+          ]
+        }
+      ],
+      "highlightTitle": { "ar": "بطولة المملكة — النسخة الخامسة 2024", "en": "Kingdom Championship — 5th Edition 2024" },
+      "highlightBody": {
+        "ar": "شهدت النسخة الخامسة من بطولة المملكة للملاكمة التايلندية (2024) مشاركةً قياسية تجاوزت 480 رياضياً من مختلف مناطق المملكة والدول الخليجية المجاورة، مما يؤكد مكانة المواي تاي رياضةً جماهيرية رائدة في المملكة.",
+        "en": "The 5th Kingdom Championship (2024) recorded unprecedented participation of over 480 athletes from across Saudi Arabia and neighbouring Gulf countries, confirming Muaythai's status as a leading competitive sport in the Kingdom."
+      }
+    },
+    "development": {
+      "label": { "ar": "تطوير", "en": "Development" },
+      "heading": { "ar": "الإنجازات التطويرية", "en": "Developmental Achievements" },
+      "badge": "2019–2026",
+      "items": [
+        {
+          "icon": "👩",
+          "text": {
+            "ar": "استضافة أول بطولة نسائية حصرية للملاكمة التايلندية (2021).",
+            "en": "Hosted the first-ever women-only Muaythai championship (2021)."
+          }
+        },
+        { "icon": "🤝", "text": { "ar": "تنظيم أول بطولة مختلطة الجنسين (2021).", "en": "Organized the first mixed-gender championship (2021)." } },
+        {
+          "icon": "📋",
+          "text": {
+            "ar": "ورش عمل معترف بها دولياً للمسؤولين التقنيين بالشراكة مع IFMA.",
+            "en": "Conducted internationally recognized Technical Officials Workshops with IFMA."
+          }
+        },
+        {
+          "icon": "🏕️",
+          "text": {
+            "ar": "إنشاء معسكرات تدريبية إقليمية لدعم برامج تطوير الناشئين.",
+            "en": "Established regional training camps supporting youth development programs."
+          }
+        },
+        {
+          "icon": "♿",
+          "text": {
+            "ar": "إطلاق برنامج البارا مواي تاي وتوسيع مشاركة ذوي الإعاقة (2023).",
+            "en": "Launched Para Muaythai program and expanded inclusive athlete participation (2023)."
+          }
+        },
+        {
+          "icon": "🌟",
+          "text": {
+            "ar": "تطوير مسارات المنتخب الشبابي وتوسيع قاعدة الرياضيين الشباب (2024).",
+            "en": "Developed Youth National Team pathways and expanded athlete pipelines (2024)."
+          }
+        },
+        {
+          "icon": "🏆",
+          "text": {
+            "ar": "إنجاز تاريخي للمنتخب الشبابي في بطولة العالم — أبوظبي 2025 (11 ميدالية).",
+            "en": "Historic Youth National Team performance at IFMA Youth Worlds — Abu Dhabi 2025 (11 medals)."
+          }
+        },
+        {
+          "icon": "🎓",
+          "text": {
+            "ar": "أول مشاركة في الرياضة الجامعية الدولية تحت رعاية FISU — البرازيل 2026.",
+            "en": "First Saudi participation in university Muaythai under FISU — Brazil 2026."
+          }
+        }
+      ]
+    },
+    "institutional": {
+      "label": { "ar": "مؤسسي", "en": "Institutional" },
+      "heading": { "ar": "المعالم المؤسسية", "en": "Institutional Milestones" },
+      "items": [
+        {
+          "year": "2019",
+          "text": {
+            "ar": "تأسيس الاتحاد رسمياً تحت مظلة اللجنة الأولمبية والبارالمبية السعودية.",
+            "en": "SMF officially established under the Saudi Olympic & Paralympic Committee (SOPC)."
+          }
+        },
+        {
+          "year": "2020",
+          "text": {
+            "ar": "الاعتراف الرسمي والانضمام إلى أسرة IFMA الدولية.",
+            "en": "Achieved official recognition from IFMA, joining the global Muaythai family."
+          }
+        },
+        {
+          "year": "2023",
+          "text": {
+            "ar": "سمو الأمير فهد بن منصور يُعيَّن نائباً لرئيس IFMA — أول سعودي في قيادة الاتحاد الدولي.",
+            "en": "HRH Prince Fahad bin Mansour appointed Vice President of IFMA — first Saudi in IFMA leadership."
+          }
+        },
+        {
+          "year": "2023",
+          "text": {
+            "ar": "المملكة العربية السعودية تستضيف منافسات المواي تاي ضمن ألعاب القتال العالمية — الرياض 2023.",
+            "en": "Saudi Arabia hosted Muaythai competition at the World Combat Games — Riyadh 2023."
+          }
+        },
+        {
+          "year": "2024",
+          "text": {
+            "ar": "رياضيون سعوديون يُحرزون ألقاب بطولة العالم في فئتَي الكبار والبارا — إنجاز تاريخي.",
+            "en": "Saudi athletes secured historic World Championship titles in Senior and Para divisions."
+          }
+        },
+        {
+          "year": "2025",
+          "text": {
+            "ar": "المنتخب الشبابي يُحقق ألقاباً عالمية متعددة في بطولة العالم للشباب IFMA — أبوظبي 2025.",
+            "en": "Youth National Team achieved multiple World Championship titles at IFMA Youth Worlds — Abu Dhabi 2025."
+          }
+        },
+        {
+          "year": "2025",
+          "text": {
+            "ar": "أول مشاركة سعودية في ألعاب CISM العالمية العسكرية — 3 ميداليات برونزية.",
+            "en": "First Saudi participation in CISM World Military Games — 3 Bronze medals."
+          }
+        },
+        {
+          "year": "2026",
+          "text": {
+            "ar": "أول مشاركة سعودية في الرياضة الجامعية الدولية (FISU) — بطولة العالم للقتالية — البرازيل 2026.",
+            "en": "First Saudi Muaythai participation under FISU at the World University Combat Sports Championships — Brazil 2026."
+          }
+        }
+      ]
+    }
+  }
+}

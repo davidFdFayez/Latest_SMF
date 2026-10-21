@@ -4,6 +4,7 @@ import { useLang } from '../context/LanguageContext';
 import PageHero from '../components/PageHero';
 import Avatar from '../components/Avatar';
 import { fetchClubRegions, fetchClubs } from '../api/services';
+import { SmartLink, usePageContent, useText } from '../content/useContent';
 
 const ENTITY_LABELS = {
   club: { ar: 'نادي', en: 'Club' },
@@ -90,6 +91,8 @@ function ClubCard({ club, ar }) {
 export default function Clubs() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('clubs');
+  const tx = useText();
 
   const [clubs, setClubs] = useState(null); // null = loading, [] = loaded empty
   const [regions, setRegions] = useState([]);
@@ -136,16 +139,14 @@ export default function Clubs() {
 
   const loading = clubs === null;
 
+  if (!c) return fallback;
+
   return (
     <>
       <PageHero
-        tag={ar ? 'جرب المواي تاي' : 'Try Muaythai'}
-        title={ar ? 'الأندية والمراكز المعتمدة' : 'Approved Clubs & Centres'}
-        subtitle={
-          ar
-            ? 'ابحث عن نادٍ أو مركز معتمد قريب منك وابدأ تدريب المواي تاي. جميع الجهات المعروضة معتمدة لدى الاتحاد السعودي للمواي تاي.'
-            : 'Find an approved club or centre near you and start training Muaythai. Every facility listed here is approved by the Saudi Muaythai Federation.'
-        }
+        tag={tx(c.hero.tag)}
+        title={tx(c.hero.title)}
+        subtitle={tx(c.hero.subtitle)}
         breadcrumb={[{ label: ar ? 'جرب المواي تاي' : 'Try Muaythai' }]}
       />
 
@@ -229,15 +230,13 @@ export default function Clubs() {
           )}
 
           <div className="clubs-cta">
-            <h2>{ar ? 'تمتلك نادياً أو مركزاً تدريبياً؟' : 'Run a club or training centre?'}</h2>
-            <p>
-              {ar
-                ? 'سجّل منشأتك لدى الاتحاد السعودي للمواي تاي لتظهر في هذا الدليل.'
-                : 'Register your facility with the Saudi Muaythai Federation to appear in this directory.'}
-            </p>
-            <Link to="/registration/club" className="btn btn--green">
-              {ar ? 'تسجيل نادي / منشأة' : 'Register a club'}
-            </Link>
+            <h2>{tx(c.cta.heading)}</h2>
+            {tx(c.cta.text) && <p>{tx(c.cta.text)}</p>}
+            {c.cta.buttonUrl && (
+              <SmartLink to={c.cta.buttonUrl} className="btn btn--green">
+                {tx(c.cta.buttonLabel)}
+              </SmartLink>
+            )}
           </div>
         </div>
       </section>

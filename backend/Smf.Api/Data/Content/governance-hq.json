@@ -1,0 +1,250 @@
+{
+  "key": "governance-hq",
+  "group": "governance",
+  "order": 20,
+  "titleEn": "HQ & Leadership",
+  "titleAr": "المقر والقيادة",
+  "route": "/governance/hq",
+  "schema": [
+    {
+      "name": "hero",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "tag", "type": "text", "label": "Small tag above the title" },
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        {
+          "name": "stats",
+          "type": "list",
+          "label": "Figures",
+          "itemLabel": "Figure",
+          "itemTitle": "label",
+          "fields": [
+            { "name": "value", "type": "string", "label": "Number", "help": "For example: 2019" },
+            { "name": "label", "type": "text", "label": "Label" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "structure",
+      "type": "group",
+      "label": "Governance structure chart",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "title", "type": "text", "label": "Heading" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" },
+        { "name": "presidentBox", "type": "text", "label": "Top box (Federation President)" },
+        { "name": "boardBox", "type": "text", "label": "Second box (Board of Directors)" },
+        { "name": "ceoBox", "type": "text", "label": "Third row, first box (CEO)" },
+        { "name": "committeesBox", "type": "text", "label": "Third row, second box (Committees)" },
+        {
+          "name": "departments",
+          "type": "list",
+          "label": "Departments (bottom row)",
+          "itemLabel": "Department",
+          "itemTitle": "name",
+          "fields": [
+            { "name": "name", "type": "text", "label": "Department" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "president",
+      "type": "group",
+      "label": "Federation President",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "photo", "type": "image", "label": "Photo", "help": "Leave empty to show the green-and-gold initials badge instead of a photo." },
+        { "name": "monogramName", "type": "text", "label": "Short name for the initials badge", "help": "The initials are taken from this name; it is also the photo's description for screen readers." },
+        { "name": "badge", "type": "text", "label": "Badge above the name" },
+        { "name": "name", "type": "text", "label": "Full name" },
+        { "name": "rolePrimary", "type": "text", "label": "First role line" },
+        { "name": "roleSecondary", "type": "text", "label": "Second role line" }
+      ]
+    },
+    {
+      "name": "ceo",
+      "type": "group",
+      "label": "Chief Executive Officer",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "photo", "type": "image", "label": "Photo", "help": "Leave empty to show the initials badge instead of a photo." },
+        { "name": "monogramName", "type": "text", "label": "Short name for the initials badge", "help": "The initials are taken from this name; it is also the photo's description for screen readers." },
+        { "name": "department", "type": "text", "label": "Department line" },
+        { "name": "name", "type": "text", "label": "Full name" },
+        { "name": "role", "type": "text", "label": "Role" }
+      ]
+    },
+    {
+      "name": "board",
+      "type": "group",
+      "label": "Board of Directors",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "intro", "type": "textarea", "label": "Introduction" },
+        { "name": "memberRole", "type": "text", "label": "Role shown on every member card" },
+        {
+          "name": "members",
+          "type": "list",
+          "label": "Board members",
+          "itemLabel": "Member",
+          "itemTitle": "name",
+          "fields": [
+            { "name": "name", "type": "text", "label": "Name" },
+            { "name": "photo", "type": "image", "label": "Photo", "help": "Leave empty to show the initials badge." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "technical",
+      "type": "group",
+      "label": "Coaching & technical staff",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "intro", "type": "textarea", "label": "Introduction" },
+        {
+          "name": "staff",
+          "type": "list",
+          "label": "Staff",
+          "itemLabel": "Staff member",
+          "itemTitle": "role",
+          "fields": [
+            { "name": "name", "type": "text", "label": "Name", "help": "For a vacant post, the wording shown instead of a name, e.g. “Coming Soon”." },
+            { "name": "role", "type": "text", "label": "Role" },
+            { "name": "vacant", "type": "boolean", "label": "Vacant post", "help": "Highlights the card and shows an empty badge instead of initials." },
+            { "name": "photo", "type": "image", "label": "Photo", "help": "Leave empty to show the initials badge." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cta",
+      "type": "group",
+      "label": "Closing call to action",
+      "fields": [
+        { "name": "text", "type": "textarea", "label": "Text" },
+        { "name": "primaryLabel", "type": "text", "label": "First button label" },
+        { "name": "primaryUrl", "type": "url", "label": "First button link" },
+        { "name": "secondaryLabel", "type": "text", "label": "Second button label" },
+        { "name": "secondaryUrl", "type": "url", "label": "Second button link" }
+      ]
+    }
+  ],
+  "content": {
+    "hero": {
+      "tag": { "ar": "القيادة والحوكمة", "en": "Leadership & Governance" },
+      "title": { "ar": "القيادة والكوادر الإدارية", "en": "Leadership & Administrative Staff" },
+      "subtitle": {
+        "ar": "يقود الاتحاد السعودي للملاكمة التايلندية نخبةٌ من القادة والمتخصصين المكرّسين لتحقيق رسالة الاتحاد ورفع مستوى المواي تاي في المملكة.",
+        "en": "SMF is led by a dedicated team of professionals committed to growing Muaythai across the Kingdom of Saudi Arabia."
+      },
+      "stats": [
+        { "value": "2019", "label": { "ar": "عام التأسيس", "en": "Founded" } },
+        { "value": "20", "label": { "ar": "عضو في الفريق", "en": "Team Members" } },
+        { "value": "7", "label": { "ar": "لجان تخصصية", "en": "Committees" } }
+      ]
+    },
+    "structure": {
+      "label": { "ar": "الهيكل التنظيمي", "en": "Organizational Structure" },
+      "title": { "ar": "هيكل الحوكمة المؤسسية", "en": "Federation Governance Structure" },
+      "subtitle": {
+        "ar": "يعتمد الاتحاد السعودي للملاكمة التايلندية هيكلاً حوكمياً واضحاً يضمن الشفافية والمساءلة.",
+        "en": "SMF operates a clear governance structure ensuring transparency and accountability at every level."
+      },
+      "presidentBox": {
+        "ar": "رئيس الاتحاد — صاحب السمو الملكي الأمير فهد بن منصور آل سعود",
+        "en": "Federation President — HRH Prince Fahad bin Mansour Al Saud"
+      },
+      "boardBox": { "ar": "مجلس الإدارة (5 أعضاء)", "en": "Board of Directors (5)" },
+      "ceoBox": {
+        "ar": "الرئيس التنفيذي — م.عبدالعزيز بن إبراهيم آل بنان",
+        "en": "CEO — Eng. Abdulaziz bin Ibrahim Al Bannan"
+      },
+      "committeesBox": { "ar": "اللجان المتخصصة", "en": "Specialist Committees" },
+      "departments": [
+        { "name": { "ar": "الموارد البشرية والإدارة", "en": "HR & Administration" } },
+        { "name": { "ar": "الإعلام وتقنية المعلومات", "en": "Media & IT & Comms" } },
+        { "name": { "ar": "الأداء الرياضي والتطوير", "en": "Sport Performance & Development" } },
+        { "name": { "ar": "المالية والمشتريات", "en": "Finance & Procurement" } },
+        { "name": { "ar": "إدارة المشاريع", "en": "Projects" } }
+      ]
+    },
+    "president": {
+      "label": { "ar": "الرئاسة", "en": "Presidency" },
+      "heading": { "ar": "رئيس الاتحاد", "en": "Federation President" },
+      "photo": "",
+      "monogramName": { "ar": "الأمير فهد بن منصور آل سعود", "en": "Fahad Bin Mansour Al Saud" },
+      "badge": { "ar": "رئيس الاتحاد السعودي للملاكمة التايلندية", "en": "Federation President" },
+      "name": {
+        "ar": "صاحب السمو الملكي الأمير فهد بن منصور بن سعد بن سعود بن عبدالعزيز آل سعود",
+        "en": "HRH Prince Fahad Bin Mansour Bin Saad Bin Saud Bin Abdulaziz Al Saud"
+      },
+      "rolePrimary": { "ar": "رئيس الاتحاد السعودي للملاكمة التايلندية", "en": "President, Saudi Muaythai Federation" },
+      "roleSecondary": {
+        "ar": "نائب رئيس الاتحاد الدولي IFMA",
+        "en": "Vice President, IFMA (International Federation of Muaythai Associations)"
+      }
+    },
+    "ceo": {
+      "label": { "ar": "الرئاسة التنفيذية", "en": "Executive Office" },
+      "heading": { "ar": "الرئيس التنفيذي", "en": "Chief Executive Officer" },
+      "photo": "",
+      "monogramName": { "ar": "عبدالعزيز بن إبراهيم آل بنان", "en": "Abdulaziz bin Ibrahim Al Bannan" },
+      "department": { "ar": "الرئاسة التنفيذية", "en": "Executive Office" },
+      "name": { "ar": "م.عبدالعزيز بن إبراهيم آل بنان", "en": "Eng. Abdulaziz bin Ibrahim Al Bannan" },
+      "role": {
+        "ar": "الرئيس التنفيذي — الاتحاد السعودي للملاكمة التايلندية",
+        "en": "Chief Executive Officer — Saudi Muaythai Federation"
+      }
+    },
+    "board": {
+      "label": { "ar": "الحوكمة", "en": "Governance" },
+      "heading": { "ar": "أعضاء مجلس الإدارة", "en": "Board of Directors" },
+      "intro": {
+        "ar": "خمسة أعضاء يمثلون الهيئة الإشرافية العليا للاتحاد.",
+        "en": "Five members forming the federation's supreme supervisory body."
+      },
+      "memberRole": { "ar": "عضو مجلس الإدارة", "en": "Board Member" },
+      "members": [
+        { "name": { "ar": "م. ريان بن غازي خميس الأحمد", "en": "Eng. Ryan bin Ghazi Khamis Al-Ahmad" }, "photo": "" },
+        { "name": { "ar": "العميد المتقاعد خالد بن محمد بن سعد الجهني", "en": "Brig. Gen. (Ret.) Khaled bin Mohammed bin Saad Al-Juhani" }, "photo": "" },
+        { "name": { "ar": "م. ناصر بن عبدالعزيز بن ناصر المعيبد", "en": "Eng. Nasser bin Abdulaziz bin Nasser Al-Muaibed" }, "photo": "" },
+        { "name": { "ar": "م. بسام بن عباس بن احمد اليماني", "en": "Eng. Bassam bin Abbas bin Ahmed Al-Yamani" }, "photo": "" },
+        { "name": { "ar": "الأستاذ عمر احمد الغامدي", "en": "Mr. Omar Ahmed Alghamdi" }, "photo": "" }
+      ]
+    },
+    "technical": {
+      "label": { "ar": "الكادر الفني", "en": "Technical Staff" },
+      "heading": { "ar": "الكادر التدريبي والفني", "en": "Coaching & Technical Team" },
+      "intro": {
+        "ar": "المدربون والكادر الفني المكلّفون بتطوير أداء منتخباتنا الوطنية.",
+        "en": "The coaches and technical staff responsible for developing our national teams."
+      },
+      "staff": [
+        { "name": { "ar": "قريباً", "en": "Coming Soon" }, "role": { "ar": "المدير الفني", "en": "Technical Director" }, "vacant": true, "photo": "" },
+        { "name": { "ar": "فراس سعدة", "en": "Feraas Saada" }, "role": { "ar": "المدرب الرئيسي للمنتخب الوطني", "en": "National Team Head Coach" }, "vacant": false, "photo": "" },
+        { "name": { "ar": "ووراووت نامدوانج", "en": "Worawut Namduang" }, "role": { "ar": "مدرب الاتحاد", "en": "Federation Coach" }, "vacant": false, "photo": "" },
+        { "name": { "ar": "علي العمري", "en": "Ali Alomari" }, "role": { "ar": "مدرب الاتحاد", "en": "Federation Coach" }, "vacant": false, "photo": "" },
+        { "name": { "ar": "فووانات بوود", "en": "Phuwanat Poode" }, "role": { "ar": "مساعد مدرب", "en": "Coach Assistant" }, "vacant": false, "photo": "" }
+      ]
+    },
+    "cta": {
+      "text": {
+        "ar": "للتواصل أو الاستفسار، يسعدنا استقبال رسائلكم عبر صفحة التواصل الرسمية.",
+        "en": "For enquiries, we welcome your messages through our official contact page."
+      },
+      "primaryLabel": { "ar": "تواصل معنا", "en": "Contact" },
+      "primaryUrl": "/contact",
+      "secondaryLabel": { "ar": "اللجان المتخصصة", "en": "Committees" },
+      "secondaryUrl": "/governance/committees"
+    }
+  }
+}

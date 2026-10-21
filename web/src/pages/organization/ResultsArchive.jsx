@@ -3,6 +3,7 @@ import { useLang } from '../../context/LanguageContext';
 import PageHero from '../../components/PageHero';
 import { fetchResults, fetchResultsStats } from '../../api/services';
 import resultsFallback from '../../data/results';
+import { usePageContent, useText } from '../../content/useContent';
 
 /* The archive rendered Arabic column headings over English-only names, because
    the records carried no Arabic. They now do, from the federation's national
@@ -20,6 +21,8 @@ const MEDAL_LABEL = {
 export default function ResultsArchive() {
   const { lang } = useLang();
   const ar = lang === 'ar';
+  const { content: c, fallback } = usePageContent('organization-results-archive');
+  const tx = useText();
   const [rows, setRows] = useState(resultsFallback || []);
   const [stats, setStats] = useState({ gold: 7, silver: 17, bronze: 48, total: 72, championships: 12 });
   const [year, setYear] = useState('');
@@ -78,12 +81,14 @@ export default function ResultsArchive() {
     }));
   }, [filtered]);
 
+  if (!c) return fallback;
+
   return (
     <>
       <PageHero
-        tag="2019 – 2026"
-        title={ar ? 'سجل النتائج الدولية' : 'International Results Archive'}
-        subtitle={ar ? 'السجل الرسمي لجميع الميداليات الدولية للمنتخب الوطني' : 'Official record of all national team international medals'}
+        tag={c.hero.tag}
+        title={tx(c.hero.title)}
+        subtitle={tx(c.hero.subtitle)}
         breadcrumb={[
           { label: ar ? 'الاتحاد' : 'Organization', to: '/organization/overview' },
           { label: ar ? 'سجل النتائج' : 'Results Archive' },

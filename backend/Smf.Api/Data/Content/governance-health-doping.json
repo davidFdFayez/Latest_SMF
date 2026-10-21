@@ -1,0 +1,171 @@
+{
+  "key": "governance-health-doping",
+  "group": "governance",
+  "order": 40,
+  "titleEn": "Health & Anti-Doping",
+  "titleAr": "الصحة ومكافحة المنشطات",
+  "route": "/governance/health-doping",
+  "schema": [
+    {
+      "name": "header",
+      "type": "group",
+      "label": "Page header",
+      "fields": [
+        { "name": "title", "type": "text", "label": "Title" },
+        { "name": "subtitle", "type": "textarea", "label": "Subtitle" }
+      ]
+    },
+    { "name": "intro", "type": "textarea", "label": "Introduction" },
+    {
+      "name": "statement",
+      "type": "group",
+      "label": "Approved anti-doping statement",
+      "help": "Official federation wording.",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "paragraph1", "type": "textarea", "label": "First paragraph" },
+        { "name": "paragraph2", "type": "textarea", "label": "Second paragraph (before the ADEL button)" },
+        { "name": "adelLabel", "type": "text", "label": "ADEL button label" },
+        { "name": "adelUrl", "type": "url", "label": "ADEL button link" },
+        { "name": "pledgeTitle", "type": "text", "label": "Pledge & declaration box title" },
+        { "name": "pledgeText", "type": "textarea", "label": "Pledge & declaration wording" },
+        { "name": "attachmentsNote", "type": "textarea", "label": "Supporting attachments note" }
+      ]
+    },
+    {
+      "name": "bodies",
+      "type": "group",
+      "label": "Anti-doping bodies",
+      "fields": [
+        { "name": "label", "type": "text", "label": "Small label above the heading" },
+        { "name": "heading", "type": "text", "label": "Heading" },
+        { "name": "websiteLabel", "type": "text", "label": "“Official website” button label" },
+        { "name": "resourcesLabel", "type": "text", "label": "“Educational resources” button label" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Bodies",
+          "itemLabel": "Body",
+          "itemTitle": "title",
+          "fields": [
+            { "name": "logo", "type": "image", "label": "Logo" },
+            { "name": "organisation", "type": "text", "label": "Country / scope line", "help": "For example: International" },
+            { "name": "title", "type": "text", "label": "Name" },
+            { "name": "body", "type": "textarea", "label": "Description" },
+            { "name": "websiteUrl", "type": "url", "label": "Official website link" },
+            { "name": "resourcesUrl", "type": "url", "label": "Educational resources link" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "commitments",
+      "type": "group",
+      "label": "Federation commitments",
+      "fields": [
+        { "name": "heading", "type": "text", "label": "Heading" },
+        {
+          "name": "items",
+          "type": "list",
+          "label": "Commitments",
+          "itemLabel": "Commitment",
+          "itemTitle": "text",
+          "help": "Icons follow the order of the list.",
+          "fields": [
+            { "name": "text", "type": "textarea", "label": "Commitment" }
+          ]
+        }
+      ]
+    }
+  ],
+  "content": {
+    "header": {
+      "title": { "ar": "الصحة ومكافحة المنشطات", "en": "Health & Anti-Doping" },
+      "subtitle": {
+        "ar": "يلتزم الاتحاد السعودي للملاكمة التايلندية بأعلى المعايير الدولية في مجال الصحة الرياضية ومكافحة استخدام المنشطات، صوناً لنزاهة الرياضة وصحة الرياضيين.",
+        "en": "The Saudi Muaythai Federation is committed to the highest international standards in sports health and anti-doping, protecting the integrity of the sport and the health of athletes."
+      }
+    },
+    "intro": {
+      "ar": "تُعدّ رياضة المواي تاي النظيفة والصحية أساساً راسخاً في رسالة الاتحاد السعودي للملاكمة التايلندية. يعمل الاتحاد بالتنسيق الوثيق مع الجهات الوطنية والدولية المعنية لضمان بيئة رياضية خالية من المنشطات، تقوم على مبادئ النزاهة والشفافية والعدالة.",
+      "en": "Clean and healthy sport is a foundational principle of the Saudi Muaythai Federation's mission. SMF works in close coordination with national and international bodies to ensure a doping-free sporting environment built on integrity, transparency, and fairness."
+    },
+    "statement": {
+      "label": { "ar": "النص المعتمد", "en": "Approved Statement" },
+      "heading": { "ar": "مكافحة المنشطات", "en": "Anti-Doping" },
+      "paragraph1": {
+        "ar": "يلتزم الاتحاد السعودي للملاكمة التايلندية بدعم مبادئ الرياضة النظيفة، وتوعية اللاعبين والمدربين بأهمية الالتزام بالأنظمة والتعليمات المتعلقة بمكافحة المنشطات. ويُعد كل لاعب مسؤولاً مسؤولية كاملة عن أي أدوية أو مكملات أو مواد يستخدمها قبل أو أثناء المشاركة في البطولات، بما يتوافق مع الأنظمة المعمول بها لدى الجهات المختصة.",
+        "en": "The Saudi Muaythai Federation is committed to upholding the principles of clean sport and to educating athletes and coaches on the importance of complying with anti-doping regulations and instructions. Every athlete bears full responsibility for any medication, supplement, or substance they use before or during participation in competitions, in accordance with the regulations of the competent authorities."
+      },
+      "paragraph2": {
+        "ar": "ولغرض التوعية، يمكن للاعبين والمدربين الاطلاع على منصة ADEL التابعة للوكالة العالمية لمكافحة المنشطات WADA من خلال الرابط التالي:",
+        "en": "For educational purposes, athletes and coaches may access the ADEL platform of the World Anti-Doping Agency (WADA) via the following link:"
+      },
+      "adelLabel": { "ar": "منصة ADEL التعليمية ↗", "en": "ADEL Learning Platform ↗" },
+      "adelUrl": "https://adel.wada-ama.org/learn/signin",
+      "pledgeTitle": { "ar": "نص التعهد والإقرار", "en": "Pledge & Declaration" },
+      "pledgeText": {
+        "ar": "أقر بالتزامي بالأنظمة والتعليمات المتعلقة بمكافحة المنشطات، وأتحمل المسؤولية الكاملة عن أي أدوية أو مكملات أو مواد أستخدمها قبل أو أثناء البطولة.",
+        "en": "I acknowledge my commitment to anti-doping regulations and instructions, and I accept full responsibility for any medication, supplement, or substance I use before or during the competition."
+      },
+      "attachmentsNote": {
+        "ar": "المرفقات الداعمة: نموذج الفحص الطبي المستخدم في البطولات، ونموذج التعهد والإقرار — تُطلب وقت البطولة فقط.",
+        "en": "Supporting attachments: the medical examination form used in competitions, and the pledge & declaration form — required at competition time only."
+      }
+    },
+    "bodies": {
+      "label": { "ar": "الهيئات المرجعية", "en": "Governing Bodies" },
+      "heading": { "ar": "الهيئات الرقابية المعتمدة", "en": "Official Anti-Doping Bodies" },
+      "websiteLabel": { "ar": "الموقع الرسمي ↗", "en": "Official Website ↗" },
+      "resourcesLabel": { "ar": "الموارد التثقيفية ↗", "en": "Educational Resources ↗" },
+      "items": [
+        {
+          "logo": "/assets/images/partner-saadc.png",
+          "organisation": { "ar": "المملكة العربية السعودية", "en": "Kingdom of Saudi Arabia" },
+          "title": { "ar": "اللجنة السعودية للرقابة على المنشطات (SAADC)", "en": "Saudi Arabian Anti-Doping Committee (SAADC)" },
+          "body": {
+            "ar": "تُعنى اللجنة السعودية للرقابة على المنشطات بتهيئة بيئة رياضية نظيفة وعادلة في المملكة، من خلال الاختبارات الدقيقة والبرامج التثقيفية وفق أعلى المعايير الدولية.",
+            "en": "SAADC is dedicated to promoting a clean and fair sporting environment in Saudi Arabia through rigorous testing and educational programs aligned with international standards."
+          },
+          "websiteUrl": "https://saadc.com",
+          "resourcesUrl": "https://saadc.com/?page_id=9029&lang=en"
+        },
+        {
+          "logo": "/assets/images/partner-wada.jpg",
+          "organisation": { "ar": "دولي", "en": "International" },
+          "title": { "ar": "الوكالة العالمية لمكافحة المنشطات (WADA)", "en": "World Anti-Doping Agency (WADA)" },
+          "body": {
+            "ar": "تُمثّل الوكالة العالمية لمكافحة المنشطات المرجعَ الدولي الأعلى في مجال مكافحة المنشطات. تضع المعايير الدولية للسياسات، وتُشرف على الامتثال، وتدعم البحث العلمي والتوعية لحماية صحة الرياضيين ونزاهة المنافسة عالمياً.",
+            "en": "WADA sets international standards for anti-doping policies, oversees compliance, and supports scientific research and education to protect the health and integrity of athletes worldwide."
+          },
+          "websiteUrl": "https://www.wada-ama.org/en",
+          "resourcesUrl": "https://www.wada-ama.org/en/resources"
+        }
+      ]
+    },
+    "commitments": {
+      "heading": { "ar": "التزامات الاتحاد", "en": "SMF's Anti-Doping Commitments" },
+      "items": [
+        {
+          "text": {
+            "ar": "تطبيق برامج الاختبارات وفق معايير WADA وSAADC في جميع البطولات الرسمية.",
+            "en": "Implementing testing programs aligned with WADA and SAADC standards across all official competitions."
+          }
+        },
+        {
+          "text": {
+            "ar": "تثقيف الرياضيين والمدربين والمسؤولين حول اللوائح والأنظمة الخاصة بمكافحة المنشطات.",
+            "en": "Educating athletes, coaches, and officials on anti-doping regulations and athlete responsibilities."
+          }
+        },
+        {
+          "text": {
+            "ar": "تعزيز ثقافة اللعب النظيف والأمانة الرياضية في جميع أنشطة الاتحاد وفعالياته.",
+            "en": "Promoting a culture of clean sport and integrity throughout all federation activities and events."
+          }
+        }
+      ]
+    }
+  }
+}

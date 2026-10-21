@@ -29,10 +29,10 @@ public class Registration
     public DateTime? ApprovedAt { get; set; }
 
     // ── Phase 2 membership lifecycle ────────────────────────────────────────
-    // §1: مدة العضوية ثلاث سنوات، ودورية التجديد كل 3 سنوات.
+    // مدة العضوية سنة واحدة لجميع الفئات، ودورية التجديد كل سنة (BUG-12).
 
     /// <summary>
-    /// End of the three-year term, set from <see cref="ApprovedAt"/> on approval
+    /// End of the membership term, set from <see cref="ApprovedAt"/> on approval
     /// and pushed forward on renewal. Null until the membership is approved.
     /// </summary>
     public DateTime? ExpiresAt { get; set; }
@@ -83,6 +83,34 @@ public class Registration
     /// </summary>
     public DateTime? CompletionReminderSentAt { get; set; }
 
-    /// <summary>True once the term has elapsed, whatever the stored status says.</summary>
-    public bool IsExpired(DateTime asOf) => ExpiresAt is { } expiry && expiry <= asOf;
+    /// <summary>
+    /// The unguessable part of this membership's public card link (ISSUE-03).
+    ///
+    /// Issued on approval and kept across renewals, so a printed card stays
+    /// valid for as long as the membership does. Regenerating it revokes every
+    /// copy of the old link, which is the only way to take a card back.
+    /// </summary>
+    public string? CardToken { get; set; }
+
+    /// <summary>
+    /// True once the term has elapsed, or once the membership has been marked
+    /// expired outright.
+    ///
+    /// BUG-12 — this used to look only at the date, so a membership an
+    /// administrator had set to Expired still reported itself as live, with a
+    /// cheerful count of days remaining on a term that no longer applied.
+    /// </summary>
+    public bool IsExpired(DateTime asOf) =>
+        Status == RegistrationStatuses.Expired || (ExpiresAt is { } expiry && expiry <= asOf);
+
+    /// <summary>
+    /// Days left on the term: zero once it is over, never a negative number.
+    /// Null when no term has been set, which is not the same as "none left".
+    /// </summary>
+    public int? DaysRemaining(DateTime asOf)
+    {
+        if (ExpiresAt is not { } expiry) return null;
+        if (IsExpired(asOf)) return 0;
+        return Math.Max(0, (int)Math.Ceiling((expiry - asOf).TotalDays));
+    }
 }
