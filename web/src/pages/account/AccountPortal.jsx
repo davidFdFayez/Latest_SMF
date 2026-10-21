@@ -4,6 +4,7 @@ import { useLang } from '../../context/LanguageContext';
 import { formatDate } from '../../utils/format';
 import {
   enter,
+  fetchAthlete,
   fetchEligible,
   fetchMe,
   fetchMedical,
@@ -267,10 +268,10 @@ function Roster({ ar, lang }) {
       {notice && <p className="acct-ok">{notice}</p>}
 
       <h2 className="portal__h2">{ar ? 'اللاعبون' : 'Athletes'} ({data.athletes.length})</h2>
-      <People list={data.athletes} ar={ar} />
+      <People list={data.athletes} ar={ar} lang={lang} openable />
 
       <h2 className="portal__h2">{ar ? 'المدربون' : 'Coaches'} ({data.coaches.length})</h2>
-      <People list={data.coaches} ar={ar} />
+      <People list={data.coaches} ar={ar} lang={lang} />
 
       {data.canInvite ? (
         <>
@@ -317,7 +318,30 @@ function Roster({ ar, lang }) {
   );
 }
 
-function People({ list, ar }) {
+/**
+ * REQ-05 rule 3 and REQ-06 rule 3 — a club or a coach can open an athlete and
+ * see the tournaments they have been in. Opened in place rather than on
+ * another page: this is a glance at somebody on a list, not a destination.
+ */
+function People({ list, ar, lang, openable = false }) {
+  const [open, setOpen] = useState(null);
+  const [detail, setDetail] = useState(null);
+
+  async function toggle(person) {
+    if (open === person.registrationId) {
+      setOpen(null);
+      setDetail(null);
+      return;
+    }
+    setOpen(person.registrationId);
+    setDetail(null);
+    try {
+      setDetail(await fetchAthlete(person.registrationId));
+    } catch {
+      setDetail({ tournaments: [] });
+    }
+  }
+
   if (list.length === 0) {
     return <p className="portal__note">{ar ? 'لا أحد بعد.' : 'Nobody yet.'}</p>;
   }
@@ -326,12 +350,45 @@ function People({ list, ar }) {
     <ul className="portal__people">
       {list.map((person) => (
         <li key={person.id} className="portal__person">
-          <span className="portal__person-name">
-            {(ar ? person.nameAr : person.nameEn) || person.displayName || person.email}
-          </span>
-          <span className="portal__person-meta">{person.membershipNumber || person.email}</span>
-          {person.isPending && (
-            <span className="portal__pending">{ar ? 'دعوة معلّقة' : 'Invitation pending'}</span>
+          <div className="portal__person-row">
+            <span className="portal__person-name">
+              {(ar ? person.nameAr : person.nameEn) || person.displayName || person.email}
+            </span>
+            <span className="portal__person-meta">{person.membershipNumber || person.email}</span>
+            {person.isPending && (
+              <span className="portal__pending">{ar ? 'دعوة معلّقة' : 'Invitation pending'}</span>
+            )}
+            {openable && !person.isPending && (
+              <button type="button" className="portal__open" onClick={() => toggle(person)}>
+                {open === person.registrationId
+                  ? (ar ? 'إغلاق' : 'Close')
+                  : (ar ? 'عرض البطولات' : 'Tournaments')}
+              </button>
+            )}
+          </div>
+
+          {open === person.registrationId && (
+            <div className="portal__person-detail">
+              {!detail ? (
+                <span className="portal__note">{ar ? 'جارٍ التحميل…' : 'Loading…'}</span>
+              ) : detail.tournaments.length === 0 ? (
+                <span className="portal__note">{ar ? 'لا توجد بطولات.' : 'No tournaments yet.'}</span>
+              ) : (
+                <ul>
+                  {detail.tournaments.map((entry) => (
+                    <li key={entry.id}>
+                      {(ar ? entry.tournamentNameAr : entry.tournamentNameEn)}
+                      {' — '}
+                      {(ar ? entry.divisionLabelAr : entry.divisionLabelEn) || '—'}
+                      {' — '}
+                      <strong>{ar ? entry.statusAr : entry.statusEn}</strong>
+                      {' · '}
+                      {formatDate(entry.startDate, lang)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
         </li>
       ))}

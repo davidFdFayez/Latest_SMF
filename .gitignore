@@ -36,3 +36,7 @@ backend/Smf.Api/Data/outbox/
 backend/Smf.Api/Data/sms-outbox/
 backend/Smf.Api/Data/uploads/
 backend/Smf.Api/Data/media/
+
+# Python bytecode from the API test suites
+__pycache__/
+*.pyc

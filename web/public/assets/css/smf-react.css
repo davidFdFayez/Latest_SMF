@@ -2367,3 +2367,35 @@ body.lang-ar {
 
 .portal__candidate select { padding: 0.35rem 0.5rem; border: 1px solid var(--clr-grey-300, #d1d5db); border-radius: 8px; }
 .portal__barrier { font-size: 0.8rem; color: #92400e; }
+
+
+/* Opening an athlete from a club's or coach's roster (REQ-05/06 rule 3). */
+.portal__person { flex-direction: column; align-items: stretch; }
+
+.portal__person-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.portal__open {
+  margin-inline-start: auto;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--clr-grey-300, #d1d5db);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.portal__person-detail {
+  margin-block-start: 0.5rem;
+  padding-block-start: 0.5rem;
+  border-block-start: 1px dashed var(--clr-grey-200, #e5e7eb);
+  font-size: 0.82rem;
+  line-height: 1.9;
+}
+
+.portal__person-detail ul { margin: 0; padding-inline-start: 1.1rem; }

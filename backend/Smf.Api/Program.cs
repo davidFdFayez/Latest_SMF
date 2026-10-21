@@ -46,6 +46,7 @@ builder.Services.AddScoped<MembershipService>();
 
 // Phase 3 — running a tournament.
 builder.Services.AddScoped<TournamentService>();
+builder.Services.AddScoped<TournamentLookups>();
 builder.Services.AddScoped<TournamentEntryService>();
 builder.Services.AddScoped<DrawService>();
 builder.Services.AddScoped<ScheduleService>();
@@ -301,6 +302,11 @@ using (var scope = app.Services.CreateScope())
     }
 
     SeedData.Initialize(db, app.Environment, logger, app.Configuration);
+
+    // Phase 3 REQ-01 rules 2 and 3 — the tournament-type and
+    // competition-type lists the federation can add to. The document's
+    // own values are put in place and kept current here.
+    TournamentLookups.SeedAsync(db).GetAwaiter().GetResult();
 }
 
 app.Run();

@@ -29,6 +29,9 @@ const emptyForm = {
   registrationClosesAt: '',
   genders: ['male'],
   categories: [],
+  // REQ-01 rule 6 — which classes to run, keyed "category:gender". Empty
+  // means every class that pairing offers.
+  weightClasses: {},
 }
 
 function toDateInput(value) {
@@ -44,7 +47,9 @@ export default function TournamentEdit() {
   const [options, setOptions] = useState(null)
   const [divisions, setDivisions] = useState([])
   const [tournament, setTournament] = useState(null)
-  const [weightPreview, setWeightPreview] = useState({})
+  // The classes each pairing offers, so they can be ticked individually.
+  const [available, setAvailable] = useState({})
+  const [addingType, setAddingType] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -64,6 +69,7 @@ export default function TournamentEdit() {
           setTournament(t)
           setDivisions(detail.divisions)
           setForm({
+            weightClasses: detail.weightClasses || {},
             nameAr: t.nameAr,
             nameEn: t.nameEn,
             type: t.type,
@@ -87,10 +93,10 @@ export default function TournamentEdit() {
     }
   }, [id, isNew])
 
-  /* How many divisions the current choices produce (REQ-02 rule 5). */
+  /* The weight classes each category and gender offers (REQ-01 rule 6). */
   useEffect(() => {
     if (!options || form.categories.length === 0 || form.genders.length === 0) {
-      setWeightPreview({})
+      setAvailable({})
       return
     }
 
@@ -100,11 +106,11 @@ export default function TournamentEdit() {
     Promise.all(pairs.map(([category, gender]) => tournamentsApi.weightClasses(category, gender)))
       .then((lists) => {
         if (cancelled) return
-        const counts = {}
+        const next = {}
         pairs.forEach(([category, gender], index) => {
-          counts[`${category}:${gender}`] = lists[index].length
+          next[`${category}:${gender}`] = lists[index]
         })
-        setWeightPreview(counts)
+        setAvailable(next)
       })
       .catch(() => {})
 
@@ -113,10 +119,37 @@ export default function TournamentEdit() {
     }
   }, [options, form.categories, form.genders])
 
+  /* How many divisions the current choices produce (REQ-02 rule 5). A pairing
+     with nothing ticked runs every class it offers. */
   const divisionCount = useMemo(
-    () => Object.values(weightPreview).reduce((total, count) => total + count, 0),
-    [weightPreview],
+    () =>
+      Object.entries(available).reduce((total, [key, classes]) => {
+        const chosen = form.weightClasses[key]
+        return total + (chosen && chosen.length > 0 ? chosen.length : classes.length)
+      }, 0),
+    [available, form.weightClasses],
   )
+
+  function toggleWeight(key, limit) {
+    setForm((current) => {
+      const chosen = current.weightClasses[key] || []
+      const has = chosen.some((value) => value === limit)
+      const next = has ? chosen.filter((value) => value !== limit) : [...chosen, limit]
+      return { ...current, weightClasses: { ...current.weightClasses, [key]: next } }
+    })
+  }
+
+  async function addOption(kind, nameAr, nameEn) {
+    setError('')
+    try {
+      await tournamentsApi.addOption(kind, { nameAr, nameEn })
+      setOptions(await tournamentsApi.options())
+      setAddingType(null)
+      setNotice('Added to the list.')
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Could not add that option.'))
+    }
+  }
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -233,6 +266,10 @@ export default function TournamentEdit() {
                 </option>
               ))}
             </select>
+            {/* Rule 2 — the list is the federation's to extend. */}
+            <button type="button" className="link-btn" onClick={() => setAddingType('tournament_type')}>
+              Add a tournament type
+            </button>
           </label>
           <label className="field">
             <span>Competition type</span>
@@ -243,6 +280,10 @@ export default function TournamentEdit() {
                 </option>
               ))}
             </select>
+            {/* Rule 3 — likewise. */}
+            <button type="button" className="link-btn" onClick={() => setAddingType('competition_type')}>
+              Add a competition type
+            </button>
           </label>
         </div>
 
@@ -335,6 +376,48 @@ export default function TournamentEdit() {
           </div>
         ))}
 
+        {Object.keys(available).length > 0 && (
+          <>
+            <h3 className="form-section-title">Weight classes</h3>
+            <p className="form-card__intro">
+              Tick the classes this tournament runs. Leave a row untouched to run all of them.
+            </p>
+
+            {Object.entries(available).map(([key, classes]) => {
+              const [category, gender] = key.split(':')
+              const label = options?.categories.find((entry) => entry.value === category)?.en || category
+              const chosen = form.weightClasses[key] || []
+
+              return (
+                <div className="weights" key={key}>
+                  <span className="weights__pair">
+                    {gender === 'female' ? 'Women' : 'Men'} — {label}
+                    <em>
+                      {chosen.length > 0 ? `${chosen.length} chosen` : `all ${classes.length}`}
+                    </em>
+                  </span>
+                  <div className="weights__list">
+                    {classes.map((entry) => {
+                      const on = chosen.some((value) => value === entry.limitKg)
+                      return (
+                        <button
+                          key={String(entry.limitKg)}
+                          type="button"
+                          className={`weights__chip${on ? ' is-on' : ''}`}
+                          aria-pressed={on}
+                          onClick={() => toggleWeight(key, entry.limitKg)}
+                        >
+                          {entry.labelEn}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </>
+        )}
+
         {divisionCount > 0 && (
           <p className="form-card__intro">
             That makes <strong>{divisionCount}</strong> divisions — category × gender × weight class.
@@ -350,6 +433,14 @@ export default function TournamentEdit() {
           </button>
         </div>
       </form>
+
+      {addingType && (
+        <AddOptionDialog
+          kind={addingType}
+          onClose={() => setAddingType(null)}
+          onSave={(nameAr, nameEn) => addOption(addingType, nameAr, nameEn)}
+        />
+      )}
 
       {!isNew && divisions.length > 0 && (
         <section className="form-card">
@@ -388,5 +479,48 @@ export default function TournamentEdit() {
         </section>
       )}
     </div>
+  )
+}
+
+/** REQ-01 rules 2 and 3 — adding to one of the two lists. */
+function AddOptionDialog({ kind, onClose, onSave }) {
+  const [nameAr, setNameAr] = useState('')
+  const [nameEn, setNameEn] = useState('')
+
+  return (
+    <section className="form-card">
+      <h3 className="form-section-title form-section-title--first">
+        {kind === 'tournament_type' ? 'New tournament type' : 'New competition type'}
+      </h3>
+      <p className="form-card__intro">
+        It joins the list for every tournament from now on, and the system's existing rules apply to it
+        unchanged.
+      </p>
+
+      <div className="form-grid">
+        <label className="field">
+          <span>Name (Arabic)</span>
+          <input type="text" dir="rtl" value={nameAr} onChange={(event) => setNameAr(event.target.value)} />
+        </label>
+        <label className="field">
+          <span>Name (English)</span>
+          <input type="text" value={nameEn} onChange={(event) => setNameEn(event.target.value)} />
+        </label>
+      </div>
+
+      <div className="form-actions">
+        <button type="button" className="btn btn--ghost" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn--primary"
+          disabled={!nameAr.trim() || !nameEn.trim()}
+          onClick={() => onSave(nameAr.trim(), nameEn.trim())}
+        >
+          Add
+        </button>
+      </div>
+    </section>
   )
 }

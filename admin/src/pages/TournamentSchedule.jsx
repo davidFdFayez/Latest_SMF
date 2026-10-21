@@ -255,6 +255,50 @@ export default function TournamentSchedule() {
                         ))}
                       </select>
                     </label>
+
+                    {/* Rule 5 — a division may run to its own start time and
+                        interval rather than its ring's; rule 17 makes both
+                        editable, and the times regenerate. */}
+                    <label className="field">
+                      <span>First bout</span>
+                      <input
+                        type="time"
+                        defaultValue={
+                          division.firstBoutTime ? String(division.firstBoutTime).slice(0, 5) : ''
+                        }
+                        disabled={working}
+                        onBlur={(event) =>
+                          event.target.value &&
+                          act(
+                            () =>
+                              tournamentsApi.setDivisionSchedule(division.id, {
+                                firstBoutTime: `${event.target.value}:00`,
+                              }),
+                            'Start time applied.',
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Interval (min)</span>
+                      <input
+                        type="number"
+                        min="1"
+                        defaultValue={division.boutIntervalMinutes || ''}
+                        disabled={working}
+                        onBlur={(event) =>
+                          event.target.value &&
+                          act(
+                            () =>
+                              tournamentsApi.setDivisionSchedule(division.id, {
+                                intervalMinutes: Number(event.target.value),
+                              }),
+                            'Interval applied.',
+                          )
+                        }
+                      />
+                    </label>
                   </div>
                 </div>
 

@@ -27,6 +27,7 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
     public DbSet<TournamentEntry> TournamentEntries => Set<TournamentEntry>();
     public DbSet<TournamentRing> TournamentRings => Set<TournamentRing>();
     public DbSet<Bout> Bouts => Set<Bout>();
+    public DbSet<TournamentLookup> TournamentLookups => Set<TournamentLookup>();
     public DbSet<AthleteMedicalFile> AthleteMedicalFiles => Set<AthleteMedicalFile>();
     public DbSet<MedicalSuspension> MedicalSuspensions => Set<MedicalSuspension>();
     public DbSet<MemberAccount> MemberAccounts => Set<MemberAccount>();
@@ -43,6 +44,11 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
     /// </summary>
     private static void ConfigureTournaments(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<TournamentLookup>(entity =>
+        {
+            entity.HasIndex(l => new { l.Kind, l.Value }).IsUnique();
+        });
+
         modelBuilder.Entity<TournamentDivision>(entity =>
         {
             entity.HasOne(d => d.Tournament)

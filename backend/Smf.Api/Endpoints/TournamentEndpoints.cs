@@ -35,10 +35,14 @@ public static class TournamentEndpoints
 
     private static void MapSetup(RouteGroupBuilder group)
     {
-        group.MapGet("/options", () => Results.Ok(new
+        group.MapGet("/options", async (TournamentLookups lookups, CancellationToken ct) => Results.Ok(new
         {
-            types = TournamentTypes.Seed.Select(t => new { value = t.Value, ar = t.Ar, en = t.En }),
-            competitionTypes = TournamentCompetitionTypes.Seed.Select(t => new { value = t.Value, ar = t.Ar, en = t.En }),
+            // REQ-01 rules 2 and 3 — read from the lists, which the federation
+            // can add to, rather than from a fixed enum.
+            types = (await lookups.ListAsync(LookupKinds.TournamentType, cancellationToken: ct))
+                .Select(t => new { value = t.Value, ar = t.NameAr, en = t.NameEn, t.IsSeeded }),
+            competitionTypes = (await lookups.ListAsync(LookupKinds.CompetitionType, cancellationToken: ct))
+                .Select(t => new { value = t.Value, ar = t.NameAr, en = t.NameEn, t.IsSeeded }),
             categories = CompetitionCategories.All.Select(c => new
             {
                 value = c.Value, ar = c.Ar, en = c.En, c.MinAge, c.MaxAge, c.Track,
@@ -59,6 +63,30 @@ public static class TournamentEndpoints
         })).RequirePermission(AdminPermissions.TournamentManage, AdminPermissions.TournamentEntries,
             AdminPermissions.TournamentTechnical, AdminPermissions.TournamentDraw,
             AdminPermissions.TournamentSchedule);
+
+        /// REQ-01 rules 2 and 3 — an authorised user adds a new tournament
+        /// type or competition type. The system's existing rules then apply to
+        /// it unchanged (rule 7), which holds because nothing branches on it.
+        group.MapPost("/options/{kind}", async (
+            string kind, LookupRequest request, ClaimsPrincipal user,
+            TournamentLookups lookups, CancellationToken ct) =>
+        {
+            var (result, entry) = await lookups.AddAsync(
+                kind, request.NameAr ?? string.Empty, request.NameEn ?? string.Empty,
+                AdminIdentity.Current(user), ct);
+
+            return result.Ok
+                ? Results.Ok(new { entry!.Id, entry.Value, entry.NameAr, entry.NameEn })
+                : Problem(result);
+        }).RequirePermission(AdminPermissions.TournamentManage);
+
+        group.MapPost("/options/{id:int}/active", async (
+            int id, ActiveRequest request, ClaimsPrincipal user,
+            TournamentLookups lookups, CancellationToken ct) =>
+        {
+            var result = await lookups.SetActiveAsync(id, request.IsActive, AdminIdentity.Current(user), ct);
+            return result.Ok ? Results.Ok(new { id, request.IsActive }) : Problem(result);
+        }).RequirePermission(AdminPermissions.TournamentManage);
 
         /// The weight classes offered for a category and gender (REQ-01 rule 6).
         group.MapGet("/weight-classes", (string category, string gender) => Results.Ok(
@@ -112,6 +140,7 @@ public static class TournamentEndpoints
                 tournament = Summarise(tournament, entryCounts.Sum(c => c.Count)),
                 categories = TournamentService.Split(tournament.Categories),
                 genders = TournamentService.Split(tournament.Genders),
+                weightClasses = ReadSelection(tournament.WeightClassesJson),
                 divisions = divisions
                     .OrderBy(d => d.Category, StringComparer.Ordinal)
                     .ThenBy(d => d.Gender).ThenBy(d => d.SortWeight)
@@ -618,6 +647,20 @@ public static class TournamentEndpoints
         };
     }
 
+    /// <summary>The stored weight-class selection, for the setup screen.</summary>
+    private static Dictionary<string, List<decimal?>> ReadSelection(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, List<decimal?>>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
     private static IResult Problem(TournamentService.Outcome outcome) => Results.Json(new
     {
         message = $"{outcome.MessageAr} / {outcome.MessageEn}",
@@ -633,14 +676,20 @@ public record TournamentSetupRequest(
     string LocationAr, string LocationEn,
     DateTime StartDate, DateTime EndDate,
     string? FirstBoutTime, DateTime? RegistrationClosesAt,
-    List<string> Genders, List<string> Categories)
+    List<string> Genders, List<string> Categories,
+    Dictionary<string, List<decimal?>>? WeightClasses = null)
 {
     public TournamentService.Setup ToSetup() => new(
         NameAr, NameEn, Type, CompetitionType, LocationAr, LocationEn,
         StartDate, EndDate,
         TimeSpan.TryParse(FirstBoutTime, out var time) ? time : new TimeSpan(17, 0, 0),
-        RegistrationClosesAt, Genders ?? [], Categories ?? []);
+        RegistrationClosesAt, Genders ?? [], Categories ?? [],
+        WeightClasses?.ToDictionary(
+            pair => pair.Key,
+            pair => (IReadOnlyList<decimal?>)pair.Value));
 }
+
+public record LookupRequest(string? NameAr, string? NameEn);
 
 public record StatusRequest(string Status);
 public record RegistrationCloseRequest(DateTime ClosesAt);

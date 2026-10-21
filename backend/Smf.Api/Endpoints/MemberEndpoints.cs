@@ -183,6 +183,45 @@ public static class MemberEndpoints
             return Results.Ok(medical.Describe(file, age, gender));
         });
 
+        /// REQ-04 rule 3 — the consent an under-18's guardian downloads, signs
+        /// and uploads. Generated with the athlete's own details on it, so a
+        /// parent signs their child's form rather than a blank one.
+        group.MapGet("/me/medical/guardian-consent", async (
+            ClaimsPrincipal user, SmfDbContext db, HttpContext http, CancellationToken ct) =>
+        {
+            var holder = MemberIdentity.Current(user);
+            if (!holder.IsAthlete) return Results.Forbid();
+
+            var registration = await db.Registrations.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == holder.RegistrationId, ct);
+            if (registration is null) return Results.NotFound();
+
+            var (age, gender) = AgeAndGender(registration);
+            if (age is null or >= 18)
+            {
+                return Results.Json(new
+                {
+                    message = "موافقة ولي الأمر مطلوبة لمن هم دون 18 سنة فقط. / "
+                              + "A guardian consent is only needed below 18.",
+                }, statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var entry = await db.TournamentEntries.AsNoTracking()
+                .Include(e => e.Tournament)
+                .Where(e => e.AthleteRegistrationId == registration.Id)
+                .OrderByDescending(e => e.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+
+            var html = GuardianConsentForm.Render(
+                NameOf(registration, arabic: true) ?? registration.ReferenceNumber,
+                registration.MembershipNumber,
+                entry?.Tournament?.NameAr,
+                includePregnancyDeclaration: gender == "female");
+
+            http.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+            return Results.Content(html, "text/html; charset=utf-8");
+        });
+
         group.MapPut("/me/medical", async (
             MedicalSubmissionRequest request, ClaimsPrincipal user,
             SmfDbContext db, MedicalFileService medical, CancellationToken ct) =>

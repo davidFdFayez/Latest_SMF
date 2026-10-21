@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { tournamentsApi } from '../api/resources'
+import { athleteMedicalApi, tournamentsApi } from '../api/resources'
 import { extractErrorMessage } from '../api/utils'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
@@ -233,6 +233,7 @@ export default function TournamentEntries() {
         <MedicalDialog
           entry={medicalFor}
           onClose={() => setMedicalFor(null)}
+          onUploaded={load}
           onDone={async (body) => {
             await run(medicalFor.id, () => tournamentsApi.recordMedical(medicalFor.id, body), 'Examination recorded.')
             setMedicalFor(null)
@@ -255,10 +256,28 @@ export default function TournamentEntries() {
 }
 
 /** REQ-08 rules 5 and 6. */
-function MedicalDialog({ entry, onClose, onDone }) {
+function MedicalDialog({ entry, onClose, onDone, onUploaded }) {
   const [result, setResult] = useState('passed')
   const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const missing = entry.medicalMissing.length > 0
+
+  /* REQ-08 rule 3 — the desk can put a missing document on the record while
+     the athlete is standing in front of them. It applies at once: this is an
+     official entering it, not the athlete replacing their own. */
+  async function record(field, value) {
+    setUploadError('')
+    setSaving(true)
+    try {
+      await athleteMedicalApi.save(entry.athleteRegistrationId, value)
+      await onUploaded()
+    } catch (err) {
+      setUploadError(extractErrorMessage(err, 'Could not record that.'))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <section className="form-card">
@@ -272,6 +291,48 @@ function MedicalDialog({ entry, onClose, onDone }) {
           but the reason is recorded against your name.
         </Alert>
       )}
+
+      {uploadError && <Alert type="error">{uploadError}</Alert>}
+
+      {/* Rule 3 — record a document the athlete has brought with them. */}
+      <div className="desk-docs">
+        <label className="field">
+          <span>Medical certificate seen — date on it</span>
+          <input
+            type="date"
+            disabled={saving}
+            onChange={(event) =>
+              event.target.value &&
+              record('certificate', {
+                certificateAttachmentId: `desk-${entry.athleteRegistrationId}-${Date.now()}`,
+                certificateDate: event.target.value,
+              })
+            }
+          />
+        </label>
+        <label className="field">
+          <span>HIV / HBV / HCV screening seen — date on it</span>
+          <input
+            type="date"
+            disabled={saving}
+            onChange={(event) =>
+              event.target.value &&
+              record('screening', {
+                screeningAttachmentId: `desk-${entry.athleteRegistrationId}-${Date.now()}`,
+                screeningDate: event.target.value,
+              })
+            }
+          />
+        </label>
+        <a
+          className="btn btn--small"
+          href={athleteMedicalApi.guardianConsentUrl(entry.athleteRegistrationId)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Print guardian consent
+        </a>
+      </div>
 
       <div className="form-grid">
         <label className="field">

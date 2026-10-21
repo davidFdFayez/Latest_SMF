@@ -74,6 +74,13 @@ public class Tournament
     public string Categories { get; set; } = string.Empty;
 
     /// <summary>
+    /// Which weight classes this tournament runs, per category and gender
+    /// (REQ-01 rule 6), as JSON of "category:gender" to the chosen upper
+    /// limits. Null means every class those categories offer.
+    /// </summary>
+    public string? WeightClassesJson { get; set; }
+
+    /// <summary>
     /// Rings are deliberately not set here. REQ-01 rule 8 defers them to
     /// scheduling, once the draw shows how many bouts there actually are.
     /// </summary>

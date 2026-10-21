@@ -27,6 +27,9 @@ export default function TournamentDraw() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [reason, setReason] = useState('')
+  // REQ-10 rule 6 — the corner being amended, and the reason it is.
+  const [editing, setEditing] = useState(null)
+  const [entries, setEntries] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -55,7 +58,12 @@ export default function TournamentDraw() {
   useEffect(() => {
     if (!selected) return
     loadBracket(selected).catch((err) => setError(extractErrorMessage(err, 'Could not load the draw.')))
-  }, [selected, loadBracket])
+    // The athletes this division holds, which is who a corner may be given to.
+    tournamentsApi
+      .entries(id, { divisionId: selected })
+      .then(setEntries)
+      .catch(() => setEntries([]))
+  }, [selected, loadBracket, id])
 
   async function act(action, message) {
     setError('')
@@ -200,6 +208,19 @@ export default function TournamentDraw() {
                         </div>
                         {bout.isWalkover && <span className="bracket__tag">Walkover</span>}
                         {bout.isBye && !bout.isWalkover && <span className="bracket__tag">Bye</span>}
+
+                        {/* Rule 6 — the delegate may add, remove or move an
+                            athlete after publishing, with a reason. */}
+                        <div className="bracket__edit">
+                          <button type="button" className="btn btn--tiny"
+                                  onClick={() => setEditing({ bout, corner: 'red' })}>
+                            Red
+                          </button>
+                          <button type="button" className="btn btn--tiny"
+                                  onClick={() => setEditing({ bout, corner: 'blue' })}>
+                            Blue
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -207,8 +228,85 @@ export default function TournamentDraw() {
               </div>
             )}
           </section>
+
+          {editing && (
+            <CornerDialog
+              editing={editing}
+              entries={entries}
+              busy={working}
+              onClose={() => setEditing(null)}
+              onSave={(entryId, why) =>
+                act(
+                  () =>
+                    tournamentsApi.setCorner(editing.bout.id, {
+                      corner: editing.corner,
+                      entryId,
+                      reason: why,
+                    }),
+                  'Draw amended.',
+                ).then(() => setEditing(null))
+              }
+            />
+          )}
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * Changing who is in a corner — REQ-10 rule 6. Leaving the athlete empty
+ * removes them; the reason is compulsory, and it is what the audit trail
+ * carries.
+ */
+function CornerDialog({ editing, entries, busy, onClose, onSave }) {
+  const [entryId, setEntryId] = useState(
+    (editing.corner === 'red' ? editing.bout.red?.id : editing.bout.blue?.id) || '',
+  )
+  const [why, setWhy] = useState('')
+
+  return (
+    <section className="form-card">
+      <h3 className="form-section-title form-section-title--first">
+        {editing.corner === 'red' ? 'Red' : 'Blue'} corner
+      </h3>
+      <p className="form-card__intro">
+        Add an athlete, replace the one here, or leave it empty to take them out. The reason is recorded
+        in the activity log against your name.
+      </p>
+
+      <div className="form-grid">
+        <label className="field">
+          <span>Athlete</span>
+          <select value={entryId} onChange={(event) => setEntryId(event.target.value)}>
+            <option value="">— empty —</option>
+            {entries.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.nameEn || entry.nameAr} · {entry.statusEn}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <label className="field">
+        <span>Why — required</span>
+        <textarea rows={2} value={why} onChange={(event) => setWhy(event.target.value)} />
+      </label>
+
+      <div className="form-actions">
+        <button type="button" className="btn btn--ghost" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn--primary"
+          disabled={busy || !why.trim()}
+          onClick={() => onSave(entryId ? Number(entryId) : null, why.trim())}
+        >
+          Save
+        </button>
+      </div>
+    </section>
   )
 }

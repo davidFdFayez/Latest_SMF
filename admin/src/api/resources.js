@@ -386,6 +386,11 @@ export const tournamentsApi = {
     const response = await client.get(`/admin/tournaments/${id}`)
     return response.data
   },
+  /** REQ-01 rules 2 and 3 — add to the tournament-type or competition-type list. */
+  async addOption(kind, body) {
+    const response = await client.post(`/admin/tournaments/options/${kind}`, body)
+    return response.data
+  },
   async weightClasses(category, gender) {
     const response = await client.get('/admin/tournaments/weight-classes', {
       params: { category, gender },
@@ -528,6 +533,10 @@ export const athleteMedicalApi = {
   async reject(athleteId, reason) {
     const response = await client.post(`/admin/athletes/${athleteId}/medical/reject`, { reason })
     return response.data
+  },
+  /** REQ-04 rule 3 — the printable guardian consent, with the athlete on it. */
+  guardianConsentUrl(athleteId) {
+    return `/api/admin/athletes/${athleteId}/medical/guardian-consent`
   },
   async suspensions(athleteId) {
     const response = await client.get(`/admin/athletes/${athleteId}/suspensions`)

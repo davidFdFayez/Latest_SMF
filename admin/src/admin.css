@@ -2380,3 +2380,83 @@ textarea:focus {
   .bout { grid-template-columns: 1fr; }
   .sched-division__head { flex-direction: column; align-items: stretch; }
 }
+
+
+/* The examination desk recording a document the athlete brought (REQ-08 rule 3). */
+.desk-docs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  margin-block-end: 1rem;
+  border: 1px dashed var(--line, #cbd5e1);
+  border-radius: 10px;
+}
+
+.desk-docs .field { margin: 0; flex: 0 1 15rem; }
+
+/* Amending a corner in a published draw (REQ-10 rule 6). */
+.bracket__edit { display: flex; gap: 0.25rem; margin-block-start: 0.35rem; }
+
+.btn--tiny {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.68rem;
+  border-radius: 6px;
+  border: 1px solid var(--line, #cbd5e1);
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Choosing which weight classes a tournament runs (REQ-01 rule 6). */
+.weights {
+  display: grid;
+  gap: 0.35rem;
+  padding-block: 0.6rem;
+  border-block-end: 1px solid var(--line, #e2e8f0);
+}
+
+.weights__pair {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.weights__pair em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--muted, #64748b);
+}
+
+.weights__list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+.weights__chip {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.weights__chip.is-on {
+  background: var(--brand, #0a7c4a);
+  border-color: var(--brand, #0a7c4a);
+  color: #fff;
+}
+
+.link-btn {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.76rem;
+  color: var(--brand, #0a7c4a);
+  text-decoration: underline;
+  cursor: pointer;
+}

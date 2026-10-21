@@ -11,7 +11,7 @@ namespace Smf.Api.Services;
 /// rather than as an exception, because all of them are things a person did
 /// and can undo.
 /// </summary>
-public class TournamentService(SmfDbContext db, AuditLogger audit)
+public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLookups lookups)
 {
     public sealed record Outcome(bool Ok, int Status, string MessageAr, string MessageEn)
     {
@@ -34,7 +34,20 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
         TimeSpan FirstBoutTime,
         DateTime? RegistrationClosesAt,
         IReadOnlyList<string> Genders,
-        IReadOnlyList<string> Categories);
+        IReadOnlyList<string> Categories,
+        /// <summary>
+        /// REQ-01 rule 6 — which weight classes to run, keyed
+        /// "category:gender" and listing the upper limits chosen. An entry of
+        /// null for the limit is the open "+" class at the top.
+        ///
+        /// Omitted, or an empty list for a pairing, means every class that
+        /// category and gender offers — the sensible default when a federation
+        /// is running a full championship.
+        /// </summary>
+        IReadOnlyDictionary<string, IReadOnlyList<decimal?>>? WeightClasses = null);
+
+    /// <summary>The key a weight-class selection is stored under.</summary>
+    public static string PairKey(string category, string gender) => $"{category}:{gender}";
 
     /* ── creation and editing ───────────────────────────────────────────── */
 
@@ -44,6 +57,7 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
         CancellationToken cancellationToken = default)
     {
         if (Validate(setup) is { Ok: false } invalid) return (invalid, null);
+        if (await ValidateListsAsync(setup, cancellationToken) is { Ok: false } unknown) return (unknown, null);
 
         var tournament = new Tournament
         {
@@ -61,6 +75,7 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
                 ?? setup.StartDate.Date.AddDays(-Tournament.DefaultRegistrationCloseDays),
             Genders = string.Join(',', setup.Genders.Distinct()),
             Categories = string.Join(',', setup.Categories.Distinct()),
+            WeightClassesJson = WriteSelection(setup.WeightClasses),
             Status = TournamentStatuses.Draft,
             CreatedBy = actor.Username,
             LastActionBy = actor.Username,
@@ -84,6 +99,7 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
         CancellationToken cancellationToken = default)
     {
         if (Validate(setup) is { Ok: false } invalid) return invalid;
+        if (await ValidateListsAsync(setup, cancellationToken) is { Ok: false } unknown) return unknown;
 
         // The categories and weights decide the divisions, and a division with
         // entries in it cannot simply vanish underneath them.
@@ -107,6 +123,7 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
         tournament.FirstBoutTime = setup.FirstBoutTime;
         tournament.Genders = string.Join(',', setup.Genders.Distinct());
         tournament.Categories = string.Join(',', setup.Categories.Distinct());
+        tournament.WeightClassesJson = WriteSelection(setup.WeightClasses);
         tournament.UpdatedAt = DateTime.UtcNow;
         tournament.LastActionBy = actor.Username;
 
@@ -224,8 +241,10 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
         var categories = Split(tournament.Categories);
         var genders = Split(tournament.Genders);
 
+        var selection = ReadSelection(tournament.WeightClassesJson);
+
         var wanted = TournamentEligibility
-            .Plan(categories, genders, WeightClasses.For)
+            .Plan(categories, genders, (category, gender) => Chosen(category, gender, selection))
             .ToList();
 
         var existing = await db.TournamentDivisions
@@ -263,14 +282,52 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// The weight classes a pairing runs: those the federation picked, or all
+    /// of them when it picked none.
+    /// </summary>
+    private static IReadOnlyList<Data.WeightClasses.WeightClass> Chosen(
+        string category,
+        string gender,
+        IReadOnlyDictionary<string, List<decimal?>> selection)
+    {
+        var all = Data.WeightClasses.For(category, gender);
+        if (!selection.TryGetValue(PairKey(category, gender), out var limits) || limits.Count == 0)
+            return all;
+
+        var wanted = limits.ToHashSet();
+        return all.Where(entry => wanted.Contains(entry.LimitKg)).ToList();
+    }
+
+    private static Dictionary<string, List<decimal?>> ReadSelection(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try
+        {
+            return System.Text.Json.JsonSerializer
+                .Deserialize<Dictionary<string, List<decimal?>>>(json) ?? [];
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return [];
+        }
+    }
+
+    private static string? WriteSelection(IReadOnlyDictionary<string, IReadOnlyList<decimal?>>? selection) =>
+        selection is null || selection.Count == 0
+            ? null
+            : System.Text.Json.JsonSerializer.Serialize(selection);
+
     /// <summary>Divisions an edit would remove that already have entries.</summary>
     private async Task<List<TournamentDivision>> DivisionsLostBy(
         Tournament tournament,
         Setup setup,
         CancellationToken cancellationToken)
     {
+        var selection = ReadSelection(WriteSelection(setup.WeightClasses));
+
         var keep = TournamentEligibility
-            .Plan(setup.Categories, setup.Genders, WeightClasses.For)
+            .Plan(setup.Categories, setup.Genders, (category, gender) => Chosen(category, gender, selection))
             .Select(w => (w.Category, w.Gender, w.Limit))
             .ToHashSet();
 
@@ -285,6 +342,22 @@ public class TournamentService(SmfDbContext db, AuditLogger audit)
     }
 
     /* ── validation ─────────────────────────────────────────────────────── */
+
+    /// <summary>
+    /// The type and competition type have to be on their lists — including
+    /// anything the federation added, which is why this needs the database
+    /// (REQ-01 rules 2, 3 and 7).
+    /// </summary>
+    private async Task<Outcome> ValidateListsAsync(Setup setup, CancellationToken cancellationToken)
+    {
+        if (!await lookups.IsKnownAsync(LookupKinds.TournamentType, setup.Type, cancellationToken))
+            return Outcome.Invalid($"نوع بطولة غير معروف: {setup.Type}.", $"Unknown tournament type: {setup.Type}.");
+
+        if (!await lookups.IsKnownAsync(LookupKinds.CompetitionType, setup.CompetitionType, cancellationToken))
+            return Outcome.Invalid($"نوع منافسة غير معروف: {setup.CompetitionType}.", $"Unknown competition type: {setup.CompetitionType}.");
+
+        return Outcome.Success();
+    }
 
     private static Outcome Validate(Setup setup)
     {

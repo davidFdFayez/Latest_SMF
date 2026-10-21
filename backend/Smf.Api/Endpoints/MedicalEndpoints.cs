@@ -63,6 +63,34 @@ public static class MedicalEndpoints
             return Results.Ok(service.Describe(file, age, gender));
         }).RequirePermission(AdminPermissions.TournamentTechnical, AdminPermissions.TournamentEntries);
 
+        /// The same consent form, for a desk that needs to hand one over.
+        group.MapGet("/{athleteId:int}/medical/guardian-consent", async (
+            int athleteId, SmfDbContext db, HttpContext http, CancellationToken ct) =>
+        {
+            var athlete = await db.Registrations.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == athleteId, ct);
+            if (athlete is null) return Results.NotFound();
+
+            var (age, gender) = Describe(athlete);
+
+            var entry = await db.TournamentEntries.AsNoTracking()
+                .Include(e => e.Tournament)
+                .Where(e => e.AthleteRegistrationId == athleteId)
+                .OrderByDescending(e => e.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+
+            var html = GuardianConsentForm.Render(
+                RegistrationPayload.DisplayName(
+                    System.Text.Json.JsonDocument.Parse(athlete.PayloadJson).RootElement, true)
+                    ?? athlete.ReferenceNumber,
+                athlete.MembershipNumber,
+                entry?.Tournament?.NameAr,
+                includePregnancyDeclaration: gender == "female" && age is < 18);
+
+            http.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+            return Results.Content(html, "text/html; charset=utf-8");
+        }).RequirePermission(AdminPermissions.TournamentTechnical, AdminPermissions.TournamentEntries);
+
         group.MapPost("/{athleteId:int}/medical/approve", async (
             int athleteId, ClaimsPrincipal user, SmfDbContext db,
             MedicalFileService service, CancellationToken ct) =>
