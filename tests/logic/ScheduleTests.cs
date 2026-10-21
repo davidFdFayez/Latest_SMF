@@ -234,6 +234,74 @@ public static class ScheduleTests
             Check("a date outside the tournament is corrected", fixedUp.Slots.Single().Date == day1);
         }
 
+
+        Console.WriteLine();
+        Console.WriteLine("=== rule 17: a division may run to its own time and interval ===");
+        {
+            var divisionRing = new Dictionary<int, int> { [10] = 1, [20] = 1 };
+            var noDates = new Dictionary<int, DateTime>();
+
+            // Its own interval, the ring's start time.
+            var ownInterval = BoutScheduler.Build(
+                Bouts(3), [ringA], divisionRing, noDates, [day1],
+                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
+                {
+                    [10] = new(null, 7),
+                });
+            Check("its own interval replaces the ring's",
+                string.Join(", ", ownInterval.Slots.OrderBy(s => s.OrderInRing)
+                    .Select(s => s.StartTime.ToString(@"hh\:mm"))) == "17:00, 17:07, 17:14",
+                string.Join(", ", ownInterval.Slots.OrderBy(s => s.OrderInRing)
+                    .Select(s => s.StartTime.ToString(@"hh\:mm"))));
+
+            // Its own start time, later than the ring's.
+            var ownStart = BoutScheduler.Build(
+                Bouts(2), [ringA], divisionRing, noDates, [day1],
+                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
+                {
+                    [10] = new(new TimeSpan(19, 30, 0), 7),
+                });
+            Check("its own start time replaces the ring's",
+                string.Join(", ", ownStart.Slots.OrderBy(s => s.OrderInRing)
+                    .Select(s => s.StartTime.ToString(@"hh\:mm"))) == "19:30, 19:37",
+                string.Join(", ", ownStart.Slots.OrderBy(s => s.OrderInRing)
+                    .Select(s => s.StartTime.ToString(@"hh\:mm"))));
+
+            // Two divisions in one ring: the second waits for its own time.
+            var pair = Bouts(2, 10, "u18", 45).Concat(Bouts(2, 20, "u18", 48, 200)).ToList();
+            var both = BoutScheduler.Build(
+                pair, [ringA], divisionRing, noDates, [day1],
+                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
+                {
+                    [20] = new(new TimeSpan(20, 0, 0), 10),
+                });
+            var ordered = both.Slots.OrderBy(s => s.OrderInRing)
+                .Select(s => s.StartTime.ToString(@"hh\:mm")).ToList();
+            Check("the lighter division runs on the ring's settings and the second on its own",
+                string.Join(", ", ordered) == "17:00, 17:15, 20:00, 20:10",
+                string.Join(", ", ordered));
+
+            // A start time already past is ignored rather than doubling bouts up.
+            var tooEarly = BoutScheduler.Build(
+                pair, [ringA], divisionRing, noDates, [day1],
+                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
+                {
+                    [20] = new(new TimeSpan(16, 0, 0), 15),
+                });
+            var times = tooEarly.Slots.OrderBy(s => s.OrderInRing).Select(s => s.StartTime).ToList();
+            Check("a start time earlier than the ring has already reached cannot overlap",
+                times.Zip(times.Skip(1)).All(p => p.Second > p.First),
+                string.Join(", ", times.Select(t => t.ToString(@"hh\:mm"))));
+
+            // Nothing given means nothing changes.
+            var plain = BoutScheduler.Build(
+                Bouts(3), [ringA], divisionRing, noDates, [day1],
+                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>());
+            Check("a division with nothing of its own still runs on the ring's",
+                string.Join(", ", plain.Slots.OrderBy(s => s.OrderInRing)
+                    .Select(s => s.StartTime.ToString(@"hh\:mm"))) == "17:00, 17:15, 17:30");
+        }
+
         Console.WriteLine();
         Console.WriteLine(failures.Count == 0 ? "FAILED: none" : "FAILED: " + string.Join(", ", failures));
         return failures.Count == 0 ? 0 : 1;

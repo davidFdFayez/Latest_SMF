@@ -175,13 +175,20 @@ public class DrawService(SmfDbContext db, AuditLogger audit)
                     "That athlete is not in this division.");
             }
 
-            // The same athlete cannot occupy both corners.
+            // Naming the athlete who is already in the other corner is how a
+            // jury asks for the two to change places, which is the common
+            // amendment. Doing it in two steps would leave the bout with the
+            // same athlete in both corners in between, so it is one move.
             var other = corner == "red" ? bout.BlueEntryId : bout.RedEntryId;
             if (other == id)
             {
-                return Outcome.Invalid(
-                    "لا يمكن أن يواجه اللاعب نفسه.",
-                    "An athlete cannot face themselves.");
+                (bout.RedEntryId, bout.BlueEntryId) = (bout.BlueEntryId, bout.RedEntryId);
+
+                audit.Write(actor, AuditActions.DrawAmended, "bout", bout.Id,
+                    details: $"corners swapped: red {other} <-> blue {bout.BlueEntryId}. Reason: {reason}");
+
+                await db.SaveChangesAsync(cancellationToken);
+                return Outcome.Success();
             }
         }
 

@@ -305,11 +305,24 @@ say("=== REQ-05 rule 4 / REQ-07 rule 2: entering from a portal ===")
 
 status, tournaments = call("GET", "/api/member/tournaments", token=CLUB)
 check("the club sees published tournaments", len(tournaments) >= 1, len(tournaments))
-tid = tournaments[0]["id"]
 
-status, eligible = call("GET", "/api/member/tournaments/%d/eligible" % tid, token=CLUB)
+# A portal shows every published tournament, and a club with one athlete will
+# not be able to enter all of them. Take the first that this athlete fits,
+# rather than the first in the list, so the order they were created in does
+# not decide whether this passes.
+tid, eligible, candidate = tournaments[0]["id"], [], None
+for offered in tournaments:
+    status, listed = call("GET", "/api/member/tournaments/%d/eligible" % offered["id"], token=CLUB)
+    if status != 200:
+        continue
+    found = next((a for a in listed if a["canEnter"]), None)
+    if eligible == [] or found is not None:
+        tid, eligible = offered["id"], listed
+    if found is not None:
+        candidate = found
+        break
+
 check("the club is shown its athletes and whether each may enter", len(eligible) >= 1, len(eligible))
-candidate = next((a for a in eligible if a["canEnter"]), None)
 check("at least one is eligible", candidate is not None,
       [a["barriers"] for a in eligible])
 

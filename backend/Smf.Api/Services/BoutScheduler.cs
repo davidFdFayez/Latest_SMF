@@ -19,6 +19,8 @@ namespace Smf.Api.Services;
 /// order, so rings run side by side (rules 9 and 11).</item>
 /// <item>Start times are generated, never typed: first bout plus the interval,
 /// one after another down the ring (rule 10).</item>
+/// <item>A division may run to its own first-bout time and its own interval,
+/// which override the ring's for its bouts (rule 17).</item>
 /// <item>Bout numbers run sequentially through the rings within a day and
 /// carry on into the next day instead of restarting (rule 12).</item>
 /// <item>An athlete has one bout a day by default. Where more are allowed:
@@ -35,6 +37,13 @@ public static class BoutScheduler
         int SortOrder,
         TimeSpan FirstBoutTime,
         int IntervalMinutes);
+
+    /// <summary>
+    /// What a division runs to, where it has been given anything of its own
+    /// (rule 17). Either part may be absent, and the ring's own setting is
+    /// used for whatever is.
+    /// </summary>
+    public sealed record DivisionTiming(TimeSpan? FirstBoutTime, int? IntervalMinutes);
 
     /// <summary>A bout as the scheduler needs to see it.</summary>
     public sealed record Entry(
@@ -86,13 +95,18 @@ public static class BoutScheduler
     /// One by default. The federation may raise it to at most three, and the
     /// rest rule then applies.
     /// </param>
+    /// <param name="divisionTiming">
+    /// A start time or an interval a division runs to instead of its ring's
+    /// (rule 17).
+    /// </param>
     public static Plan Build(
         IReadOnlyList<Entry> bouts,
         IReadOnlyList<Ring> rings,
         IReadOnlyDictionary<int, int> divisionRing,
         IReadOnlyDictionary<int, DateTime> divisionDate,
         IReadOnlyList<DateTime> days,
-        int boutsPerAthletePerDay = DefaultBoutsPerAthletePerDay)
+        int boutsPerAthletePerDay = DefaultBoutsPerAthletePerDay,
+        IReadOnlyDictionary<int, DivisionTiming>? divisionTiming = null)
     {
         if (rings.Count == 0 || bouts.Count == 0 || days.Count == 0) return new Plan([], []);
 
@@ -139,17 +153,45 @@ public static class BoutScheduler
                     .ThenBy(p => p.Bout.Position)
                     .ToList();
 
+                /* Rules 10 and 17 — the clock runs down the ring rather than
+                   each time being worked out from the position, because a
+                   division may carry its own interval and its own start time.
+                   A division's start time moves the clock forward to it and
+                   never back, so its bouts cannot land on top of the ones
+                   already placed above them. */
+                var clock = ring.FirstBoutTime;
+                var previousDivision = 0;
+
                 for (var i = 0; i < inRing.Count; i++)
                 {
-                    // Rule 10 — the time follows from the position in the ring.
-                    var start = ring.FirstBoutTime.Add(TimeSpan.FromMinutes((double)i * ring.IntervalMinutes));
+                    var divisionId = inRing[i].Bout.DivisionId;
+                    var timing = divisionTiming is not null
+                                 && divisionTiming.TryGetValue(divisionId, out var own)
+                        ? own
+                        : null;
+
+                    if (i > 0)
+                    {
+                        var interval = timing?.IntervalMinutes ?? ring.IntervalMinutes;
+                        clock = clock.Add(TimeSpan.FromMinutes(interval));
+                    }
+
+                    // Rule 17 — the division's own first bout starts when it says.
+                    if (divisionId != previousDivision
+                        && timing?.FirstBoutTime is { } wanted
+                        && wanted > clock)
+                    {
+                        clock = wanted;
+                    }
+
+                    previousDivision = divisionId;
 
                     slots.Add(new Slot(
                         inRing[i].Bout.BoutId,
                         day.Date,
                         ring.RingId,
                         i + 1,
-                        start,
+                        clock,
                         BoutNumber: 0));
                 }
             }

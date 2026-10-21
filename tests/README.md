@@ -24,7 +24,8 @@ Covers, rule by rule against the signed Phase 3 document:
   byes advancing, a complete connected tree, round names including
   "Preliminary", no third-place bout, club separation across 200 draws, and
   reproducibility from a seed so a draw can be re-run in a dispute.
-- **REQ-11** — per-ring start times and intervals, the document's own
+- **REQ-11** — per-ring start times and intervals, a division running to its
+  own start time and interval over its ring's, the document's own
   bout-numbering example, lightest division first, a pinned bout surviving a
   regeneration, and the three athlete-safety rules.
 
@@ -48,9 +49,19 @@ beyond the standard library.
 - `test_accounts.py` — REQ-04 to REQ-07: the medical file, invitations and
   activation, the club, coach and athlete portals, and the separation between
   a member's token and the console's.
+- `test_gaps.py` — the rules that were implied rather than operable until the
+  second pass: extending the two type lists and running a tournament on an
+  added type, picking which weight classes a tournament runs, the guardian
+  consent form as a document, swapping two corners, and a division with its
+  own start time and interval.
 
 Each check prints `PASS` or `FAIL` with what it actually saw, and the run ends
-with `FAILED: none` or the names of what broke. The exit code follows.
+with `FAILED: none` or the names of what broke. The exit code follows. Set
+`SMF_TEST_LOG` to keep a copy of a run.
+
+The three suites share one database, each building its own tournaments and
+athletes, so the order they run in does not matter and a run can be repeated
+against a database that has already been used.
 
 ## What is not here
 

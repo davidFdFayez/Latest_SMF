@@ -249,7 +249,8 @@ public class ScheduleService(SmfDbContext db, AuditLogger audit)
             .ToDictionary(d => d.Id, d => d.ScheduledDate!.Value.Date);
 
         var plan = BoutScheduler.Build(
-            input, ringSettings, divisionRing, divisionDate, tournament.Days(), boutsPerAthletePerDay);
+            input, ringSettings, divisionRing, divisionDate, tournament.Days(), boutsPerAthletePerDay,
+            TimingOf(divisions));
 
         var bySlot = plan.Slots.ToDictionary(s => s.BoutId);
 
@@ -288,6 +289,19 @@ public class ScheduleService(SmfDbContext db, AuditLogger audit)
     /// The schedule as REQ-11 rule 2 asks it to read: grouped by category,
     /// divisions within it lightest first, bouts under each.
     /// </summary>
+    /// <summary>
+    /// What each division runs to where it has been given anything of its own
+    /// (REQ-11 rule 17). Divisions with neither are left out, so the ring's
+    /// own settings go on applying.
+    /// </summary>
+    private static Dictionary<int, BoutScheduler.DivisionTiming> TimingOf(
+        IEnumerable<TournamentDivision> divisions) =>
+        divisions
+            .Where(d => d.FirstBoutTime is not null || d.BoutIntervalMinutes is not null)
+            .ToDictionary(
+                d => d.Id,
+                d => new BoutScheduler.DivisionTiming(d.FirstBoutTime, d.BoutIntervalMinutes));
+
     public async Task<object> ViewAsync(int tournamentId, CancellationToken cancellationToken = default)
     {
         var tournament = await db.Tournaments.FirstAsync(t => t.Id == tournamentId, cancellationToken);
@@ -339,7 +353,8 @@ public class ScheduleService(SmfDbContext db, AuditLogger audit)
                 r.BoutIntervalMinutes ?? DefaultIntervalMinutes)).ToList(),
             divisions.Where(d => d.DefaultRingId is not null).ToDictionary(d => d.Id, d => d.DefaultRingId!.Value),
             divisions.Where(d => d.ScheduledDate is not null).ToDictionary(d => d.Id, d => d.ScheduledDate!.Value.Date),
-            tournament.Days());
+            tournament.Days(),
+            divisionTiming: TimingOf(divisions));
 
         return new
         {
