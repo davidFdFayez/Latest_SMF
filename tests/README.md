@@ -58,6 +58,14 @@ beyond the standard library.
   added type, picking which weight classes a tournament runs, the guardian
   consent form as a document, swapping two corners, and a division with its
   own start time and interval.
+- `test_rules.py` — written from the document's sentences rather than
+  alongside the code, because a suite written with the code can agree with
+  it and both be wrong. Every one of the eleven age bands at both ends, the
+  two overlap examples the document works out by hand, what a Failed
+  examination and a Failed weigh-in actually stop, a weigh-in moving an
+  athlete's registered class, and the paths nothing had ever driven: a coach
+  entering an athlete, the technical team changing a class after
+  registration, one athlete in two tournaments.
 - `test_brd.py` — the rules the document states exactly, held to its own
   numbers: the weight table as the API serves it, the create-then-approve
   permission pairs with a user who holds only one half of each, approving the

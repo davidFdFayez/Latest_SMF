@@ -106,6 +106,44 @@ public class TournamentEntryService(SmfDbContext db, AuditLogger audit)
                 "The chosen track does not match the chosen category."), null);
         }
 
+        /* A Division is Category + Gender + Weight Class (REQ-02 rule 5), and
+           the athlete picks a class when they register (REQ-03 rule 6). So an
+           entry that named only a category still has to land in one: the class
+           its declared weight falls into. Without that it would be an entry in
+           no division, which weighs in against nothing and appears in no
+           bracket — registered as far as the athlete can see, and absent on
+           the day. */
+        if (division is null)
+        {
+            var open = verdict.Options.FirstOrDefault(o => o.Category == category);
+            if (open is null)
+            {
+                return (Outcome.Conflict(
+                    "هذه الفئة غير متاحة لهذا اللاعب.",
+                    "That category is not open to this athlete."), null);
+            }
+
+            if (request.DeclaredWeightKg is not { } declared)
+            {
+                return (Outcome.Invalid(
+                    "يجب تحديد فئة الوزن أو الوزن الحالي.",
+                    "A weight class must be chosen, or a current weight given to place one."), null);
+            }
+
+            var landed = open.Divisions.FirstOrDefault(d =>
+                (d.WeightFloorKg is null || declared > d.WeightFloorKg)
+                && (d.WeightLimitKg is null || declared <= d.WeightLimitKg));
+
+            if (landed is null)
+            {
+                return (Outcome.Conflict(
+                    $"لا توجد فئة وزن في هذه البطولة تناسب {declared:0.##} كجم.",
+                    $"This tournament runs no weight class that {declared:0.##} kg falls into."), null);
+            }
+
+            division = divisions.First(d => d.Id == landed.DivisionId);
+        }
+
         var entry = new TournamentEntry
         {
             TournamentId = tournament.Id,
