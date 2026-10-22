@@ -72,7 +72,7 @@ export SMF_TEST_DB="$WORK/smf.db"
 export SMF_TEST_OUTBOX="$WORK/outbox"
 
 status=0
-for suite in test_phase3 test_accounts test_gaps; do
+for suite in test_phase3 test_accounts test_gaps test_brd; do
   echo
   echo "=============================================================="
   echo " $suite"

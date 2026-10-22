@@ -71,8 +71,9 @@ public class Bout
     public TimeSpan? StartTime { get; set; }
 
     /// <summary>
-    /// Sequential across the whole tournament, by ring order within a day and
-    /// continuing into the next day rather than restarting (REQ-11 rule 12).
+    /// Sequential across the whole tournament, following the clock across all
+    /// of a day's rings and continuing into the next day rather than
+    /// restarting (REQ-11 rule 12). Byes never get one.
     /// </summary>
     public int? BoutNumber { get; set; }
 
@@ -81,6 +82,15 @@ public class Bout
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>A bout that needs a slot in the schedule: two athletes, actually happening.</summary>
-    public bool IsSchedulable => !IsBye && RedEntryId is not null && BlueEntryId is not null;
+    /// <summary>
+    /// A bout that needs a slot in the schedule.
+    ///
+    /// Everything that is an actual bout, which is everything that is not a
+    /// bye. A later-round bout whose corners still read "winner of bout 10"
+    /// is one of them: REQ-11 rule 11 says it takes a day, a ring, an order,
+    /// a start time and a bout number before anybody knows who will be in it,
+    /// and the names drop in when the earlier bouts finish. A bye never does,
+    /// because a bye is not a bout.
+    /// </summary>
+    public bool IsSchedulable => !IsBye;
 }

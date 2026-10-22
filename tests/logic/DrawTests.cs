@@ -21,6 +21,22 @@ public static class DrawTests
         static List<DrawBuilder.Contender> Pool(int n, string? club = null) =>
             Enumerable.Range(1, n).Select(i => new DrawBuilder.Contender(i, club ?? $"club{i}")).ToList();
 
+        /* The shuffle is seeded, so to compare against the document's own
+           "Athlete 1 vs Athlete 2" the ids are renumbered into drawn order
+           afterwards rather than fought against the shuffle. */
+        static List<DrawBuilder.Contender> InOrder(int n)
+        {
+            var drawn = DrawBuilder.Build(Pool(n), seed: 1).Bouts
+                .Where(b => b.Round == 1).OrderBy(b => b.Position)
+                .SelectMany(b => new[] { b.RedEntryId, b.BlueEntryId })
+                .Where(id => id is not null).Select(id => id!.Value).ToList();
+
+            var place = drawn.Select((id, index) => (id, index))
+                .ToDictionary(e => e.id, e => e.index + 1);
+
+            return Pool(n).Select(c => c with { EntryId = place[c.EntryId] }).ToList();
+        }
+
         Console.WriteLine("=== bracket size and bye count (rule 2) ===");
         foreach (var (n, bracket, byes) in new[]
                  {
@@ -169,6 +185,45 @@ public static class DrawTests
             var two = DrawBuilder.Build(Pool(2), 1);
             Check("two athletes are a single final",
                 two.Bouts.Count == 1 && two.TotalRounds == 1 && two.ByeCount == 0);
+        }
+
+
+        Console.WriteLine();
+        Console.WriteLine("=== rule 3: the document's own two bye examples, slot for slot ===");
+        {
+            /* The document works both cases out by hand, so they are checked
+               against its numbers rather than against a property. "A1" here
+               is the first athlete in draw order, which is what its examples
+               mean by Athlete 1. */
+            static string RoundTwo(DrawBuilder.Draw draw)
+            {
+                // Who arrives in each round-two slot: a bye carries its
+                // athlete, a contested bout carries its winner.
+                var firstRound = draw.Bouts.Where(b => b.Round == 1).OrderBy(b => b.Position).ToList();
+
+                var arrivals = firstRound
+                    .Select(b => b.IsBye ? $"A{b.RedEntryId}" : $"W(A{b.RedEntryId}vA{b.BlueEntryId})")
+                    .ToList();
+
+                return string.Join(", ", Enumerable.Range(0, arrivals.Count / 2)
+                    .Select(i => $"{arrivals[i * 2]} v {arrivals[(i * 2) + 1]}"));
+            }
+
+            // Ten athletes, six byes — an even number, so they pair against
+            // each other first and the two winners meet last.
+            var ten = DrawBuilder.Build(InOrder(10), seed: 1);
+            Check("10 athletes give 6 byes", ten.ByeCount == 6, ten.ByeCount.ToString());
+            Check("round two reads A1vA2, A3vA4, A5vA6, then the two winners",
+                RoundTwo(ten) == "A1 v A2, A3 v A4, A5 v A6, W(A7vA8) v W(A9vA10)",
+                RoundTwo(ten));
+
+            // Nine athletes, seven byes — an odd number, so the last bye
+            // holder meets the winner of the single first-round bout.
+            var nine = DrawBuilder.Build(InOrder(9), seed: 1);
+            Check("9 athletes give 7 byes", nine.ByeCount == 7, nine.ByeCount.ToString());
+            Check("round two reads A1vA2, A3vA4, A5vA6, A7 v the winner",
+                RoundTwo(nine) == "A1 v A2, A3 v A4, A5 v A6, A7 v W(A8vA9)",
+                RoundTwo(nine));
         }
 
         Console.WriteLine();

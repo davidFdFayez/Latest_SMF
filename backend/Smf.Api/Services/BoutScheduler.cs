@@ -21,8 +21,9 @@ namespace Smf.Api.Services;
 /// one after another down the ring (rule 10).</item>
 /// <item>A division may run to its own first-bout time and its own interval,
 /// which override the ring's for its bouts (rule 17).</item>
-/// <item>Bout numbers run sequentially through the rings within a day and
-/// carry on into the next day instead of restarting (rule 12).</item>
+/// <item>Bout numbers follow the clock across all the rings of a day, with
+/// the ring order breaking a tie, and carry on into the next day instead of
+/// restarting (rule 12).</item>
 /// <item>An athlete has one bout a day by default. Where more are allowed:
 /// two hours between them, three in a day at most, and never two at once in
 /// different rings (rules 14 to 16).</item>
@@ -198,21 +199,28 @@ public static class BoutScheduler
         }
 
         /* ── 3. number them ─────────────────────────────────────────────────
-           Rule 12 — through the rings within a day, then on into the next day
-           rather than back to one. */
+           Rule 12 — by the clock, across every ring at once, not ring by ring:
+           a bout in Ring B at 2:30 is numbered before one in Ring A at 3:00,
+           because that is the order the day actually happens in. Two bouts
+           starting together are separated by the ring order. The count carries
+           on into the next day rather than going back to one. */
+        var ringOrder = rings
+            .OrderBy(r => r.SortOrder).ThenBy(r => r.RingId)
+            .Select((ring, index) => (ring.RingId, Index: index))
+            .ToDictionary(entry => entry.RingId, entry => entry.Index);
+
         var numbered = new List<Slot>(slots.Count);
         var number = 1;
 
         foreach (var day in days)
         {
-            foreach (var ring in rings.OrderBy(r => r.SortOrder).ThenBy(r => r.RingId))
+            foreach (var slot in slots
+                         .Where(s => s.Date == day.Date)
+                         .OrderBy(s => s.StartTime)
+                         .ThenBy(s => ringOrder.TryGetValue(s.RingId, out var at) ? at : int.MaxValue)
+                         .ThenBy(s => s.OrderInRing))
             {
-                foreach (var slot in slots
-                             .Where(s => s.Date == day.Date && s.RingId == ring.RingId)
-                             .OrderBy(s => s.OrderInRing))
-                {
-                    numbered.Add(slot with { BoutNumber = number++ });
-                }
+                numbered.Add(slot with { BoutNumber = number++ });
             }
         }
 

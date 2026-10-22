@@ -196,7 +196,7 @@ public static class TournamentEndpoints
 
             var result = await service.PublishAsync(tournament, AdminIdentity.Current(user), ct);
             return result.Ok ? Results.Ok(Summarise(tournament, 0)) : Problem(result);
-        }).RequirePermission(AdminPermissions.TournamentManage);
+        }).RequirePermission(AdminPermissions.TournamentApprove);
 
         group.MapPost("/{id:int}/status", async (
             int id, StatusRequest request, ClaimsPrincipal user,
@@ -449,7 +449,7 @@ public static class TournamentEndpoints
 
             var result = await service.PublishAsync(division, AdminIdentity.Current(user), ct);
             return result.Ok ? Results.Ok(new { division.Id, division.DrawPublishedAt }) : Problem(result);
-        }).RequirePermission(AdminPermissions.TournamentDraw);
+        }).RequirePermission(AdminPermissions.TournamentDrawApprove);
 
         group.MapPut("/bouts/{boutId:int}/corner", async (
             int boutId, CornerRequest request, ClaimsPrincipal user,
@@ -552,6 +552,22 @@ public static class TournamentEndpoints
 
             return result.Ok ? Results.Ok(await service.ViewAsync(id, ct)) : Problem(result);
         }).RequirePermission(AdminPermissions.TournamentSchedule);
+
+        /// REQ-11 rule 14 — the running order is signed off separately from
+        /// being made, and the stage after this one has nothing to work from
+        /// until it is.
+        group.MapPost("/{id:int}/schedule/approve", async (
+            int id, ClaimsPrincipal user, SmfDbContext db,
+            ScheduleService service, CancellationToken ct) =>
+        {
+            var tournament = await db.Tournaments.FirstOrDefaultAsync(t => t.Id == id, ct);
+            if (tournament is null) return Results.NotFound();
+
+            var result = await service.ApproveScheduleAsync(tournament, AdminIdentity.Current(user), ct);
+            return result.Ok
+                ? Results.Ok(new { tournament.Id, tournament.ScheduleApprovedAt })
+                : Problem(result);
+        }).RequirePermission(AdminPermissions.TournamentScheduleApprove);
     }
 
     /* ── shapes ─────────────────────────────────────────────────────────── */

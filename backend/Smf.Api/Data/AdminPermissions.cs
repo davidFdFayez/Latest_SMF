@@ -55,6 +55,16 @@ public static class AdminPermissions
     public const string TournamentDraw = "tournament.draw";
     public const string TournamentSchedule = "tournament.schedule";
 
+    /* Every stage of the document is "create or edit" and then "approve", and
+       it says each pair may go to one person or to two. Making a thing and
+       signing it off are therefore separate grants throughout: publishing a
+       tournament, approving an entry, approving a bracket, approving a
+       schedule. Nothing moves to the next stage without the approval half. */
+    public const string TournamentApprove = "tournament.approve";
+    public const string TournamentEntriesApprove = "tournament.entries.approve";
+    public const string TournamentDrawApprove = "tournament.draw.approve";
+    public const string TournamentScheduleApprove = "tournament.schedule.approve";
+
     public const string MembershipPrefix = "membership.";
 
     /// <summary>The permission key for a §6 action, e.g. "approve" → "membership.approve".</summary>
@@ -124,18 +134,26 @@ public static class AdminPermissions
             new(Whistleblower, "operations", "بلاغات النزاهة", "Whistleblower reports",
                 "Read and manage confidential whistleblower reports."),
 
-            new(TournamentManage, "tournaments", "إنشاء وإدارة البطولات", "Create & manage tournaments",
-                "Create a tournament, set its categories, genders and weight classes, and publish it so entries open (REQ-01)."),
+            new(TournamentManage, "tournaments", "إنشاء وتعديل البطولات", "Create & edit tournaments",
+                "Create a tournament and set its categories, genders and weight classes (REQ-01)."),
+            new(TournamentApprove, "tournaments", "اعتماد البطولة", "Approve tournament",
+                "Publish a tournament, which is what opens it for entries. Separate from creating it (REQ-01)."),
             new(TournamentEntries, "tournaments", "تسجيل اللاعبين في البطولات", "Enter athletes",
                 "Enter an athlete into a tournament on their behalf, and amend an entry's category, track or weight class (REQ-03)."),
+            new(TournamentEntriesApprove, "tournaments", "اعتماد تسجيل اللاعبين", "Approve athlete entries",
+                "Sign off an entry. An entry stands without it (REQ-04 rule 4); this is the grant for reviewing one (REQ-03)."),
             new(TournamentTechnical, "tournaments", "الحضور والفحص والوزن", "Check-in, examination & weigh-in",
                 "Record check-in, the medical result and the weigh-in, and upload documents missing at the desk (REQ-08, REQ-09)."),
             new(TournamentDirector, "tournaments", "اعتماد جاهزية اللاعبين", "Approve readiness",
                 "The technical director's approval, which is what puts an athlete into the pool a draw is made from (REQ-09)."),
-            new(TournamentDraw, "tournaments", "إنشاء وإدارة القرعة", "Create & manage the draw",
-                "The technical delegate's grant: make the draw, publish it, and amend it afterwards with a reason (REQ-10)."),
-            new(TournamentSchedule, "tournaments", "جدولة النزالات والحلبات", "Schedule bouts & rings",
+            new(TournamentDraw, "tournaments", "إنشاء وتعديل القرعة", "Create & edit the draw",
+                "The technical delegate's grant: make the draw and amend it afterwards with a reason (REQ-10)."),
+            new(TournamentDrawApprove, "tournaments", "اعتماد القرعة", "Approve the draw",
+                "Publish a draw, which is what releases its bouts to the schedule (REQ-10)."),
+            new(TournamentSchedule, "tournaments", "جدولة النزالات والحلبات", "Create & edit the bout schedule",
                 "Add rings, distribute bouts across days and rings, and generate the running order (REQ-11)."),
+            new(TournamentScheduleApprove, "tournaments", "اعتماد جدول النزالات", "Approve the bout schedule",
+                "Sign off the running order. Nothing proceeds to the next stage until it is approved (REQ-11)."),
         ];
 
         var membershipDescriptions = new Dictionary<string, string>

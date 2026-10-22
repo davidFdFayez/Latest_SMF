@@ -273,13 +273,108 @@ public class ScheduleService(SmfDbContext db, AuditLogger audit)
             }
         }
 
+        // What was approved is no longer what the schedule says, so the
+        // approval goes with it (REQ-11 rule 14).
+        var wasApproved = tournament.ScheduleApprovedAt is not null;
+        tournament.ScheduleApprovedAt = null;
+        tournament.ScheduleApprovedBy = null;
+
         audit.Write(actor, AuditActions.ScheduleGenerated, "tournament", tournamentId,
             tournament.NameEn,
             details: $"{plan.Slots.Count} bout(s) across {rings.Count} ring(s)"
-                     + (plan.Clashes.Count == 0 ? "." : $", {plan.Clashes.Count} clash(es) reported."));
+                     + (plan.Clashes.Count == 0 ? "." : $", {plan.Clashes.Count} clash(es) reported.")
+                     + (wasApproved ? " The earlier approval no longer stands." : string.Empty));
 
         await db.SaveChangesAsync(cancellationToken);
         return Outcome.Success();
+    }
+
+    /// <summary>
+    /// REQ-11 rule 14 — signing the running order off. Separate from making
+    /// it, so the two may sit with different people, and refused while the
+    /// schedule still has an athlete in two places at once: approving a
+    /// clash would be approving something that cannot happen.
+    /// </summary>
+    public async Task<Outcome> ApproveScheduleAsync(
+        Tournament tournament,
+        AdminIdentity.Actor actor,
+        CancellationToken cancellationToken = default)
+    {
+        var scheduled = await db.Bouts
+            .Where(b => b.Division!.TournamentId == tournament.Id && b.BoutNumber != null)
+            .CountAsync(cancellationToken);
+
+        if (scheduled == 0)
+        {
+            return Outcome.Invalid(
+                "لا يوجد جدول لاعتماده.",
+                "There is no schedule to approve yet.");
+        }
+
+        var clashes = await ClashesAsync(tournament, cancellationToken);
+        if (clashes.Count > 0)
+        {
+            return Outcome.Conflict(
+                $"لا يمكن اعتماد جدول به تعارض في مواعيد اللاعبين ({clashes.Count}).",
+                $"A schedule with an athlete clash cannot be approved ({clashes.Count}).");
+        }
+
+        tournament.ScheduleApprovedAt = DateTime.UtcNow;
+        tournament.ScheduleApprovedBy = actor.Username;
+
+        audit.Write(actor, AuditActions.ScheduleApproved, "tournament", tournament.Id,
+            tournament.NameEn, toStatus: "schedule_approved",
+            details: $"{scheduled} bout(s) approved.");
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Outcome.Success();
+    }
+
+    /// <summary>
+    /// What the current schedule gets wrong for an athlete, recomputed from
+    /// what is stored rather than from the last generation, so an edit made
+    /// since then counts (REQ-11 rule 15).
+    /// </summary>
+    private async Task<IReadOnlyList<BoutScheduler.Clash>> ClashesAsync(
+        Tournament tournament,
+        CancellationToken cancellationToken)
+    {
+        var divisions = await db.TournamentDivisions
+            .Where(d => d.TournamentId == tournament.Id)
+            .ToListAsync(cancellationToken);
+
+        var divisionIds = divisions.Select(d => d.Id).ToList();
+
+        var bouts = await db.Bouts
+            .Where(b => divisionIds.Contains(b.DivisionId))
+            .ToListAsync(cancellationToken);
+
+        var rings = await db.TournamentRings
+            .Where(r => r.TournamentId == tournament.Id)
+            .OrderBy(r => r.SortOrder)
+            .ToListAsync(cancellationToken);
+
+        if (rings.Count == 0) return [];
+
+        var byId = divisions.ToDictionary(d => d.Id);
+
+        var plan = BoutScheduler.Build(
+            bouts.Where(b => b.IsSchedulable).Select(b => new BoutScheduler.Entry(
+                b.Id, b.DivisionId,
+                byId[b.DivisionId].Category,
+                byId[b.DivisionId].SortWeight,
+                b.Round, b.Position, b.RedEntryId, b.BlueEntryId,
+                b.ScheduledDate, b.RingId, b.RingPinned)).ToList(),
+            rings.Select(r => new BoutScheduler.Ring(
+                r.Id, r.Name, r.SortOrder,
+                r.FirstBoutTime ?? tournament.FirstBoutTime,
+                r.BoutIntervalMinutes ?? DefaultIntervalMinutes)).ToList(),
+            divisions.Where(d => d.DefaultRingId is not null).ToDictionary(d => d.Id, d => d.DefaultRingId!.Value),
+            divisions.Where(d => d.ScheduledDate is not null).ToDictionary(d => d.Id, d => d.ScheduledDate!.Value.Date),
+            tournament.Days(),
+            divisionTiming: TimingOf(divisions));
+
+        return plan.Clashes;
     }
 
     /// <summary>Half an hour, until a ring says otherwise.</summary>
@@ -365,6 +460,9 @@ public class ScheduleService(SmfDbContext db, AuditLogger audit)
                 tournament.NameEn,
                 days = tournament.Days(),
                 firstBoutTime = tournament.FirstBoutTime,
+                // REQ-11 rule 14 — the screen has to say whether this is signed off.
+                tournament.ScheduleApprovedAt,
+                tournament.ScheduleApprovedBy,
             },
             rings = rings.Select(r => new
             {

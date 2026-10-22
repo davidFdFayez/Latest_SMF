@@ -25,9 +25,13 @@ Covers, rule by rule against the signed Phase 3 document:
   "Preliminary", no third-place bout, club separation across 200 draws, and
   reproducibility from a seed so a draw can be re-run in a dispute.
 - **REQ-11** — per-ring start times and intervals, a division running to its
-  own start time and interval over its ring's, the document's own
-  bout-numbering example, lightest division first, a pinned bout surviving a
-  regeneration, and the three athlete-safety rules.
+  own start time and interval over its ring's, bout numbers following the
+  clock across the rings with the ring order breaking a tie, lightest
+  division first, a pinned bout surviving a regeneration, and the three
+  athlete-safety rules.
+- **REQ-01** — the Weight Class Mapping, every cell of it, plus where a
+  measured weight lands and what happens above a category that has no open
+  class.
 
 ## `api/` — the journey, against a running API
 
@@ -54,6 +58,12 @@ beyond the standard library.
   added type, picking which weight classes a tournament runs, the guardian
   consent form as a document, swapping two corners, and a division with its
   own start time and interval.
+- `test_brd.py` — the rules the document states exactly, held to its own
+  numbers: the weight table as the API serves it, the create-then-approve
+  permission pairs with a user who holds only one half of each, approving the
+  running order and losing that approval on a regeneration, a bye kept out of
+  the schedule, a final scheduled before its athletes are known, and bout
+  numbers in clock order across two rings.
 
 Each check prints `PASS` or `FAIL` with what it actually saw, and the run ends
 with `FAILED: none` or the names of what broke. The exit code follows. Set

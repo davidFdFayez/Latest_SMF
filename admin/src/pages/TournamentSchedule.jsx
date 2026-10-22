@@ -84,9 +84,35 @@ export default function TournamentSchedule() {
             >
               Regenerate
             </button>
+            {/* Rule 14 — approving is a separate act from making, and a
+                regeneration undoes it, so the button comes back. */}
+            {!view.tournament.scheduleApprovedAt && (
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={working || view.clashes.length > 0}
+                title={
+                  view.clashes.length > 0
+                    ? 'Clear the clashes first — a schedule that cannot happen cannot be approved.'
+                    : undefined
+                }
+                onClick={() => act(() => tournamentsApi.approveSchedule(id), 'Schedule approved.')}
+              >
+                Approve
+              </button>
+            )}
           </div>
         }
       />
+
+      {/* Rule 14 — nothing proceeds to the next stage on an unapproved order. */}
+      <Alert type={view.tournament.scheduleApprovedAt ? 'success' : 'info'}>
+        {view.tournament.scheduleApprovedAt
+          ? `Approved${
+              view.tournament.scheduleApprovedBy ? ` by ${view.tournament.scheduleApprovedBy}` : ''
+            } on ${formatDate(view.tournament.scheduleApprovedAt)}. Regenerating it will need a new approval.`
+          : 'Not approved yet. The stage after this one has nothing to work from until it is.'}
+      </Alert>
 
       <Alert type="error" onDismiss={() => setError('')}>
         {error}

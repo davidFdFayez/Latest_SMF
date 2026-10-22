@@ -510,6 +510,11 @@ export const tournamentsApi = {
     const response = await client.post(`/admin/tournaments/${id}/schedule/generate`, body || {})
     return response.data
   },
+  /** REQ-11 rule 14 — signing the running order off, separately from making it. */
+  async approveSchedule(id) {
+    const response = await client.post(`/admin/tournaments/${id}/schedule/approve`)
+    return response.data
+  },
 }
 
 /** An athlete's medical file and any medical suspensions (REQ-04, REQ-03 rule 3). */

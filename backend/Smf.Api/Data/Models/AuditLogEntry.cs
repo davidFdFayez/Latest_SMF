@@ -77,6 +77,7 @@ public static class AuditActions
     public const string DrawAmended = "tournament.draw_amended";
     public const string ScheduleGenerated = "tournament.schedule_generated";
     public const string ScheduleAmended = "tournament.schedule_amended";
+    public const string ScheduleApproved = "tournament.schedule_approved";
     public const string MemberAccountInvited = "member_account.invited";
     public const string MemberAccountUpdated = "member_account.updated";
     public const string ProfileChangeReviewed = "member_account.change_reviewed";

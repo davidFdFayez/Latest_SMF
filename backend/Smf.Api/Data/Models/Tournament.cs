@@ -81,6 +81,16 @@ public class Tournament
     public string? WeightClassesJson { get; set; }
 
     /// <summary>
+    /// When the running order was signed off (REQ-11 rule 14). Null means it
+    /// has not been, and the stage after scheduling has nothing to work from.
+    /// Regenerating the schedule clears it, because what was approved is no
+    /// longer what the schedule says.
+    /// </summary>
+    public DateTime? ScheduleApprovedAt { get; set; }
+
+    public string? ScheduleApprovedBy { get; set; }
+
+    /// <summary>
     /// Rings are deliberately not set here. REQ-01 rule 8 defers them to
     /// scheduling, once the draw shows how many bouts there actually are.
     /// </summary>

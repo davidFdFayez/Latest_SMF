@@ -10,8 +10,9 @@ namespace Smf.Api.Services;
 /// from the same club kept apart where that is possible (rules 1 and 4).</item>
 /// <item>Byes bring the field up to the next power of two, so the round after
 /// the first is a clean 4, 8, 16, 32 or 64 (rule 2).</item>
-/// <item>An even number of byes pairs them against each other first; an odd
-/// number sends the last one against the winner of the first bout (rule 3).</item>
+/// <item>Byes are seated first and in draw order, so an even number pairs
+/// against itself and an odd number leaves the last one facing the winner of
+/// the first bout (rule 3).</item>
 /// <item>Nobody fights a second time before everybody has fought once
 /// (rule 4).</item>
 /// <item>No third-place bout — both losing semi-finalists take bronze
@@ -80,28 +81,39 @@ public static class DrawBuilder
         var bouts = new List<PlannedBout>();
 
         /* ── round one ─────────────────────────────────────────────────────
-           The contested bouts first, then the byes. An even number of byes is
-           paired off against itself — in a single-elimination bracket that is
-           what "facing each other" means: they occupy adjacent slots and both
-           walk into round two. An odd number leaves one over, and the document
-           sends that one against the winner of the first bout, which is the
-           same as seating it beside bout one in the second round. */
-        for (var i = 0; i < firstRoundBouts; i++)
-        {
-            bouts.Add(new PlannedBout(1, i + 1, fighting[i * 2].EntryId, fighting[(i * 2) + 1].EntryId, false));
-        }
+           The byes first, in draw order, then the contested bouts in bout
+           order. That ordering is rule 3 itself, and it produces both of the
+           document's worked examples without a special case for either:
 
+             10 athletes, 6 byes (even) — slots 1-6 are byes and 7-8 the two
+             bouts, so round two reads A1vA2, A3vA4, A5vA6, and last
+             W(A7vA8) v W(A9vA10): byes paired against each other first,
+             winners after.
+
+             9 athletes, 7 byes (odd) — slots 1-7 are byes and 8 the one bout,
+             so round two reads A1vA2, A3vA4, A5vA6, A7 v W(A8vA9): the one
+             bye left over is the last, and it meets the winner of the first
+             bout.
+
+           Putting the bouts first would give the same pairings mirrored, which
+           is the same competition but not the running order the document
+           describes. */
         foreach (var (bye, index) in byes.Select((value, index) => (value, index)))
         {
             // A bye is recorded as a bout with one corner empty, so the bracket
             // is a complete tree and the athlete's path is visible.
-            bouts.Add(new PlannedBout(1, firstRoundBouts + index + 1, bye.EntryId, null, true));
+            bouts.Add(new PlannedBout(1, index + 1, bye.EntryId, null, true));
+        }
+
+        for (var i = 0; i < firstRoundBouts; i++)
+        {
+            bouts.Add(new PlannedBout(
+                1, byes.Count + i + 1, fighting[i * 2].EntryId, fighting[(i * 2) + 1].EntryId, false));
         }
 
         /* ── the rounds above ─────────────────────────────────────────────
            Each one is half the size of the one below, and slots are filled by
-           the winners in order. The odd bye ends up beside bout one precisely
-           because the byes were appended after the contested bouts. */
+           the winners in order. */
         var previousRoundSize = bouts.Count;
         for (var round = 2; round <= totalRounds; round++)
         {

@@ -18,9 +18,11 @@
     <Compile Include="../../backend/Smf.Api/Services/DrawBuilder.cs" Link="DrawBuilder.cs" />
     <Compile Include="../../backend/Smf.Api/Services/BoutScheduler.cs" Link="BoutScheduler.cs" />
     <Compile Include="../../backend/Smf.Api/Data/Models/BoutRounds.cs" Link="BoutRounds.cs" />
+    <Compile Include="../../backend/Smf.Api/Data/WeightClasses.cs" Link="WeightClasses.cs" />
 
     <Compile Include="DrawTests.cs" />
     <Compile Include="ScheduleTests.cs" />
+    <Compile Include="WeightClassTests.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>
 

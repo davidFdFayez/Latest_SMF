@@ -69,7 +69,7 @@ public static class ScheduleTests
         }
 
         Console.WriteLine();
-        Console.WriteLine("=== rule 12: numbering runs through the rings, then on into the next day ===");
+        Console.WriteLine("=== rule 12: numbering follows the clock across the rings, day after day ===");
         {
             // The document's own example: three bouts in each of two rings on day one.
             var dayOne = Bouts(3, 10, "u18", 45, 100).Select(b => b with { Date = day1 }).ToList();
@@ -84,12 +84,45 @@ public static class ScheduleTests
             var numbers = plan.Slots.OrderBy(s => s.BoutNumber)
                 .Select(s => $"{s.Date:dd} {(s.RingId == 1 ? "A" : "B")}#{s.BoutNumber}").ToList();
 
-            Check("day one is Ring A 1-3 then Ring B 4-6",
-                string.Join(" ", numbers.Take(6)) == "06 A#1 06 A#2 06 A#3 06 B#4 06 B#5 06 B#6",
+            // Both rings open at 17:00 and then draw apart: A every 15
+            // minutes, B every 20. The numbers follow the clock, so the rings
+            // interleave rather than running one after the other.
+            Check("day one is numbered by the clock, interleaving the two rings",
+                string.Join(" ", numbers.Take(6)) == "06 A#1 06 B#2 06 A#3 06 B#4 06 A#5 06 B#6",
                 string.Join(" ", numbers.Take(6)));
             Check("day two carries on from 7, it does not restart",
                 string.Join(" ", numbers.Skip(6)) == "07 A#7 07 A#8",
                 string.Join(" ", numbers.Skip(6)));
+
+            Check("the numbers are in start-time order within a day",
+                plan.Slots.Where(x => x.Date == day1).OrderBy(x => x.BoutNumber)
+                    .Select(x => x.StartTime).SequenceEqual(
+                        plan.Slots.Where(x => x.Date == day1).Select(x => x.StartTime).Order()));
+
+            // The document's own example: a later ring that starts earlier
+            // takes the earlier number.
+            var early = RingOf(2, "Ring B", 2, 14, 30);
+            var crossed = BoutScheduler.Build(
+                [.. Bouts(1, 10, "u18", 45, 100), .. Bouts(1, 20, "u18", 48, 200)],
+                [ringA, early],
+                new Dictionary<int, int> { [10] = 1, [20] = 2 },
+                new Dictionary<int, DateTime>(), [day1]);
+
+            var first = crossed.Slots.Single(x => x.BoutNumber == 1);
+            Check("Ring B at 14:00 is numbered before Ring A at 17:00",
+                first.RingId == 2 && first.StartTime == new TimeSpan(14, 0, 0),
+                $"ring {first.RingId} at {first.StartTime}");
+
+            // A tie goes to the ring order, not to whichever was found first.
+            var together = BoutScheduler.Build(
+                [.. Bouts(1, 10, "u18", 45, 100), .. Bouts(1, 20, "u18", 48, 200)],
+                [ringA, RingOf(2, "Ring B", 2, 17, 15)],
+                new Dictionary<int, int> { [10] = 2, [20] = 1 },
+                new Dictionary<int, DateTime>(), [day1]);
+
+            Check("two bouts at the same moment are separated by the ring order",
+                together.Slots.Single(x => x.BoutNumber == 1).RingId == 1,
+                $"ring {together.Slots.Single(x => x.BoutNumber == 1).RingId} first");
         }
 
         Console.WriteLine();

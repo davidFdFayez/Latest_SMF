@@ -13,5 +13,9 @@ Console.WriteLine("### REQ-11 — the schedule ###");
 failures += ScheduleTests.Run();
 
 Console.WriteLine();
+Console.WriteLine("### REQ-01 — the weight classes ###");
+failures += WeightClassTests.Run();
+
+Console.WriteLine();
 Console.WriteLine(failures == 0 ? "ALL SUITES PASSED" : "SOME SUITES FAILED");
 return failures == 0 ? 0 : 1;
