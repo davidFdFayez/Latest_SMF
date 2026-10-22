@@ -1,0 +1,88 @@
+# Builds and restarts staging on the host whenever the branch moves.
+#
+# Why this exists: deploying by hand puts a person in the middle of every
+# verification cycle, and between cycles nobody can say what staging is
+# actually running. This closes that loop, and keeps the key in GitHub's
+# secret store rather than anywhere it can be read.
+#
+# What it needs, set once under Settings → Secrets and variables → Actions:
+#
+#   STAGING_HOST   187.124.4.73
+#   STAGING_USER   the account to deploy as — not root; see below
+#   STAGING_KEY    the private half of an SSH key whose public half is in
+#                  that account's ~/.ssh/authorized_keys
+#   STAGING_PATH   the absolute path of the repository on the host
+#
+# On the host, make a deploy account rather than using root, and let it use
+# docker without a password:
+#
+#   adduser --disabled-password --gecos "" deploy
+#   usermod -aG docker deploy
+#   mkdir -p /home/deploy/.ssh && chmod 700 /home/deploy/.ssh
+#   # put the public key in /home/deploy/.ssh/authorized_keys, chmod 600
+#   chown -R deploy:deploy /home/deploy/.ssh
+#
+# Then turn off password and root login in /etc/ssh/sshd_config:
+#
+#   PermitRootLogin no
+#   PasswordAuthentication no
+#
+# ...and `systemctl restart ssh`. After that there is no password to leak.
+
+name: Deploy staging
+
+on:
+  push:
+    branches: [NewPhase]
+  # Also runnable from the Actions tab, for a redeploy without a commit.
+  workflow_dispatch:
+
+concurrency:
+  # One deploy at a time; a newer push supersedes one still waiting.
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Load the deploy key
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.STAGING_KEY }}" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          ssh-keyscan -H "${{ secrets.STAGING_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Build and restart on the host
+        env:
+          HOST: ${{ secrets.STAGING_HOST }}
+          USER_NAME: ${{ secrets.STAGING_USER }}
+          REPO_PATH: ${{ secrets.STAGING_PATH }}
+          REF: ${{ github.sha }}
+        run: |
+          ssh -i ~/.ssh/deploy -o BatchMode=yes "$USER_NAME@$HOST" bash -se <<SH
+          set -euo pipefail
+          cd "$REPO_PATH"
+
+          git fetch --all --prune
+          git checkout --detach "$REF"
+
+          # --build because the compose file builds from source on the host.
+          docker compose up -d --build
+          docker image prune -f
+          SH
+
+      - name: Wait for the API to answer
+        env:
+          HOST: ${{ secrets.STAGING_HOST }}
+        run: |
+          for _ in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              --max-time 10 "https://smf.$HOST.sslip.io/api/events" || true)
+            [ "$code" = "200" ] && echo "staging is up" && exit 0
+            sleep 5
+          done
+          echo "The API did not answer after the deploy." >&2
+          exit 1

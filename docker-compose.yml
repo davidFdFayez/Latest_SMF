@@ -10,7 +10,13 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Data Source=/app/data/smf.db
-      Jwt__Secret: SmfMuaythai2026-ProdSigningKey-ChangeIfNeeded-32chars!
+      # Read from .env, which is not in the repository. This file is, and
+      # the repository is public: a signing key written here is a published
+      # one, and anyone holding it can mint an administrator's token without
+      # ever seeing a password. There is no default on purpose — the API
+      # refuses to start without it rather than falling back to something
+      # guessable.
+      Jwt__Secret: ${JWT_SECRET:?set JWT_SECRET in .env}
       Jwt__Issuer: Smf.Api
       Jwt__Audience: Smf.Clients
       Jwt__ExpiryMinutes: "480"
@@ -31,6 +37,9 @@ services:
       # Set once an SMS gateway is contracted; until then messages go to
       # /app/data/sms-outbox.
       Sms__Provider: ""
+      # The first administrator, created only on an empty database. Also from
+      # .env, for the same reason.
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
     volumes:
       - smf-api-data:/app/data
     networks:

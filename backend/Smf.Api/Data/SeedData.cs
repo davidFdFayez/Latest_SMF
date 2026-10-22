@@ -20,7 +20,7 @@ public static class SeedData
 
         if (!db.AdminUsers.Any())
         {
-            SeedAdminUser(db);
+            SeedAdminUser(db, env, config, logger);
         }
 
         // One account per §6 membership role, so role-based access can actually
@@ -276,11 +276,40 @@ public static class SeedData
             "No active Super Admin existed; reactivated the development 'admin' account and gave it the Super Admin role.");
     }
 
-    private static void SeedAdminUser(SmfDbContext db)
+    /// <summary>
+    /// The first administrator, on an empty database.
+    ///
+    /// Outside development this needs <c>Seed:AdminPassword</c> to be set.
+    /// It used to create <c>admin</c> with a password written in this file,
+    /// in every environment — and this repository is public, so that was a
+    /// published credential for any deployment that had ever started with an
+    /// empty database. Now a deployment either says what the password is, or
+    /// starts with no administrator and says so loudly.
+    /// </summary>
+    private static void SeedAdminUser(
+        SmfDbContext db,
+        IWebHostEnvironment env,
+        IConfiguration? config,
+        ILogger? logger)
     {
+        var password = config?["Seed:AdminPassword"];
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            if (!env.IsDevelopment())
+            {
+                logger?.LogCritical(
+                    "No administrator exists and Seed:AdminPassword is not set, so none was created. "
+                    + "Set it and restart, or the console cannot be signed into.");
+                return;
+            }
+
+            password = "Admin@123";
+        }
+
         var superAdmin = db.Roles.FirstOrDefault(r => r.Key == AdminRoles.SuperAdmin);
 
-        var (hash, salt) = PasswordHasher.HashPassword("Admin@123");
+        var (hash, salt) = PasswordHasher.HashPassword(password);
         db.AdminUsers.Add(new AdminUser
         {
             Username = "admin",

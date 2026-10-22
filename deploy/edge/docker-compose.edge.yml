@@ -1,0 +1,40 @@
+# The edge proxy, as a container built from the repository.
+#
+# Run alongside the main stack, from the repository root:
+#
+#   docker compose -f docker-compose.yml -f deploy/edge/docker-compose.edge.yml up -d
+#
+# It is a separate file rather than a service in docker-compose.yml because
+# the main stack has to stay runnable on a laptop, where ports 80 and 443
+# are usually taken and there are no certificates to mount.
+
+services:
+  edge:
+    image: nginx:1.27-alpine
+    container_name: smf-edge
+    restart: unless-stopped
+    depends_on:
+      - web
+      - admin
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/edge/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/edge/smf-proxy.conf:/etc/nginx/snippets/smf-proxy.conf:ro
+      # Certificates stay on the host: they are renewed there, and they are
+      # the one thing that must not be in the repository.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    extra_hosts:
+      # So the upstreams can reach the host ports the other containers
+      # publish. Docker provides this name on Desktop but not always on
+      # Linux, where it has to be stated.
+      - "host.docker.internal:host-gateway"
+    networks:
+      - smfnet
+
+networks:
+  smfnet:
+    external: true
+    name: smfnet
