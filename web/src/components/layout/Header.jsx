@@ -1,16 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLang } from '../../context/LanguageContext';
 import { SmartLink } from '../../content/useContent';
 import { useSiteContent } from '../../content/site';
 import { IconChevron } from '../icons/Icons';
+import { IconClubBadge, IconCoach, IconGlove } from '../icons/AccountIcons';
+import NotificationBell from './NotificationBell';
+import { getToken, subscribeToken, tokenKind } from '../../api/member';
+
+/** Where each kind of signed-in member's account icon leads, and what it says. */
+const ACCOUNT_LINKS = {
+  club: { to: '/account/club', Icon: IconClubBadge, ar: 'حساب النادي', en: 'Club Account' },
+  coach: { to: '/account/coach', Icon: IconCoach, ar: 'حساب المدرب', en: 'Coach Account' },
+  athlete: { to: '/account/athlete', Icon: IconGlove, ar: 'حساب اللاعب', en: 'Athlete Account' },
+  default: { to: '/account', Icon: IconClubBadge, ar: 'حسابي', en: 'My account' },
+};
 
 export default function Header() {
   const { t } = useTranslation();
   const { lang, toggleLang } = useLang();
   const { site, navigation, navLabel, tx } = useSiteContent();
   const location = useLocation();
+  // A signed-in member is offered their account instead of the login page.
+  const token = useSyncExternalStore(subscribeToken, getToken);
+  const signedIn = Boolean(token);
+  // A club or a coach opens their own account page; any other member keeps their portal.
+  const account = ACCOUNT_LINKS[tokenKind(token)] || ACCOUNT_LINKS.default;
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -86,7 +102,7 @@ export default function Header() {
     setOpenDropdown((cur) => (cur === key ? null : key));
   }
 
-  const navItems = [
+  const allNavItems = [
     { key: 'home', to: '/', label: navLabel('home') },
     {
       key: 'federation',
@@ -151,6 +167,9 @@ export default function Header() {
       ],
     },
   ];
+
+  // A signed-in member has already registered; the menu stops offering it.
+  const navItems = signedIn ? allNavItems.filter((item) => item.key !== 'registration') : allNavItems;
 
   /**
    * Reporting a violation and contacting the federation are utility actions,
@@ -276,8 +295,30 @@ export default function Header() {
               <SmartLink to={ctaUrl} className="nav-cta nav-cta--inline">
                 {navLabel('tryMuaythai')}
               </SmartLink>
-              <button type="button" className="lang-toggle" onClick={toggleLang}>
-                {lang === 'ar' ? 'English' : 'عربي'}
+              {/* The bordered button here is the way into the member area;
+                  the language switch is plain text at the edge of the strip. */}
+              {signedIn ? (
+                /* The member's notifications, then the way back to their
+                   account; signing out lives inside it, at the foot of its
+                   navigation. */
+                <>
+                  <NotificationBell lang={lang} />
+                  <Link
+                    to={account.to}
+                    className="header-account"
+                    title={lang === 'ar' ? account.ar : account.en}
+                    aria-label={lang === 'ar' ? account.ar : account.en}
+                  >
+                    <account.Icon className="header-account__icon" />
+                  </Link>
+                </>
+              ) : (
+                <Link to="/account/login" className="lang-toggle header-login">
+                  {lang === 'ar' ? 'تسجيل الدخول' : 'Login'}
+                </Link>
+              )}
+              <button type="button" className="lang-switch" onClick={toggleLang} lang={lang === 'ar' ? 'en' : 'ar'}>
+                {lang === 'ar' ? 'English' : 'العربية'}
               </button>
               <button
                 type="button"

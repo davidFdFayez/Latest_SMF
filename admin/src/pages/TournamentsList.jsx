@@ -7,7 +7,9 @@ import Spinner from '../components/Spinner'
 import Alert from '../components/Alert'
 import Badge from '../components/Badge'
 import EmptyState from '../components/EmptyState'
-import { PlusIcon } from '../components/Icons'
+import { EditIcon, PlusIcon } from '../components/Icons'
+import { useAuth } from '../context/AuthContext'
+import { tournamentEditPermission } from '../utils'
 
 /**
  * Tournaments — Phase 3 REQ-01.
@@ -26,6 +28,12 @@ const STATUS_TONE = {
 }
 
 export default function TournamentsList() {
+  // A draft takes "Create & edit tournaments" to edit, a published one
+  // "Approve, publish & edit published tournaments". The API refuses an edit
+  // without the right one, so each row's Edit action is only live with it.
+  const { hasPermission } = useAuth()
+  const canEdit = (tournament) => hasPermission(tournamentEditPermission(tournament))
+
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -94,6 +102,7 @@ export default function TournamentsList() {
                 <th>Entries close</th>
                 <th>Status</th>
                 <th>Entries</th>
+                <th className="data-table__actions-col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -123,6 +132,32 @@ export default function TournamentsList() {
                     <Badge tone={STATUS_TONE[tournament.status] || 'neutral'}>{tournament.statusEn}</Badge>
                   </td>
                   <td>{tournament.entries}</td>
+                  <td className="data-table__actions">
+                    {canEdit(tournament) ? (
+                      <Link
+                        to={`/tournaments/${tournament.id}`}
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label={`Edit ${tournament.nameEn}`}
+                      >
+                        <EditIcon />
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        disabled
+                        title={
+                          tournamentEditPermission(tournament) === 'tournament.approve'
+                            ? 'Published — editing needs the “Approve, publish & edit published tournaments” permission'
+                            : 'Editing a draft needs the “Create & edit tournaments” permission'
+                        }
+                        aria-label={`Editing ${tournament.nameEn} is not available to your account`}
+                      >
+                        <EditIcon />
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

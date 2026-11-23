@@ -42,12 +42,13 @@ else
   DATA="$WORK"
 fi
 
-echo "Starting the API on $PORT…"
+echo "Starting the API on ${PORT}…"
 ASPNETCORE_ENVIRONMENT=Development \
 ConnectionStrings__DefaultConnection="Data Source=$DATA/smf.db" \
 Email__OutboxPath="$DATA/outbox" \
 Sms__OutboxPath="$DATA/sms-outbox" \
 Storage__RegistrationUploadsPath="$DATA/uploads" \
+Storage__MediaPath="$DATA/media" \
 Membership__MaintenanceEnabled=false \
 RateLimits__PublicRegistration__PermitLimit=5000 \
 RateLimits__MemberAuth__PermitLimit=5000 \
@@ -72,7 +73,7 @@ export SMF_TEST_DB="$WORK/smf.db"
 export SMF_TEST_OUTBOX="$WORK/outbox"
 
 status=0
-for suite in test_phase3 test_accounts test_gaps test_brd test_rules; do
+for suite in test_phase3 test_accounts test_gaps test_brd test_rules test_req02 test_req03 test_participants test_readiness test_terms test_email_unique test_draw_generate test_banner_crop test_weigh_in_range test_draw_sync test_member_weight; do
   echo
   echo "=============================================================="
   echo " $suite"

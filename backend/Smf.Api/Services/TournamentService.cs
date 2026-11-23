@@ -15,6 +15,9 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
 {
     public sealed record Outcome(bool Ok, int Status, string MessageAr, string MessageEn)
     {
+        /// <summary>A machine-readable refusal reason for the page to act on (e.g. "schedule_approved"); null for most outcomes.</summary>
+        public string? Code { get; init; }
+
         public static Outcome Success() => new(true, 200, string.Empty, string.Empty);
         public static Outcome Invalid(string ar, string en) => new(false, 400, ar, en);
         public static Outcome Conflict(string ar, string en) => new(false, 409, ar, en);
@@ -44,7 +47,52 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
         /// category and gender offers — the sensible default when a federation
         /// is running a full championship.
         /// </summary>
-        IReadOnlyDictionary<string, IReadOnlyList<decimal?>>? WeightClasses = null);
+        IReadOnlyDictionary<string, IReadOnlyList<decimal?>>? WeightClasses = null,
+        /// <summary>
+        /// The bilingual description. Null leaves an existing one as it is, so
+        /// a caller that does not know about it cannot wipe it.
+        /// </summary>
+        string? DescriptionAr = null,
+        string? DescriptionEn = null,
+        /// <summary>
+        /// True when <see cref="WeightClasses"/> names every pairing to run,
+        /// each with its classes, and nothing else runs. See
+        /// <see cref="Tournament.ExactWeightClasses"/>.
+        /// </summary>
+        bool ExactWeightClasses = false,
+        /// <summary>
+        /// The Activities category it is shown under once published. Null
+        /// leaves an existing choice as it is.
+        /// </summary>
+        string? ActivityCategory = null,
+        /// <summary>
+        /// The on-site check-in, medical examination and weigh-in window. Null
+        /// leaves it as it is; given, it is set (its nulls clear it).
+        /// </summary>
+        OnSiteWindow? OnSite = null,
+        /// <summary>
+        /// The Terms &amp; Conditions, as formatted text in each language. Null
+        /// leaves the stored text as it is, like the description; anything
+        /// given is cleaned by <see cref="RichText"/> before it is kept.
+        /// </summary>
+        string? TermsAr = null,
+        string? TermsEn = null,
+        /// <summary>
+        /// How the banner is framed. Null leaves the stored position as it is.
+        /// Ignored when the tournament has no banner, or when it names an image
+        /// other than the current one — a position chosen on a picture that has
+        /// since been replaced means nothing for the new one.
+        /// </summary>
+        BannerPosition? BannerImageCrop = null);
+
+    /// <summary>
+    /// A banner position and the image it was chosen on. A null crop is one
+    /// that could not be read, which the update refuses.
+    /// </summary>
+    public sealed record BannerPosition(string? ImageUrl, BannerCrop? Crop);
+
+    /// <summary>The on-site check-in, examination and weigh-in window; either end may be unset.</summary>
+    public sealed record OnSiteWindow(DateTime? StartsAt, DateTime? EndsAt);
 
     /// <summary>The key a weight-class selection is stored under.</summary>
     public static string PairKey(string category, string gender) => $"{category}:{gender}";
@@ -63,10 +111,15 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
         {
             NameAr = setup.NameAr.Trim(),
             NameEn = setup.NameEn.Trim(),
+            DescriptionAr = setup.DescriptionAr?.Trim() ?? string.Empty,
+            DescriptionEn = setup.DescriptionEn?.Trim() ?? string.Empty,
+            TermsAr = RichText.Sanitize(setup.TermsAr),
+            TermsEn = RichText.Sanitize(setup.TermsEn),
             Type = setup.Type,
             CompetitionType = setup.CompetitionType,
             LocationAr = setup.LocationAr.Trim(),
             LocationEn = setup.LocationEn.Trim(),
+            ActivityCategory = setup.ActivityCategory ?? string.Empty,
             StartDate = setup.StartDate.Date,
             EndDate = setup.EndDate.Date,
             FirstBoutTime = setup.FirstBoutTime,
@@ -76,6 +129,9 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
             Genders = string.Join(',', setup.Genders.Distinct()),
             Categories = string.Join(',', setup.Categories.Distinct()),
             WeightClassesJson = WriteSelection(setup.WeightClasses),
+            ExactWeightClasses = setup.ExactWeightClasses,
+            OnSiteCheckInStartsAt = setup.OnSite?.StartsAt,
+            OnSiteCheckInEndsAt = setup.OnSite?.EndsAt,
             Status = TournamentStatuses.Draft,
             CreatedBy = actor.Username,
             LastActionBy = actor.Username,
@@ -100,6 +156,25 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
     {
         if (Validate(setup) is { Ok: false } invalid) return invalid;
         if (await ValidateListsAsync(setup, cancellationToken) is { Ok: false } unknown) return unknown;
+        if (setup.BannerImageCrop is { Crop: null })
+            return Outcome.Invalid("موضع صورة البانر غير صالح.", "The banner position is not valid.");
+
+        // SCH-001 — the edit and its division sync commit together, under the write
+        // lock, and an approved schedule's days and first-bout time cannot change
+        // underneath it: the approval must be withdrawn first (D3).
+        await using var transaction = db.Database.CurrentTransaction is null
+            ? await EmailReservations.BeginExclusiveAsync(db, cancellationToken)
+            : null;
+        await db.Entry(tournament).ReloadAsync(cancellationToken);
+        if (tournament.ScheduleApprovedAt is not null
+            && (setup.StartDate.Date != tournament.StartDate.Date || setup.EndDate.Date != tournament.EndDate.Date
+                || setup.FirstBoutTime != tournament.FirstBoutTime))
+        {
+            return Outcome.Conflict(
+                "جدول النزالات معتمد؛ لا يمكن تغيير أيام البطولة أو موعد أول نزال قبل سحب اعتماد الجدول.",
+                "The bout schedule is approved, so the tournament's days and first-bout time cannot change. "
+                + "A schedule approver must first withdraw the approval, with a reason.") with { Code = ScheduleService.ApprovedCode };
+        }
 
         // The categories and weights decide the divisions, and a division with
         // entries in it cannot simply vanish underneath them.
@@ -114,27 +189,58 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
 
         tournament.NameAr = setup.NameAr.Trim();
         tournament.NameEn = setup.NameEn.Trim();
+        if (setup.DescriptionAr is not null) tournament.DescriptionAr = setup.DescriptionAr.Trim();
+        if (setup.DescriptionEn is not null) tournament.DescriptionEn = setup.DescriptionEn.Trim();
+        if (setup.TermsAr is not null) tournament.TermsAr = RichText.Sanitize(setup.TermsAr);
+        if (setup.TermsEn is not null) tournament.TermsEn = RichText.Sanitize(setup.TermsEn);
         tournament.Type = setup.Type;
         tournament.CompetitionType = setup.CompetitionType;
         tournament.LocationAr = setup.LocationAr.Trim();
         tournament.LocationEn = setup.LocationEn.Trim();
+        if (setup.ActivityCategory is not null) tournament.ActivityCategory = setup.ActivityCategory;
         tournament.StartDate = setup.StartDate.Date;
         tournament.EndDate = setup.EndDate.Date;
         tournament.FirstBoutTime = setup.FirstBoutTime;
         tournament.Genders = string.Join(',', setup.Genders.Distinct());
         tournament.Categories = string.Join(',', setup.Categories.Distinct());
         tournament.WeightClassesJson = WriteSelection(setup.WeightClasses);
+        tournament.ExactWeightClasses = setup.ExactWeightClasses;
         tournament.UpdatedAt = DateTime.UtcNow;
         tournament.LastActionBy = actor.Username;
 
         if (setup.RegistrationClosesAt is { } closes) tournament.RegistrationClosesAt = closes;
+        if (setup.OnSite is { } onSite)
+        {
+            tournament.OnSiteCheckInStartsAt = onSite.StartsAt;
+            tournament.OnSiteCheckInEndsAt = onSite.EndsAt;
+        }
 
         await SyncDivisionsAsync(tournament, cancellationToken);
 
         audit.Write(actor, AuditActions.TournamentUpdated, "tournament", tournament.Id, tournament.NameEn);
+        ApplyBannerPosition(tournament, setup.BannerImageCrop, actor);
         await db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
 
         return Outcome.Success();
+    }
+
+    /// <summary>
+    /// The banner's framing, saved with the rest of the form. Only the image
+    /// it was chosen on takes it, and an unchanged position writes nothing.
+    /// </summary>
+    private void ApplyBannerPosition(Tournament tournament, BannerPosition? position, AdminIdentity.Actor actor)
+    {
+        if (position?.Crop is not { } crop || tournament.BannerImageUrl is null) return;
+        if (position.ImageUrl is not null && position.ImageUrl != tournament.BannerImageUrl) return;
+
+        var next = crop.Write();
+        if (next == tournament.BannerImageCrop) return;
+
+        audit.Write(actor, AuditActions.TournamentUpdated, "tournament", tournament.Id,
+            fromStatus: tournament.BannerImageCrop, toStatus: next,
+            details: "Banner position changed: " + next);
+        tournament.BannerImageCrop = next;
     }
 
     /// <summary>REQ-01 rule 11 — publishing is what opens entries.</summary>
@@ -244,7 +350,8 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
         var selection = ReadSelection(tournament.WeightClassesJson);
 
         var wanted = TournamentEligibility
-            .Plan(categories, genders, (category, gender) => Chosen(category, gender, selection))
+            .Plan(categories, genders,
+                (category, gender) => Chosen(category, gender, selection, tournament.ExactWeightClasses))
             .ToList();
 
         var existing = await db.TournamentDivisions
@@ -284,19 +391,39 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
 
     /// <summary>
     /// The weight classes a pairing runs: those the federation picked, or all
-    /// of them when it picked none.
+    /// of them when it picked none — unless the selection is exact, where
+    /// picking none means the pairing does not run.
     /// </summary>
     private static IReadOnlyList<Data.WeightClasses.WeightClass> Chosen(
         string category,
         string gender,
-        IReadOnlyDictionary<string, List<decimal?>> selection)
+        IReadOnlyDictionary<string, List<decimal?>> selection,
+        bool exact)
     {
         var all = Data.WeightClasses.For(category, gender);
         if (!selection.TryGetValue(PairKey(category, gender), out var limits) || limits.Count == 0)
-            return all;
+            return exact ? [] : all;
 
         var wanted = limits.ToHashSet();
         return all.Where(entry => wanted.Contains(entry.LimitKg)).ToList();
+    }
+
+    /// <summary>
+    /// Whether the tournament, as it is configured now, runs this division:
+    /// its category and gender are chosen, and its class is in the weight
+    /// selection. A division left behind by a later edit (kept only because
+    /// someone is entered in it) is not.
+    /// </summary>
+    public static bool Runs(Tournament tournament, TournamentDivision division)
+    {
+        if (!Split(tournament.Categories).Contains(division.Category)
+            || !Split(tournament.Genders).Contains(division.Gender))
+            return false;
+
+        return Chosen(division.Category, division.Gender, ReadSelection(tournament.WeightClassesJson),
+                tournament.ExactWeightClasses)
+            .Any(c => c.LimitKg == division.WeightLimitKg
+                      && (division.WeightLimitKg is not null || c.FloorKg == division.WeightFloorKg));
     }
 
     private static Dictionary<string, List<decimal?>> ReadSelection(string? json)
@@ -327,7 +454,8 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
         var selection = ReadSelection(WriteSelection(setup.WeightClasses));
 
         var keep = TournamentEligibility
-            .Plan(setup.Categories, setup.Genders, (category, gender) => Chosen(category, gender, selection))
+            .Plan(setup.Categories, setup.Genders,
+                (category, gender) => Chosen(category, gender, selection, setup.ExactWeightClasses))
             .Select(w => (w.Category, w.Gender, w.Limit))
             .ToHashSet();
 
@@ -361,6 +489,9 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
 
     private static Outcome Validate(Setup setup)
     {
+        if (RichText.Sanitize(setup.TermsAr).Length > RichText.MaxLength || RichText.Sanitize(setup.TermsEn).Length > RichText.MaxLength)
+            return Outcome.Invalid("نص الشروط والأحكام أطول من المسموح.", "The Terms & Conditions are too long.");
+
         if (string.IsNullOrWhiteSpace(setup.NameAr) || string.IsNullOrWhiteSpace(setup.NameEn))
             return Outcome.Invalid("اسم البطولة مطلوب بالعربية والإنجليزية.", "The tournament needs a name in both languages.");
 
@@ -381,8 +512,25 @@ public class TournamentService(SmfDbContext db, AuditLogger audit, TournamentLoo
         if (unknownGender is not null)
             return Outcome.Invalid($"جنس غير معروف: {unknownGender}.", $"Unknown gender: {unknownGender}.");
 
+        if (!string.IsNullOrEmpty(setup.ActivityCategory) && !ActivityCategories.IsKnown(setup.ActivityCategory))
+            return Outcome.Invalid($"مكان عرض غير معروف: {setup.ActivityCategory}.", $"Unknown display location: {setup.ActivityCategory}.");
+
+        // An exact selection with nothing ticked would run no divisions at all.
+        if (setup.ExactWeightClasses && (setup.WeightClasses is null || setup.WeightClasses.All(pair => pair.Value.Count == 0)))
+            return Outcome.Invalid("يجب اختيار فئة وزن واحدة على الأقل.", "At least one weight class must be chosen.");
+
         if (setup.RegistrationClosesAt is { } closes && closes > setup.StartDate.Date.AddDays(1))
             return Outcome.Invalid("لا يمكن أن يتجاوز إغلاق التسجيل بداية البطولة.", "Entries cannot close after the tournament starts.");
+
+        if (setup.OnSite is { } onSite)
+        {
+            if (onSite.StartsAt is null && onSite.EndsAt is not null)
+                return Outcome.Invalid("حدد بداية الحضور والفحص والوزن قبل نهايته.", "Set when on-site check-in, medical examination and weigh-in starts before its end.");
+            if (onSite is { StartsAt: { } from, EndsAt: { } to } && to <= from)
+                return Outcome.Invalid("يجب أن تكون نهاية الحضور والفحص والوزن بعد بدايته.", "On-site check-in, medical examination and weigh-in must end after it starts.");
+            if (onSite.StartsAt is { } starts && starts >= setup.EndDate.Date.AddDays(1))
+                return Outcome.Invalid("لا يمكن أن يبدأ الحضور والفحص والوزن بعد آخر أيام البطولة.", "On-site check-in, medical examination and weigh-in cannot start after the last day of the tournament.");
+        }
 
         return Outcome.Success();
     }

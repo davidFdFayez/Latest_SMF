@@ -32,6 +32,9 @@ import AboutRules from './pages/about/Rules';
 import AboutEquipment from './pages/about/Equipment';
 import MembershipCard from './pages/MembershipCard';
 import { AccountActivate, AccountLogin } from './pages/account/AccountAuth';
+import ClubAccount from './pages/account/ClubAccount';
+import CoachAccount from './pages/account/CoachAccount';
+import AthleteAccount from './pages/account/AthleteAccount';
 import AccountPortal from './pages/account/AccountPortal';
 
 export default function App() {
@@ -77,6 +80,13 @@ export default function App() {
         <Route path="activities/event/:id" element={<EventDetail />} />
         <Route path="registration/:type" element={<Registration />} />
         <Route path="registration" element={<RegistrationHub />} />
+        {/* Login is a page of the public website — header, hero and all — and
+            the way into the member area beside it. */}
+        <Route path="account/login" element={<AccountLogin />} />
+        {/* A club's own area: a page of the website, under its header. */}
+        <Route path="account/club" element={<ClubAccount />} />
+        <Route path="account/coach" element={<CoachAccount />} />
+        <Route path="account/athlete" element={<AthleteAccount />} />
         <Route path="clubs" element={<Clubs />} />
         {/* QA-01 — the "Try Muaythai" call to action in the header and the
             footer now points here rather than straight at /clubs, so the route
@@ -96,7 +106,6 @@ export default function App() {
       {/* Phase 3 REQ-05/06/07 — the club, coach and athlete portal. It stands
           outside the site layout: it is a signed-in area, not a page of the
           public website. */}
-      <Route path="account/login" element={<AccountLogin />} />
       <Route path="account/activate" element={<AccountActivate />} />
       <Route path="account" element={<AccountPortal />} />
     </Routes>

@@ -67,7 +67,7 @@ public static class RegistrationExport
     /// quote: spreadsheet software treats such a value as a formula, and these
     /// fields hold text typed by the public.
     /// </summary>
-    private static string Escape(string? value)
+    internal static string Escape(string? value)
     {
         if (string.IsNullOrEmpty(value)) return "\"\"";
 

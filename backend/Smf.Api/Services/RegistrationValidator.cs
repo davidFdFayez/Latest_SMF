@@ -69,6 +69,57 @@ public static class RegistrationValidator
         ["official"] = (18, 80),
     };
 
+    /* ── the athlete's current (body) weight — REG-11 ────────────────────── */
+
+    /// <summary>
+    /// The lightest current weight an athlete aged 13 or under may register.
+    ///
+    /// This is a body weight on the membership record, not a weigh-in: it only
+    /// has to be plausible, never to make a competition class. The lightest
+    /// weight any official class takes at the weigh-in is 14 kg (the first
+    /// U8 class, 16 kg, from its limit − 2 kg — WeighInRange); 12 kg leaves a
+    /// margin below that for a light child's real weight while still refusing
+    /// zero, negative and nonsensical values. (It was 20 kg, which a U8 athlete
+    /// in the 16 kg class could not enter truthfully.)
+    /// </summary>
+    public const decimal YouthMinimumWeightKg = 12m;
+
+    /// <summary>
+    /// The accepted current weight for an athlete's competition age (the
+    /// tournament-year rule the categories use). The website's weightRangeFor
+    /// (web/src/data/registrationPortal.js) is the same table.
+    /// </summary>
+    public static (decimal Min, decimal Max) CurrentWeightRange(int? competitionAge) => competitionAge switch
+    {
+        null => (YouthMinimumWeightKg, 150m),
+        <= 13 => (YouthMinimumWeightKg, 80m),
+        <= 17 => (28m, 110m),
+        _ => (40m, 150m),
+    };
+
+    /// <summary>The range for an ISO date of birth (null or unreadable: the widest one).</summary>
+    public static (decimal Min, decimal Max) CurrentWeightRange(string? isoDateOfBirth) =>
+        CurrentWeightRange(CompetitionCategories.AgeOf(ParseDate(isoDateOfBirth)));
+
+    /// <summary>
+    /// The same check for one value outside a full registration form — a
+    /// profile change the athlete proposes, or one being approved. Null when
+    /// the value is acceptable; the wording matches the registration form's.
+    /// </summary>
+    public static Failure? CurrentWeightProblem(string? isoDateOfBirth, string? value)
+    {
+        var (min, max) = CurrentWeightRange(isoDateOfBirth);
+        var text = value?.Trim();
+        if (!string.IsNullOrEmpty(text)
+            && decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+            && parsed >= min && parsed <= max)
+            return null;
+
+        return new Failure(
+            $"يرجى إدخال قيمة بين {min:0.##} و{max:0.##}.",
+            $"Please enter a value between {min:0.##} and {max:0.##}.");
+    }
+
     /* ── entry point ─────────────────────────────────────────────────────── */
 
     public static Result Validate(string type, JsonElement payload)
@@ -125,14 +176,7 @@ public static class RegistrationValidator
 
         // REG-11 — the plausible weight range follows the age band, exactly as
         // the portal computes it, in the same competition age the categories use.
-        var age = CompetitionCategories.AgeOf(ParseDate(form.Text("dateOfBirth")));
-        var (min, max) = age switch
-        {
-            null => (20m, 150m),
-            <= 13 => (20m, 80m),
-            <= 17 => (28m, 110m),
-            _ => (40m, 150m),
-        };
+        var (min, max) = CurrentWeightRange(form.Text("dateOfBirth"));
         form.Decimal("currentWeight", min, max, required: true);
 
         // BUG-10 — the stepper used to accept a negative height.

@@ -40,9 +40,10 @@ export default function TournamentEntries() {
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(0)
 
-  // The two steps that need something typed before they can be recorded.
+  // The step that needs something typed before it can be recorded here. The
+  // weigh-in is recorded on Check-in & Medical, where the server's verdict,
+  // the move and the Failed reason all live; this page links there.
   const [medicalFor, setMedicalFor] = useState(null)
-  const [weighFor, setWeighFor] = useState(null)
 
   const load = useCallback(async () => {
     const [detail, list] = await Promise.all([
@@ -202,11 +203,15 @@ export default function TournamentEntries() {
                     ) : entry.medicalResult === 'failed' ? (
                       <span className="data-table__subtext">Failed the examination</span>
                     ) : !entry.weighInResult ? (
-                      <button type="button" className="btn btn--small" onClick={() => setWeighFor(entry)}>
+                      <Link className="btn btn--small" to={`/tournaments/readiness?tournament=${id}`}>
                         Weigh in
-                      </button>
+                      </Link>
                     ) : entry.weighInResult === 'failed' ? (
                       <span className="data-table__subtext">Failed the weigh-in</span>
+                    ) : entry.staleWeighIn ? (
+                      // Passed for another class, or under an earlier rule: the server will not
+                      // approve it or put it in a draw.
+                      <span className="data-table__subtext">Weigh-in not valid for the current class</span>
                     ) : entry.status !== 'qualified' ? (
                       <button
                         type="button"
@@ -241,16 +246,6 @@ export default function TournamentEntries() {
         />
       )}
 
-      {weighFor && (
-        <WeighInDialog
-          entry={weighFor}
-          onClose={() => setWeighFor(null)}
-          onDone={async (body) => {
-            await run(weighFor.id, () => tournamentsApi.recordWeighIn(weighFor.id, body), 'Weigh-in recorded.')
-            setWeighFor(null)
-          }}
-        />
-      )}
     </div>
   )
 }
@@ -371,116 +366,3 @@ function MedicalDialog({ entry, onClose, onDone, onUploaded }) {
 }
 
 /** REQ-09 rules 2 to 6. */
-function WeighInDialog({ entry, onClose, onDone }) {
-  const [weight, setWeight] = useState('')
-  const [preview, setPreview] = useState(null)
-  const [moveTo, setMoveTo] = useState('')
-
-  useEffect(() => {
-    const value = Number(weight)
-    if (!Number.isFinite(value) || value <= 0) {
-      setPreview(null)
-      return
-    }
-
-    let cancelled = false
-    const timer = setTimeout(() => {
-      tournamentsApi
-        .previewWeighIn(entry.id, value)
-        .then((data) => !cancelled && setPreview(data))
-        .catch(() => {})
-    }, 300)
-
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [entry.id, weight])
-
-  const outside = preview && !preview.withinRegisteredClass
-
-  return (
-    <section className="form-card">
-      <h3 className="form-section-title form-section-title--first">
-        Weigh-in — {entry.nameEn || entry.nameAr}
-      </h3>
-      <p className="form-card__intro">Entered in {entry.divisionLabelEn || '—'}.</p>
-
-      <div className="form-grid">
-        <label className="field">
-          <span>Weight on the scales (kg)</span>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            value={weight}
-            onChange={(event) => setWeight(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === '-') event.preventDefault()
-            }}
-          />
-        </label>
-      </div>
-
-      {preview && (
-        <Alert type={outside ? 'info' : 'success'}>
-          {outside
-            ? `${preview.actualWeightKg} kg is outside ${preview.registeredClassLabel}. ` +
-              (preview.actualClassLabel ? `It belongs in ${preview.actualClassLabel}. ` : '') +
-              'Move them to a class that fits, or record a failure.'
-            : `${preview.actualWeightKg} kg is inside ${preview.registeredClassLabel}.`}
-        </Alert>
-      )}
-
-      {outside && preview.alternatives.length > 0 && (
-        <label className="field">
-          <span>Move to another weight class</span>
-          <select value={moveTo} onChange={(event) => setMoveTo(event.target.value)}>
-            <option value="">Do not move them</option>
-            {preview.alternatives.map((division) => (
-              <option key={division.id} value={division.id}>
-                {division.labelEn}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      <div className="form-actions">
-        <button type="button" className="btn btn--ghost" onClick={onClose}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="btn btn--danger-ghost"
-          onClick={() => onDone({ noShow: true })}
-        >
-          Did not appear (DSQ)
-        </button>
-        <button
-          type="button"
-          className="btn btn--danger-ghost"
-          disabled={!preview}
-          onClick={() => onDone({ weightKg: Number(weight), result: 'failed', noShow: false })}
-        >
-          Failed
-        </button>
-        <button
-          type="button"
-          className="btn btn--primary"
-          disabled={!preview || (outside && !moveTo)}
-          onClick={() =>
-            onDone({
-              weightKg: Number(weight),
-              result: 'passed',
-              moveToDivisionId: moveTo ? Number(moveTo) : null,
-              noShow: false,
-            })
-          }
-        >
-          Passed
-        </button>
-      </div>
-    </section>
-  )
-}

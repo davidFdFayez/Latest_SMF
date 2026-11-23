@@ -69,6 +69,15 @@ public class TournamentEntry
     /// </summary>
     public string? MedicalNote { get; set; }
 
+    /// <summary>
+    /// REQ-08 rule 6 — why a Passed examination was given while required
+    /// medical documents were still missing. Kept apart from
+    /// <see cref="MedicalNote"/> (a Failed result's reason), set only with a
+    /// Passed result that had documents missing, and cleared when the result
+    /// is no longer such a pass. The documents' own statuses are untouched.
+    /// </summary>
+    public string? MedicalMissingDocumentsReason { get; set; }
+
     /// <summary>REQ-09 rule 1 — entered by hand before the tournament.</summary>
     public decimal? ActualWeightKg { get; set; }
     public string? WeighInResult { get; set; }
@@ -83,6 +92,14 @@ public class TournamentEntry
     public DateTime? QualifiedAt { get; set; }
     public string? QualifiedBy { get; set; }
 
+    /// <summary>
+    /// The approver's other answer: all three steps passed, but the athlete is
+    /// not released to the draw. Its own state — not a Failed step, not a DSQ.
+    /// </summary>
+    public DateTime? ReadinessRejectedAt { get; set; }
+    public string? ReadinessRejectedBy { get; set; }
+    public string? ReadinessRejectionReason { get; set; }
+
     /// <summary>Why an entry was withdrawn, failed or disqualified.</summary>
     public string? StatusReason { get; set; }
 
@@ -91,11 +108,13 @@ public class TournamentEntry
 
     /// <summary>
     /// Ready for the draw: checked in, passed the examination and the weigh-in,
-    /// and approved (REQ-09 rule 7).
+    /// and approved (REQ-09 rule 7). The draw takes these athletes and no
+    /// others, and a draw is only published while all of its athletes still are.
     /// </summary>
     public bool IsQualified =>
         Status == EntryStatuses.Qualified
         && QualifiedAt is not null
+        && CheckedInAt is not null
         && MedicalResult == ReadinessResults.Passed
         && WeighInResult == ReadinessResults.Passed;
 }
@@ -112,6 +131,9 @@ public static class ReadinessResults
 {
     public const string Passed = "passed";
     public const string Failed = "failed";
+
+    /// <summary>A weigh-in only: the athlete did not appear (REQ-09 rule 6) — DSQ, not a Failed.</summary>
+    public const string NoShow = "no_show";
 }
 
 public static class EntryStatuses
@@ -134,8 +156,11 @@ public static class EntryStatuses
     /// <summary>Pulled out. Before the draw they leave the division; after it the opponent walks over.</summary>
     public const string Withdrawn = "withdrawn";
 
+    /// <summary>Through all three steps, but the readiness approver refused them the draw.</summary>
+    public const string Rejected = "rejected";
+
     public static readonly IReadOnlyList<string> All =
-        [Registered, CheckedIn, Qualified, NotEligible, Disqualified, Withdrawn];
+        [Registered, CheckedIn, Qualified, NotEligible, Disqualified, Withdrawn, Rejected];
 
     public static readonly IReadOnlyDictionary<string, (string Ar, string En)> Labels =
         new Dictionary<string, (string, string)>
@@ -146,5 +171,6 @@ public static class EntryStatuses
             [NotEligible] = ("غير مؤهل", "Not eligible"),
             [Disqualified] = ("مستبعد", "Disqualified"),
             [Withdrawn] = ("منسحب", "Withdrawn"),
+            [Rejected] = ("مرفوض للقرعة", "Rejected for the draw"),
         };
 }

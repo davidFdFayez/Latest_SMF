@@ -85,7 +85,10 @@ public static class MemberAccountKinds
     public const string Coach = "coach";
     public const string Club = "club";
 
-    public static readonly IReadOnlyList<string> All = [Athlete, Coach, Club];
+    /// <summary>A referee or official — the "official" membership type.</summary>
+    public const string Official = "official";
+
+    public static readonly IReadOnlyList<string> All = [Athlete, Coach, Club, Official];
 
     /// <summary>The membership type each kind of account speaks for.</summary>
     public static string? RegistrationType(string kind) => kind switch
@@ -93,14 +96,20 @@ public static class MemberAccountKinds
         Athlete => "athlete",
         Coach => "coach",
         Club => "club",
+        Official => "official",
         _ => null,
     };
+
+    /// <summary>The kind of account a membership type opens, or null for none.</summary>
+    public static string? ForRegistrationType(string type) =>
+        All.FirstOrDefault(kind => RegistrationType(kind) == type);
 
     public static (string Ar, string En) Label(string kind) => kind switch
     {
         Athlete => ("لاعب", "Athlete"),
         Coach => ("مدرب", "Coach"),
         Club => ("نادي", "Club"),
+        Official => ("حكم / مسؤول", "Referee / Official"),
         _ => (kind, kind),
     };
 }

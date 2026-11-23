@@ -61,8 +61,6 @@ public static class DrawBuilder
         var count = contenders.Count;
         if (count < 2) return new Draw([], 0, 0, false);
 
-        var ordered = Spread(contenders, seed);
-
         // The bracket is the next power of two at or above the field, and the
         // byes are the gap. Six athletes means a bracket of eight and two byes.
         var bracket = 1;
@@ -70,6 +68,11 @@ public static class DrawBuilder
 
         var byeCount = bracket - count;
         var totalRounds = (int)Math.Log2(bracket);
+
+        // Random order with club separation over every first meeting — the
+        // contested pairs, the BYE pairs, and (with an odd number of byes) the
+        // last bye against both athletes of the first contested bout (DRW-001).
+        var ordered = Arrange(contenders, byeCount, seed);
 
         // Athletes who have to fight in round one: everyone who is not a bye.
         var fighting = ordered.Take(count - byeCount).ToList();
@@ -132,36 +135,167 @@ public static class DrawBuilder
     }
 
     /// <summary>
-    /// Random order, then club separation: an athlete whose neighbour shares
-    /// their club is swapped further down the list where somebody suitable can
-    /// be found. "Where possible" is the document's own wording — a division
-    /// where one club brought most of the field cannot be fully separated, and
-    /// the draw proceeds rather than failing.
+    /// The version of the arrangement below, written into every draw's audit
+    /// line with its seed, so an old seed stays interpretable: the same seed
+    /// gives a different draw under v1 (forward-only separation, before the
+    /// DRW-001 remediation) than under v2.
     /// </summary>
-    private static List<Contender> Spread(IReadOnlyList<Contender> contenders, int seed)
+    public const string AlgorithmVersion = "v2";
+
+    /// <summary>
+    /// The draw order: a seeded random shuffle, then club separation over every
+    /// first meeting. "Where possible" is the document's own wording — a
+    /// division where one club brought most of the field cannot be fully
+    /// separated, and the draw proceeds rather than failing — but where it is
+    /// possible it is now always achieved (DRW-001): the shuffle is repaired by
+    /// swaps anywhere in the list, not only further down it, and a constructive
+    /// arrangement (largest club paired first) is used when the repaired
+    /// shuffle still has more clashes. Deterministic for a given seed.
+    ///
+    /// Positions: pairs (0,1), (2,3), … are the first meetings — contested
+    /// bouts first, then BYE pairs. With an odd number of byes the last athlete
+    /// is the single bye who meets the winner of pair (0,1).
+    /// </summary>
+    internal static List<Contender> Arrange(IReadOnlyList<Contender> contenders, int byeCount, int seed)
     {
         var random = new Random(seed);
-        var ordered = contenders.OrderBy(_ => random.Next()).ToList();
+        var shuffled = contenders.OrderBy(_ => random.Next()).ToList();
+        var single = byeCount % 2 == 1 && contenders.Count >= 3;
 
-        for (var i = 0; i + 1 < ordered.Count; i += 2)
+        var repaired = Improve(new List<Contender>(shuffled), single);
+        var repairedClashes = Clashes(repaired, single);
+        if (repairedClashes == 0) return repaired;
+
+        var built = Improve(Construct(shuffled, single, random), single);
+        return Clashes(built, single) < repairedClashes ? built : repaired;
+    }
+
+    /// <summary>
+    /// The cost of same-club first meetings in an arrangement (see <see cref="Arrange"/>).
+    /// A pair that will certainly meet (a contested bout, or two BYE holders)
+    /// costs 2; the odd BYE holder against either athlete of the first bout —
+    /// a meeting that happens only if that athlete wins — costs 1. So a
+    /// certain clash is never accepted to avoid a possible one.
+    /// </summary>
+    internal static int Clashes(IReadOnlyList<Contender> list, bool single)
+    {
+        var n = list.Count;
+        var pairsEnd = single ? n - 1 : n;
+        var clashes = 0;
+        for (var i = 0; i + 1 < pairsEnd; i += 2)
+            if (SameClub(list[i], list[i + 1])) clashes += 2;
+        if (single && n >= 3)
         {
-            if (!SameClub(ordered[i], ordered[i + 1])) continue;
+            if (SameClub(list[n - 1], list[0])) clashes++;
+            if (SameClub(list[n - 1], list[1])) clashes++;
+        }
+        return clashes;
+    }
 
-            // Look for anyone later in the list who clashes with neither this
-            // athlete nor their own new neighbour.
-            for (var j = i + 2; j < ordered.Count; j++)
+    private static bool InClash(IReadOnlyList<Contender> list, int i, bool single)
+    {
+        var n = list.Count;
+        if (single && i == n - 1) return SameClub(list[i], list[0]) || SameClub(list[i], list[1]);
+        var partner = i % 2 == 0 ? i + 1 : i - 1;
+        var pairsEnd = single ? n - 1 : n;
+        if (partner < pairsEnd && SameClub(list[i], list[partner])) return true;
+        return single && i <= 1 && SameClub(list[i], list[n - 1]);
+    }
+
+    /// <summary>Swaps anywhere in the list while a swap strictly reduces the clashes.</summary>
+    private static List<Contender> Improve(List<Contender> list, bool single)
+    {
+        var cost = Clashes(list, single);
+        var improved = true;
+        while (cost > 0 && improved)
+        {
+            improved = false;
+            for (var i = 0; i < list.Count && !improved; i++)
             {
-                var partner = j % 2 == 0 ? j + 1 : j - 1;
-                var partnerOk = partner >= ordered.Count || !SameClub(ordered[i + 1], ordered[partner]);
-
-                if (SameClub(ordered[i], ordered[j]) || !partnerOk) continue;
-
-                (ordered[i + 1], ordered[j]) = (ordered[j], ordered[i + 1]);
-                break;
+                if (!InClash(list, i, single)) continue;
+                for (var j = 0; j < list.Count; j++)
+                {
+                    if (j == i) continue;
+                    (list[i], list[j]) = (list[j], list[i]);
+                    var after = Clashes(list, single);
+                    if (after < cost)
+                    {
+                        cost = after;
+                        improved = true;
+                        break;
+                    }
+                    (list[i], list[j]) = (list[j], list[i]);
+                }
             }
         }
+        return list;
+    }
 
-        return ordered;
+    /// <summary>
+    /// A constructive arrangement that reaches the fewest possible clashes:
+    /// the single bye's trio is taken from the three largest clubs, then the
+    /// largest remaining club is always paired with the next largest. The
+    /// pairs' order and corners are then shuffled with the same seeded random.
+    /// </summary>
+    private static List<Contender> Construct(IReadOnlyList<Contender> shuffled, bool single, Random random)
+    {
+        static string Key(Contender c) =>
+            string.IsNullOrWhiteSpace(c.Club) ? "#" + c.EntryId : c.Club.Trim().ToUpperInvariant();
+
+        var order = shuffled.Select((c, i) => (c, i)).ToDictionary(x => x.c, x => x.i);
+        var groups = shuffled.GroupBy(Key).ToDictionary(g => g.Key, g => new Queue<Contender>(g));
+
+        List<string> Largest() => groups.Where(g => g.Value.Count > 0)
+            .OrderByDescending(g => g.Value.Count)
+            .ThenBy(g => order[g.Value.Peek()])
+            .Select(g => g.Key)
+            .ToList();
+
+        var n = shuffled.Count;
+        var result = new Contender[n];
+        var first = 0;
+        if (single)
+        {
+            var keys = Largest();
+            var trio = new List<Contender>();
+            for (var t = 0; t < 3; t++)
+            {
+                var available = Largest();
+                var pick = keys.FirstOrDefault(k => groups[k].Count > 0 && trio.All(x => Key(x) != k)) ?? available[0];
+                trio.Add(groups[pick].Dequeue());
+            }
+            for (var t = trio.Count - 1; t > 0; t--)
+            {
+                var swap = random.Next(t + 1);
+                (trio[t], trio[swap]) = (trio[swap], trio[t]);
+            }
+            result[0] = trio[0];
+            result[1] = trio[1];
+            result[n - 1] = trio[2];
+            first = 2;
+        }
+
+        var pairs = new List<(Contender A, Contender B)>();
+        while (groups.Values.Sum(q => q.Count) >= 2)
+        {
+            var keys = Largest();
+            var a = groups[keys[0]].Dequeue();
+            var bKey = keys.Count > 1 ? keys[1] : keys[0];
+            var b = groups[bKey].Dequeue();
+            pairs.Add((a, b));
+        }
+        for (var t = pairs.Count - 1; t > 0; t--)
+        {
+            var swap = random.Next(t + 1);
+            (pairs[t], pairs[swap]) = (pairs[swap], pairs[t]);
+        }
+        foreach (var (a, b) in pairs)
+        {
+            var flip = random.Next(2) == 1;
+            result[first++] = flip ? b : a;
+            result[first++] = flip ? a : b;
+        }
+        return result.ToList();
     }
 
     private static bool SameClub(Contender a, Contender b) =>

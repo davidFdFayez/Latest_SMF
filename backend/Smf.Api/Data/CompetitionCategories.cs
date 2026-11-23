@@ -70,6 +70,31 @@ public static class CompetitionCategories
         dateOfBirth is { } birth ? (competitionYear ?? DateTime.UtcNow.Year) - birth.Year : null;
 
     /// <summary>
+    /// REQ-02 rule 1 — an athlete's age for a tournament: the tournament's year
+    /// minus their birth year. The year is required: tournament eligibility is
+    /// never worked out from today's date, and the month and day of birth play
+    /// no part.
+    /// </summary>
+    public static int? CompetitionAge(DateTime? dateOfBirth, int tournamentYear) =>
+        AgeOf(dateOfBirth, tournamentYear);
+
+    /// <summary>
+    /// Every category a tournament in that year admits this athlete to — all of
+    /// them, since the ranges overlap on purpose (18 is U24 and Elite; 35 is
+    /// Elite and Masters 35+; 40 is Elite and Masters 40+).
+    /// </summary>
+    public static IReadOnlyList<Category> EligibleForTournament(DateTime? dateOfBirth, int tournamentYear) =>
+        EligibleFor(dateOfBirth, tournamentYear);
+
+    /// <summary>Position in the official list: youngest category first.</summary>
+    public static int OrderOf(string? value)
+    {
+        for (var index = 0; index < All.Count; index++)
+            if (All[index].Value == value) return index;
+        return int.MaxValue;
+    }
+
+    /// <summary>
     /// Every category this athlete may enter.
     ///
     /// The eligibility rules close with an absolute instruction — "Athletes

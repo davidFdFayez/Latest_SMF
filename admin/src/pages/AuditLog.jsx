@@ -49,7 +49,12 @@ const VERB_LABEL = {
   reset: 'reset',
   uploaded: 'uploaded',
   attachment_viewed: 'document opened',
+  medical_document_uploaded: 'medical document uploaded',
+  medical_document_replaced: 'medical document replaced',
+  medical_document_viewed: 'medical document opened',
   attachment_added: 'document added',
+  readiness_approved: 'approved for the draw',
+  readiness_rejected: 'rejected for the draw',
   attachment_removed: 'document removed',
   term_realigned: 'term realigned',
   card_reissued: 'card link reissued',
@@ -93,6 +98,18 @@ const SENTENCE = {
   'event.created': 'Added an event.',
   'event.updated': 'Edited an event.',
   'event.deleted': 'Deleted an event.',
+  'tournament.entry_updated':
+    'Changed a tournament entry — its category or weight class (Participants or the weigh-in).',
+  'athlete.medical_document_uploaded':
+    'Uploaded a missing medical document to an athlete’s Medical File; approved immediately.',
+  'athlete.medical_document_replaced':
+    'Replaced a medical document on an athlete’s Medical File; approved immediately.',
+  'athlete.medical_document_viewed': 'Opened a medical document on an athlete’s Medical File.',
+  'tournament.readiness_rejected': 'Rejected an athlete for the draw after readiness, with a reason.',
+  'tournament.draw_regenerated':
+    'Regenerated a Draft draw whose eligible athletes had changed, with the athletes added and removed and a reason.',
+  'tournament.schedule_approval_withdrawn':
+    'Withdrew the bout schedule approval, with a reason. Nothing in the schedule was changed; it must be approved again.',
 }
 
 function words(value) {
@@ -394,9 +411,7 @@ export default function AuditLog() {
                         <div className="data-table__subtext">{actionSentence(entry)}</div>
                       </td>
                       <td>
-                        <div className="data-table__primary">
-                          {reference || (entityId > 0 ? `#${entityId}` : '—')}
-                        </div>
+                        <div className="data-table__primary">{reference || (entityId > 0 ? `#${entityId}` : '—')}</div>
                         {reference && entityId > 0 && <div className="data-table__subtext">#{entityId}</div>}
                       </td>
                       <td>

@@ -82,7 +82,14 @@ public static class MemberIdentity
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == accountId, context.HttpContext.RequestAborted);
 
-        if (account is null || !account.CanSignIn)
+        // TEMPORARY — see DevelopmentMemberSignIn: an account it opened has no
+        // stored password, and stays usable only while it is switched on.
+        var services = context.HttpContext.RequestServices;
+        var developmentSession = account is { IsActive: true, ActivatedAt: not null }
+            && DevelopmentMemberSignIn.IsEnabled(
+                services.GetRequiredService<IConfiguration>(), services.GetRequiredService<IHostEnvironment>());
+
+        if (account is null || !(account.CanSignIn || developmentSession))
         {
             context.Fail("This account can no longer sign in.");
             return;

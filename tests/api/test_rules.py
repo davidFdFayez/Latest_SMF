@@ -19,6 +19,17 @@ API = os.environ.get("SMF_TEST_API", "http://127.0.0.1:5197")
 DB = os.environ["SMF_TEST_DB"]
 OUTBOX = os.environ.get("SMF_TEST_OUTBOX", "")
 YEAR = datetime.date.today().year
+# The tournaments' dates follow today's, so the suite does not stop working on
+# the day a fixed closing date passes; ages "in the tournament year" follow
+# the tournament's own year. The gaps are kept short so the tournaments stay in
+# this year for all but the last week of December.
+_TODAY = datetime.date.today()
+CLOSES = _TODAY + datetime.timedelta(days=3)
+LATER_CLOSE = _TODAY + datetime.timedelta(days=5)
+START = _TODAY + datetime.timedelta(days=7)
+SECOND_CLOSE = _TODAY + datetime.timedelta(days=8)
+SECOND_START = _TODAY + datetime.timedelta(days=10)
+TOURNAMENT_YEAR = START.year
 failures, log = [], []
 
 
@@ -98,7 +109,7 @@ def athlete(birth_date, gender="male", weight="60", club="Rules Club", email=Non
 
 def born_at(age, month=6, day=15):
     """A date of birth that makes the athlete this age in the tournament year."""
-    return "%d-%02d-%02d" % (YEAR - age, month, day)
+    return "%d-%02d-%02d" % (TOURNAMENT_YEAR - age, month, day)
 
 
 ALL_CATEGORIES = [
@@ -112,10 +123,10 @@ EVERYTHING = {
     "nameAr": "بطولة القواعد", "nameEn": "Rules Championship",
     "type": "kingdom", "competitionType": "muaythai_combat",
     "locationAr": "الرياض", "locationEn": "Riyadh",
-    "startDate": "%d-12-10" % YEAR, "endDate": "%d-12-11" % YEAR,
+    "startDate": START.isoformat(), "endDate": (START + datetime.timedelta(days=1)).isoformat(),
     "firstBoutTime": "17:00:00", "boutIntervalMinutes": 10,
     "registrationOpensAt": "%d-01-01T00:00:00" % YEAR,
-    "registrationClosesAt": "%d-12-01T00:00:00" % YEAR,
+    "registrationClosesAt": CLOSES.isoformat() + "T00:00:00",
     "genders": ["male", "female"], "categories": ALL_CATEGORIES,
 }
 
@@ -252,8 +263,8 @@ say("=== REQ-03 rule 11: the same athlete, two tournaments, two divisions ===")
 
 second = dict(EVERYTHING)
 second.update({"nameEn": "Rules Championship II", "nameAr": "بطولة القواعد ٢",
-               "startDate": "%d-12-20" % YEAR, "endDate": "%d-12-20" % YEAR,
-               "registrationClosesAt": "%d-12-15T00:00:00" % YEAR})
+               "startDate": SECOND_START.isoformat(), "endDate": SECOND_START.isoformat(),
+               "registrationClosesAt": SECOND_CLOSE.isoformat() + "T00:00:00"})
 status, other = call("POST", "/api/admin/tournaments", second, token=TOKEN)
 OTHER_TOURNAMENT = other["id"]
 call("POST", "/api/admin/tournaments/%d/publish" % OTHER_TOURNAMENT, token=TOKEN)
@@ -336,7 +347,8 @@ registered = sql("select DivisionId from TournamentEntries where Id=?", (HEAVY,)
 
 call("POST", "/api/admin/tournaments/entries/%d/check-in" % HEAVY, token=TOKEN)
 call("POST", "/api/admin/tournaments/entries/%d/medical" % HEAVY,
-     {"result": "passed", "note": None, "documentsMissing": False}, token=TOKEN)
+     {"result": "passed", "note": None, "documentsMissing": False,
+          "missingDocumentsReason": "Documents to be brought on the day."}, token=TOKEN)
 
 status, preview = call(
     "GET", "/api/admin/tournaments/entries/%d/weigh-in/preview?weightKg=56" % HEAVY, token=TOKEN)
@@ -370,9 +382,10 @@ status, entry = call("POST", "/api/admin/tournaments/%d/entries" % OPEN_TO_ALL,
 LIGHT = entry["id"]
 call("POST", "/api/admin/tournaments/entries/%d/check-in" % LIGHT, token=TOKEN)
 call("POST", "/api/admin/tournaments/entries/%d/medical" % LIGHT,
-     {"result": "passed", "note": None, "documentsMissing": False}, token=TOKEN)
+     {"result": "passed", "note": None, "documentsMissing": False,
+          "missingDocumentsReason": "Documents to be brought on the day."}, token=TOKEN)
 call("POST", "/api/admin/tournaments/entries/%d/weigh-in" % LIGHT,
-     {"weightKg": 56, "result": "failed", "noShow": False}, token=TOKEN)
+     {"weightKg": 56, "result": "failed", "noShow": False, "reason": "Over the class."}, token=TOKEN)
 
 status, approved = call("POST", "/api/admin/tournaments/entries/%d/approve" % LIGHT, token=TOKEN)
 check("a Failed weigh-in cannot be approved for the draw (rule 5)",
@@ -385,13 +398,13 @@ say("=== REQ-01 rule 9: the closing date can be extended ===")
 
 status, before = call("GET", "/api/admin/tournaments/%d" % OPEN_TO_ALL, token=TOKEN)
 later = dict(EVERYTHING)
-later["registrationClosesAt"] = "%d-12-08T00:00:00" % YEAR
+later["registrationClosesAt"] = LATER_CLOSE.isoformat() + "T00:00:00"
 status, extended = call("PUT", "/api/admin/tournaments/%d" % OPEN_TO_ALL, later, token=TOKEN)
 check("an authorised user can push the closing date out", status == 200, extended)
 
 status, after = call("GET", "/api/admin/tournaments/%d" % OPEN_TO_ALL, token=TOKEN)
 check("and the new date is what the tournament now runs to",
-      after["tournament"]["registrationClosesAt"].startswith("%d-12-08" % YEAR),
+      after["tournament"]["registrationClosesAt"].startswith(LATER_CLOSE.isoformat()),
       after["tournament"]["registrationClosesAt"])
 
 
@@ -418,7 +431,8 @@ for index in range(2):
 for e in [LEAVER, *stayers]:
     call("POST", "/api/admin/tournaments/entries/%d/check-in" % e, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/medical" % e,
-         {"result": "passed", "note": None, "documentsMissing": False}, token=TOKEN)
+         {"result": "passed", "note": None, "documentsMissing": False,
+          "missingDocumentsReason": "Documents to be brought on the day."}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/weigh-in" % e,
          {"weightKg": 60, "result": "passed", "noShow": False}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/approve" % e, token=TOKEN)
@@ -515,7 +529,11 @@ ROSTER_ATHLETE = athlete(born_at(16), weight="60",
 status, added = call("POST", "/api/member/roster/invite",
                      {"email": roster_email, "kind": "athlete",
                       "registrationId": ROSTER_ATHLETE, "displayName": "Ali"}, token=CLUB)
-check("the club puts an athlete on its roster", status == 200, added)
+check("the club invites an athlete to its roster", status == 200, added)
+# The athlete joins only by accepting the club's invitation.
+status, signed = call("POST", "/api/member/login", {"email": roster_email, "password": "123"})
+status, accepted = call("POST", "/api/member/invitations/%d/accept" % added["invitationId"], token=signed["token"])
+check("the athlete accepts it", status == 200, accepted)
 
 status, seen = call("GET", "/api/member/roster", token=COACH)
 check("the coach sees them (rule 2)",

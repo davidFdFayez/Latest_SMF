@@ -93,6 +93,15 @@ public static class WeightClasses
         ["u8:female"] = new([16, 18, 20, 22, 24, 26], Open: false),
     };
 
+    /// <summary>
+    /// Whether this exact class is one the mapping lists for the pairing: a
+    /// limit (or, for the open class, a floor) the official table has.
+    /// </summary>
+    public static bool IsOfficial(string category, string gender, decimal? limitKg, decimal? floorKg) =>
+        For(category, gender).Any(entry => limitKg is null
+            ? entry.IsOpen && entry.FloorKg == floorKg
+            : entry.LimitKg == limitKg);
+
     /// <summary>Whether the mapping has a row for this pairing at all.</summary>
     public static bool Knows(string category, string gender) =>
         Mapping.ContainsKey(Key(category, gender));
@@ -116,23 +125,6 @@ public static class WeightClasses
 
         if (row.Open) classes.Add(new WeightClass(null, row.Limits[^1]));
         return classes;
-    }
-
-    /// <summary>
-    /// The class a measured weight belongs to, or null when it falls outside
-    /// every class the pairing runs — below the lightest, or above the
-    /// heaviest where the category has no open class. Used at the weigh-in to
-    /// see whether an athlete is still in the class they entered, and to offer
-    /// the one they have landed in instead (REQ-09 rule 4).
-    /// </summary>
-    public static WeightClass? ClassFor(string category, string gender, decimal weightKg)
-    {
-        foreach (var entry in For(category, gender))
-        {
-            if (entry.IsOpen) return weightKg > entry.FloorKg ? entry : null;
-            if (weightKg <= entry.LimitKg) return entry;
-        }
-        return null;
     }
 
     private static string Key(string category, string gender) =>

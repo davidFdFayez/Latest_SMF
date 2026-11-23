@@ -23,6 +23,7 @@ namespace Smf.Api.Services;
 public class MemberAccountService(
     SmfDbContext db,
     IConfiguration configuration,
+    IHostEnvironment environment,
     NotificationDispatcher notifications,
     AuditLogger audit)
 {
@@ -74,8 +75,10 @@ public class MemberAccountService(
 
         if (existing is not null)
         {
-            // REQ-05 rule 2 — a live account is attached directly.
-            if (existing.CanSignIn)
+            // REQ-05 rule 2 — a live account is attached directly. Live means
+            // taken up: a password chosen, or (while it exists) opened by the
+            // temporary development sign-in.
+            if (existing is { IsActive: true, ActivatedAt: not null })
             {
                 if (existing.Kind != kind)
                 {
@@ -98,9 +101,18 @@ public class MemberAccountService(
                 return (Outcome.Success(), new InviteResult(existing, true, null));
             }
 
-            // Pending already: send the invitation again with a fresh token.
+            if (existing.Kind != kind)
+            {
+                return (Outcome.Conflict(
+                    "هذا البريد مرتبط بحساب من نوع آخر.",
+                    "That address already belongs to an account of a different kind."), null);
+            }
+
+            // Pending already: send the invitation again with a fresh token,
+            // on the same row — never a second invitation for one address.
             var reissued = Issue(existing);
             existing.InvitedBy = invitedBy;
+            if (clubRegistrationId is not null) existing.ClubRegistrationId = clubRegistrationId;
             await db.SaveChangesAsync(cancellationToken);
             var resent = await SendInviteAsync(existing, reissued, cancellationToken);
 
@@ -128,19 +140,37 @@ public class MemberAccountService(
                 "The membership type does not match the account kind."), null);
         }
 
-        var account = new MemberAccount
+        // One email, one identity: a new account may not take an address that
+        // another registration holds (its own registration and club aside).
+        // Checked and saved under the same write lock as a public submission.
+        MemberAccount account;
+        string pendingToken;
+        await using (var reservation = await EmailReservations.BeginExclusiveAsync(db, cancellationToken))
         {
-            Email = address,
-            Kind = kind,
-            RegistrationId = registrationId,
-            ClubRegistrationId = clubRegistrationId,
-            DisplayName = displayName,
-            InvitedBy = invitedBy,
-        };
+            var own = clubRegistrationId is { } club ? new[] { registrationId, club } : new[] { registrationId };
+            if ((await EmailReservations.ReservedAsync(db, [address], own, cancellationToken)).Count > 0)
+            {
+                return (Outcome.Conflict(
+                    "هذا البريد الإلكتروني مسجل مسبقًا لعضوية أخرى.",
+                    "That address is already registered to another membership."), null);
+            }
 
-        var token = Issue(account);
-        db.MemberAccounts.Add(account);
-        await db.SaveChangesAsync(cancellationToken);
+            var created = new MemberAccount
+            {
+                Email = address,
+                Kind = kind,
+                RegistrationId = registrationId,
+                ClubRegistrationId = clubRegistrationId,
+                DisplayName = displayName,
+                InvitedBy = invitedBy,
+            };
+            pendingToken = Issue(created);
+            db.MemberAccounts.Add(created);
+            await db.SaveChangesAsync(cancellationToken);
+            await reservation.CommitAsync(cancellationToken);
+            account = created;
+        }
+        var token = pendingToken;
 
         var sent = await SendInviteAsync(account, token, cancellationToken);
 
@@ -210,15 +240,171 @@ public class MemberAccountService(
             "بيانات الدخول غير صحيحة.",
             "Those sign-in details are not right.");
 
-        if (account?.PasswordHash is null || account.PasswordSalt is null) return (refused, null, null);
-        if (!account.CanSignIn) return (refused, null, null);
-        if (!PasswordHasher.VerifyPassword(password, account.PasswordHash, account.PasswordSalt))
+        var byPassword = account is { CanSignIn: true, PasswordHash: not null, PasswordSalt: not null }
+            && PasswordHasher.VerifyPassword(password, account.PasswordHash, account.PasswordSalt);
+
+        if (!byPassword)
+        {
+            // TEMPORARY — see DevelopmentMemberSignIn.
+            if (!DevelopmentMemberSignIn.Matches(configuration, environment, password)) return (refused, null, null);
+            account = await DevelopmentAccountAsync(account, address, cancellationToken);
+            if (account is null) return (refused, null, null);
+        }
+
+        // Only an approved, live membership opens the portal: a request still
+        // under review, rejected, suspended or expired does not.
+        if (!await MembershipAllowsSignInAsync(account.RegistrationId, cancellationToken))
             return (refused, null, null);
 
         account.LastLoginAt = DateTime.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
 
         return (Outcome.Success(), account, GenerateToken(account));
+    }
+
+    /// <summary>True when the membership behind an account is approved and not expired.</summary>
+    private async Task<bool> MembershipAllowsSignInAsync(int registrationId, CancellationToken cancellationToken)
+    {
+        var registration = await db.Registrations.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == registrationId, cancellationToken);
+
+        return registration is not null
+            && registration.Status == RegistrationStatuses.Approved
+            && !registration.IsExpired(DateTime.UtcNow);
+    }
+
+    /// <summary>
+    /// TEMPORARY — see <see cref="DevelopmentMemberSignIn"/>. The account the
+    /// development password opens for this address: the one that already
+    /// exists, or a new one attached to the approved membership registered
+    /// under it — the same record an invitation would have created. Null when
+    /// there is neither.
+    /// </summary>
+    private async Task<MemberAccount?> DevelopmentAccountAsync(
+        MemberAccount? existing,
+        string address,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+
+        if (existing is not null)
+        {
+            if (!existing.IsActive) return null;
+
+            // Signing in stands in for opening the invitation email while no
+            // email is sent: a pending invitation is taken up here.
+            if (existing.ActivatedAt is null)
+            {
+                existing.ActivatedAt = now;
+                existing.InviteTokenHash = null;
+                existing.InviteExpiresAt = null;
+                audit.Write(By(DevelopmentMemberSignIn.CreatedBy), AuditActions.MemberAccountUpdated,
+                    "member_account", existing.Id, existing.Email,
+                    details: "Invitation taken up through the temporary development sign-in.");
+                await db.SaveChangesAsync(cancellationToken);
+            }
+
+            return existing;
+        }
+
+        // Only one approved membership may stand behind a new account: with
+        // several (of any type) sharing the address, which one it should be is
+        // not this sign-in's to guess, so none is opened. Existing accounts are
+        // returned above, unchanged.
+        var matches = await FindApprovedRegistrationsAsync(address, cancellationToken);
+        if (matches.Count != 1) return null;
+        var registration = matches[0];
+
+        var account = new MemberAccount
+        {
+            Email = address,
+            Kind = MemberAccountKinds.ForRegistrationType(registration.Type)!,
+            RegistrationId = registration.Id,
+            ActivatedAt = now,
+            InvitedBy = DevelopmentMemberSignIn.CreatedBy,
+        };
+
+        db.MemberAccounts.Add(account);
+        await db.SaveChangesAsync(cancellationToken);
+
+        audit.Write(By(DevelopmentMemberSignIn.CreatedBy), AuditActions.MemberAccountUpdated, "member_account",
+            account.Id, account.Email,
+            details: $"A {account.Kind} account was opened by the temporary development sign-in.");
+        await db.SaveChangesAsync(cancellationToken);
+
+        return account;
+    }
+
+    /// <summary>
+    /// Every approved, live membership registered under this address that opens
+    /// an account, newest first — so a caller can tell one from several.
+    /// </summary>
+    public async Task<IReadOnlyList<Registration>> FindApprovedRegistrationsAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        var address = (email ?? string.Empty).Trim().ToLowerInvariant();
+        if (address.Length == 0 || !address.Contains('@')) return [];
+
+        var candidates = await db.Registrations.AsNoTracking()
+            .Where(r => r.Status == RegistrationStatuses.Approved
+                && EF.Functions.Like(r.PayloadJson, "%" + address + "%"))
+            .OrderByDescending(r => r.Id)
+            .ToListAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        return candidates.Where(r =>
+                !r.IsExpired(now)
+                && MemberAccountKinds.ForRegistrationType(r.Type) is not null
+                && RegisteredEmails(r).Contains(address))
+            .ToList();
+    }
+
+    /// <summary>
+    /// The approved, live membership registered under this address — of the
+    /// given type (athlete, coach, club, official), or of any type that opens
+    /// an account when <paramref name="type"/> is null. The most recent wins.
+    /// </summary>
+    public async Task<Registration?> FindApprovedRegistrationAsync(
+        string email,
+        string? type,
+        CancellationToken cancellationToken = default)
+    {
+        var address = (email ?? string.Empty).Trim().ToLowerInvariant();
+        if (address.Length == 0 || !address.Contains('@')) return null;
+
+        // The address lives inside the stored form, so narrow by text first
+        // (LIKE is case-insensitive here) and then read the fields properly.
+        var candidates = await db.Registrations.AsNoTracking()
+            .Where(r => r.Status == RegistrationStatuses.Approved
+                && (type == null || r.Type == type)
+                && EF.Functions.Like(r.PayloadJson, "%" + address + "%"))
+            .OrderByDescending(r => r.Id)
+            .ToListAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        return candidates.FirstOrDefault(r =>
+            !r.IsExpired(now)
+            && MemberAccountKinds.ForRegistrationType(r.Type) is not null
+            && RegisteredEmails(r).Contains(address));
+    }
+
+    /// <summary>The addresses a registration was made with, lower-cased.</summary>
+    private static HashSet<string> RegisteredEmails(Registration registration)
+    {
+        try
+        {
+            var payload = JsonDocument.Parse(registration.PayloadJson).RootElement;
+            return new[] { "email", "applicantEmail", "officialEmail" }
+                .Select(key => RegistrationPayload.FirstString(payload, key))
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!.Trim().ToLowerInvariant())
+                .ToHashSet();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 
     public async Task<Outcome> ChangePasswordAsync(
@@ -306,6 +492,11 @@ public class MemberAccountService(
                 $"That field cannot be changed from an account: {offending}. Please contact the federation.");
         }
 
+        // REG-11 — a proposed current weight is held to the registration form's
+        // own rule, so a profile edit cannot store what registering would refuse.
+        if (await WeightRefusedAsync(account.RegistrationId, changes, cancellationToken) is { } refused)
+            return refused;
+
         db.MemberProfileChanges.Add(new MemberProfileChange
         {
             MemberAccountId = account.Id,
@@ -327,6 +518,16 @@ public class MemberAccountService(
     {
         if (change.Status != ProfileChangeStatuses.Pending)
             return Outcome.Conflict("تمت مراجعة هذا الطلب.", "This request has already been reviewed.");
+
+        // A request proposed before the rule (or crafted around it) is not
+        // applied with a weight the registration form would refuse; it can
+        // still be rejected.
+        if (approve)
+        {
+            var proposed = JsonSerializer.Deserialize<Dictionary<string, string>>(change.ChangesJson) ?? [];
+            if (await WeightRefusedAsync(change.RegistrationId, proposed, cancellationToken) is { } refused)
+                return refused;
+        }
 
         change.Status = approve ? ProfileChangeStatuses.Approved : ProfileChangeStatuses.Rejected;
         change.ReviewedAt = DateTime.UtcNow;
@@ -354,6 +555,35 @@ public class MemberAccountService(
     }
 
     /* ── helpers ────────────────────────────────────────────────────────── */
+
+    /// <summary>
+    /// A refusal when the changes carry an athlete's current weight outside the
+    /// range registration accepts for their age (RegistrationValidator); null otherwise.
+    /// </summary>
+    private async Task<Outcome?> WeightRefusedAsync(
+        int registrationId, IReadOnlyDictionary<string, string> changes, CancellationToken cancellationToken)
+    {
+        if (!changes.TryGetValue("currentWeight", out var weight)) return null;
+
+        var registration = await db.Registrations.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == registrationId, cancellationToken);
+        if (registration is null || registration.Type != "athlete") return null;
+
+        string? dateOfBirth = null;
+        try
+        {
+            dateOfBirth = RegistrationPayload.FirstString(
+                JsonDocument.Parse(registration.PayloadJson).RootElement, "dateOfBirth");
+        }
+        catch (JsonException)
+        {
+            // An unreadable record: judged on the widest range.
+        }
+
+        return RegistrationValidator.CurrentWeightProblem(dateOfBirth, weight) is { } failure
+            ? Outcome.Invalid(failure.Ar, $"Current weight: {failure.En}")
+            : null;
+    }
 
     private static string Issue(MemberAccount account)
     {

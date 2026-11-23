@@ -50,6 +50,7 @@ builder.Services.AddScoped<TournamentLookups>();
 builder.Services.AddScoped<TournamentEntryService>();
 builder.Services.AddScoped<DrawService>();
 builder.Services.AddScoped<ScheduleService>();
+builder.Services.AddScoped<AdminNotificationService>();
 builder.Services.AddScoped<MedicalFileService>();
 builder.Services.AddScoped<MemberAccountService>();
 
@@ -270,6 +271,7 @@ app.MapContentEndpoints();
 app.MapMediaEndpoints();
 app.MapNewsEndpoints();
 app.MapEventsEndpoints();
+app.MapPublicDrawEndpoints();
 app.MapResultsEndpoints();
 app.MapSettingsEndpoints();
 app.MapRegistrationsEndpoints();

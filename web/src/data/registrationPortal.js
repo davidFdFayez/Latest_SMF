@@ -279,11 +279,20 @@ const WEIGHT_DIVISIONS = {
   female: [45, 48, 51, 54, 57, 60, 63.5, 67, 71],
 }
 
-/** Plausible competition weight for the age band (REG-11). */
+/**
+ * Plausible current (body) weight for the age band (REG-11) — a membership
+ * answer, not a weigh-in: it never has to make a competition class. The same
+ * table as the API's RegistrationValidator.CurrentWeightRange. The youngest
+ * band starts at 12 kg: the lightest official class takes 14 kg at the
+ * weigh-in (U8 16 kg, limit − 2 kg), and a light child must be able to enter
+ * their real weight (it was 20 kg).
+ */
+export const YOUTH_MINIMUM_WEIGHT_KG = 12
+
 export function weightRangeFor(values) {
   const age = competitionAge(values.dateOfBirth)
-  if (age === null) return { min: 20, max: 150 }
-  if (age <= 13) return { min: 20, max: 80 }
+  if (age === null) return { min: YOUTH_MINIMUM_WEIGHT_KG, max: 150 }
+  if (age <= 13) return { min: YOUTH_MINIMUM_WEIGHT_KG, max: 80 }
   if (age <= 17) return { min: 28, max: 110 }
   return { min: 40, max: 150 }
 }
@@ -462,7 +471,7 @@ export const FIELDS = {
         span: 4,
         dir: 'ltr',
         validate: 'weight',
-        step: '0.1',
+        step: '0.01',
         min: 0,
       },
       { name: 'height', label: { ar: 'الطول (سم)', en: 'Height (cm)' }, control: 'number', span: 4, dir: 'ltr', min: 0, max: 260, validate: 'height' },

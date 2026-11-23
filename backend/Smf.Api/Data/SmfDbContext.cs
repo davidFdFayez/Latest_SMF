@@ -26,12 +26,20 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
     public DbSet<TournamentDivision> TournamentDivisions => Set<TournamentDivision>();
     public DbSet<TournamentEntry> TournamentEntries => Set<TournamentEntry>();
     public DbSet<TournamentRing> TournamentRings => Set<TournamentRing>();
+    public DbSet<RingDaySetting> RingDaySettings => Set<RingDaySetting>();
+    public DbSet<ScheduleAthleteException> ScheduleAthleteExceptions => Set<ScheduleAthleteException>();
+    public DbSet<SchedulePublication> SchedulePublications => Set<SchedulePublication>();
+    public DbSet<DrawPublication> DrawPublications => Set<DrawPublication>();
+    public DbSet<AdminNotification> AdminNotifications => Set<AdminNotification>();
+    public DbSet<AdminNotificationRead> AdminNotificationReads => Set<AdminNotificationRead>();
     public DbSet<Bout> Bouts => Set<Bout>();
     public DbSet<TournamentLookup> TournamentLookups => Set<TournamentLookup>();
     public DbSet<AthleteMedicalFile> AthleteMedicalFiles => Set<AthleteMedicalFile>();
     public DbSet<MedicalSuspension> MedicalSuspensions => Set<MedicalSuspension>();
     public DbSet<MemberAccount> MemberAccounts => Set<MemberAccount>();
     public DbSet<MemberProfileChange> MemberProfileChanges => Set<MemberProfileChange>();
+    public DbSet<ClubInvitation> ClubInvitations => Set<ClubInvitation>();
+    public DbSet<MemberNotification> MemberNotifications => Set<MemberNotification>();
 
 
     /// <summary>
@@ -123,6 +131,28 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
             entity.HasIndex(c => new { c.Status, c.CreatedAt });
         });
 
+        modelBuilder.Entity<ClubInvitation>(entity =>
+        {
+            entity.HasOne(i => i.MemberAccount)
+                .WithMany()
+                .HasForeignKey(i => i.MemberAccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(i => new { i.ClubRegistrationId, i.Status });
+            entity.HasIndex(i => new { i.MemberAccountId, i.Status });
+        });
+
+        modelBuilder.Entity<MemberNotification>(entity =>
+        {
+            entity.HasOne(n => n.MemberAccount)
+                .WithMany()
+                .HasForeignKey(n => n.MemberAccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(n => new { n.MemberAccountId, n.ReadAt });
+            entity.HasIndex(n => new { n.MemberAccountId, n.CreatedAt });
+        });
+
         modelBuilder.Entity<AthleteMedicalFile>(entity =>
         {
             entity.HasOne(f => f.AthleteRegistration)
@@ -175,6 +205,46 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
 
             entity.HasIndex(b => new { b.DivisionId, b.Round, b.Position }).IsUnique();
             entity.HasIndex(b => new { b.TournamentId, b.BoutNumber });
+            // Stage 5: a bout number is unique within a tournament DAY, and a queue position within a ring's day.
+            // (Existing databases get the same two indexes from SeedData.EnsureScheduleIndexes.)
+            entity.HasIndex(b => new { b.TournamentId, b.ScheduledDate, b.BoutNumber })
+                .IsUnique().HasFilter("\"BoutNumber\" IS NOT NULL").HasDatabaseName("UX_Bouts_DayNumber");
+            entity.HasIndex(b => new { b.TournamentId, b.ScheduledDate, b.RingId, b.OrderInRing })
+                .IsUnique().HasFilter("\"OrderInRing\" IS NOT NULL").HasDatabaseName("UX_Bouts_RingQueue");
+        });
+
+        modelBuilder.Entity<RingDaySetting>(entity =>
+        {
+            entity.HasOne(s => s.Ring).WithMany().HasForeignKey(s => s.RingId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(s => s.Tournament).WithMany().HasForeignKey(s => s.TournamentId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(s => new { s.RingId, s.Date }).IsUnique();
+        });
+
+        modelBuilder.Entity<ScheduleAthleteException>(entity =>
+        {
+            entity.HasOne(x => x.Tournament).WithMany().HasForeignKey(x => x.TournamentId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.TournamentId, x.AthleteRegistrationId, x.Date });
+            entity.Ignore(x => x.IsActive);
+        });
+        modelBuilder.Entity<SchedulePublication>(entity =>
+        {
+            entity.HasOne(x => x.Tournament).WithMany().HasForeignKey(x => x.TournamentId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.TournamentId, x.Version }).IsUnique();
+            entity.Ignore(x => x.IsCurrent);
+        });
+        modelBuilder.Entity<AdminNotification>(entity =>
+        {
+            entity.HasIndex(x => new { x.Type, x.TournamentId, x.ResolvedAt });
+        });
+        modelBuilder.Entity<AdminNotificationRead>(entity =>
+        {
+            entity.HasOne(x => x.Notification).WithMany().HasForeignKey(x => x.NotificationId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.NotificationId, x.AdminUserId }).IsUnique();
+        });
+        modelBuilder.Entity<DrawPublication>(entity =>
+        {
+            entity.HasOne(x => x.Division).WithMany().HasForeignKey(x => x.DivisionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.DivisionId, x.Version }).IsUnique();
         });
     }
 
@@ -259,5 +329,12 @@ public class SmfDbContext(DbContextOptions<SmfDbContext> options) : DbContext(op
         // Membership expiry is swept on a schedule, so it is queried by date.
         modelBuilder.Entity<Registration>()
             .HasIndex(r => r.ExpiresAt);
+
+        // One registration holding an address at a time (Services.EmailReservations).
+        modelBuilder.Entity<Registration>()
+            .HasIndex(r => r.NormalizedEmail)
+            .HasDatabaseName(Services.EmailReservations.IndexName)
+            .HasFilter(Services.EmailReservations.IndexFilter)
+            .IsUnique();
     }
 }

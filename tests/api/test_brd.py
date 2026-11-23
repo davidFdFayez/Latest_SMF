@@ -15,6 +15,14 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 API = os.environ.get("SMF_TEST_API", "http://127.0.0.1:5197")
 DB = os.environ["SMF_TEST_DB"]
 YEAR = datetime.date.today().year
+# The tournaments' dates follow today's, so the suite does not stop working on
+# the day a fixed closing date passes; ages "in the tournament year" follow
+# the tournament's own year. The gaps are kept short so the tournaments stay in
+# this year for all but the last week of December.
+_TODAY = datetime.date.today()
+CLOSES = _TODAY + datetime.timedelta(days=3)
+START = _TODAY + datetime.timedelta(days=7)
+TOURNAMENT_YEAR = START.year
 failures, log = [], []
 
 
@@ -70,7 +78,7 @@ def make_athlete(age, gender="male", weight="60", club="BRD Club"):
         "firstNameEn": "Ali", "fatherNameEn": "Mohammed",
         "familyNameEn": "Al" + "".join(chr(97 + (b % 26)) for b in uuid.uuid4().bytes[:5]),
         "documentType": "national_id", "nationalId": "1" + str(uuid.uuid4().int)[:9],
-        "dateOfBirth": "%d-06-15" % (YEAR - age), "nationality": "SA", "gender": gender,
+        "dateOfBirth": "%d-06-15" % (TOURNAMENT_YEAR - age), "nationality": "SA", "gender": gender,
         "phone": "+966512345678", "email": "b%s@example.com" % uuid.uuid4().hex[:8],
         "region": "الرياض", "city": "الرياض",
         "paraAthlete": "no", "currentWeight": weight, "clubName": club,
@@ -170,10 +178,10 @@ setup = {
     "nameAr": "بطولة المستند", "nameEn": "Document Championship",
     "type": "kingdom", "competitionType": "muaythai_combat",
     "locationAr": "جدة", "locationEn": "Jeddah",
-    "startDate": "%d-11-20" % YEAR, "endDate": "%d-11-20" % YEAR,
+    "startDate": START.isoformat(), "endDate": START.isoformat(),
     "firstBoutTime": "17:00:00", "boutIntervalMinutes": 10,
     "registrationOpensAt": "%d-01-01T00:00:00" % YEAR,
-    "registrationClosesAt": "%d-11-10T00:00:00" % YEAR,
+    "registrationClosesAt": CLOSES.isoformat() + "T00:00:00",
     "genders": ["male"], "categories": ["u18"],
 }
 
@@ -207,25 +215,27 @@ say("")
 say("=== REQ-10 and REQ-11: a bracket, then a running order ===")
 
 status, detail = call("GET", "/api/admin/tournaments/%d" % TOURNAMENT, token=TOKEN)
-DIVISION = next(d["id"] for d in detail["divisions"] if str(d["weightLimitKg"]) == "45.0")
+# 51 kg (48.5–51.0 at the weigh-in): the first class, 45 kg, has no approved minimum yet.
+DIVISION = next(d["id"] for d in detail["divisions"] if str(d["weightLimitKg"]) == "51.0")
 
 # Three athletes, so the draw has one bye and a real bout: enough to check
 # that a bye is left out of the running order and the final is kept in.
 ready = []
 for index in range(3):
-    rid = make_athlete(16, weight="44")
+    rid = make_athlete(16, weight="50")
     st, entry = call("POST", "/api/admin/tournaments/%d/entries" % TOURNAMENT,
                      {"athleteRegistrationId": rid, "divisionId": DIVISION,
-                      "declaredWeightKg": 44, "clubName": "Club %d" % index}, token=TOKEN)
+                      "declaredWeightKg": 50, "clubName": "Club %d" % index}, token=TOKEN)
     if st == 200:
         ready.append(entry["id"])
 
 for entry in ready:
     call("POST", "/api/admin/tournaments/entries/%d/check-in" % entry, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/medical" % entry,
-         {"result": "passed", "note": None, "documentsMissing": False}, token=TOKEN)
+         {"result": "passed", "note": None, "documentsMissing": False,
+          "missingDocumentsReason": "Documents to be brought on the day."}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/weigh-in" % entry,
-         {"weightKg": 44, "result": "passed", "noShow": False}, token=TOKEN)
+         {"weightKg": 50, "result": "passed", "noShow": False}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/approve" % entry, token=TOKEN)
 
 status, drawn = call("POST", "/api/admin/tournaments/divisions/%d/draw" % DIVISION,
@@ -250,7 +260,7 @@ status, ringA = call("POST", "/api/admin/tournaments/%d/rings" % TOURNAMENT,
 check("a ring is added at scheduling time, not at setup (rule 8)", status == 200, ringA)
 
 call("PUT", "/api/admin/tournaments/divisions/%d/schedule" % DIVISION,
-     {"ringId": ringA["id"], "date": "%d-11-20" % YEAR}, token=TOKEN)
+     {"ringId": ringA["id"], "date": START.isoformat()}, token=TOKEN)
 
 status, _ = call("POST", "/api/admin/tournaments/%d/schedule/generate" % TOURNAMENT, {}, token=TOKEN)
 check("the running order is generated", status == 200, status)
@@ -274,7 +284,7 @@ check("the final is scheduled although its corners are empty (rule 11)",
 
 # =========================================================================
 say("")
-say("=== REQ-11 rule 12: bout numbers follow the clock, not the ring ===")
+say("=== REQ-11 numbering (Stage 5, approved 2026-11-19): grouped by ring order, restarting daily ===")
 
 status, ringB = call("POST", "/api/admin/tournaments/%d/rings" % TOURNAMENT,
                      {"name": "Ring B", "firstBoutTime": "14:00:00", "intervalMinutes": 30},
@@ -296,7 +306,8 @@ for index in range(2):
 for entry in pair:
     call("POST", "/api/admin/tournaments/entries/%d/check-in" % entry, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/medical" % entry,
-         {"result": "passed", "note": None, "documentsMissing": False}, token=TOKEN)
+         {"result": "passed", "note": None, "documentsMissing": False,
+          "missingDocumentsReason": "Documents to be brought on the day."}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/weigh-in" % entry,
          {"weightKg": 47, "result": "passed", "noShow": False}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/approve" % entry, token=TOKEN)
@@ -304,7 +315,7 @@ for entry in pair:
 call("POST", "/api/admin/tournaments/divisions/%d/draw" % OTHER, {"seed": 11}, token=TOKEN)
 call("POST", "/api/admin/tournaments/divisions/%d/draw/publish" % OTHER, token=TOKEN)
 call("PUT", "/api/admin/tournaments/divisions/%d/schedule" % OTHER,
-     {"ringId": ringB["id"], "date": "%d-11-20" % YEAR}, token=TOKEN)
+     {"ringId": ringB["id"], "date": START.isoformat()}, token=TOKEN)
 
 status, _ = call("POST", "/api/admin/tournaments/%d/schedule/generate" % TOURNAMENT, {}, token=TOKEN)
 check("the order is regenerated with both rings", status == 200, status)
@@ -313,11 +324,11 @@ ordered = sql("select BoutNumber, StartTime, RingId from Bouts "
               "where BoutNumber is not null and DivisionId in (?, ?) order by BoutNumber",
               (DIVISION, OTHER))
 
-check("bout 1 is the one that starts earliest, in the later-added ring",
-      ordered[0][2] == ringB["id"] and str(ordered[0][1]).startswith("14:00"), ordered[0])
-check("the numbers run in start-time order across the two rings",
-      [row[1] for row in ordered] == sorted(row[1] for row in ordered),
-      [(row[0], str(row[1])[:5]) for row in ordered])
+check("bout 1 is Ring A's first bout (ring order), although Ring B opens earlier at 14:00",
+      ordered[0][2] == ringA["id"] and str(ordered[0][1]).startswith("17:00"), ordered[0])
+check("all of Ring A's numbers come before Ring B's (the clock across rings does not decide)",
+      [row[2] for row in ordered] == sorted((row[2] for row in ordered), key=lambda r: 0 if r == ringA["id"] else 1),
+      [(row[0], str(row[1])[:5], row[2]) for row in ordered])
 
 
 # =========================================================================
@@ -332,6 +343,30 @@ check("the person who made it cannot also approve it", status == 403, status)
 
 SCHEDULER = make_user("brd.sched." + tag, make_role("brd_sched_" + tag, ["tournament.schedule.approve"]))
 
+# Stage 5 (approved 2026-11-19): this one-day tournament puts both rounds of the three-athlete bracket on the
+# same day, back to back in Ring A. That is only allowed with an authorised daily exception (with a reason)
+# and at least two hours between the slots, so both are put right through the new workflow before approval.
+status, view = call("GET", "/api/admin/tournaments/%d/bout-schedule" % TOURNAMENT, token=TOKEN)
+athletes = sorted({a for b in view["bouts"] if b["divisionId"] == DIVISION
+                   for a in (b["red"].get("athleteId"), b["blue"].get("athleteId")) if a})
+status, body = call("POST", "/api/admin/tournaments/%d/bout-schedule/exceptions" % TOURNAMENT,
+                    {"athleteIds": athletes, "date": START.isoformat(), "maxBouts": 2,
+                     "reason": "One-day tournament: first bout and final on the same day.",
+                     "expectedRevision": view["schedule"]["revision"]}, token=TOKEN)
+check("Stage 5: the daily exception is authorised with a reason", status == 200, body)
+status, view = call("GET", "/api/admin/tournaments/%d/bout-schedule" % TOURNAMENT, token=TOKEN)
+status, body = call("PUT", "/api/admin/tournaments/%d/bout-schedule/ring-days" % TOURNAMENT,
+                    {"ringId": ringB["id"], "date": START.isoformat(), "firstBoutTime": "20:00",
+                     "intervalMinutes": 30, "expectedRevision": view["schedule"]["revision"]}, token=TOKEN)
+check("Stage 5: Ring B runs from 20:00 that day", status == 200, body)
+status, view = call("GET", "/api/admin/tournaments/%d/bout-schedule" % TOURNAMENT, token=TOKEN)
+final = max((b for b in view["bouts"] if b["divisionId"] == DIVISION and not b["isBye"]), key=lambda b: b["round"])
+status, body = call("POST", "/api/admin/tournaments/%d/bout-schedule/bouts/%d/move" % (TOURNAMENT, final["id"]),
+                    {"date": START.isoformat(), "ringId": ringB["id"], "position": None,
+                     "reason": "At least two hours after the first bout.",
+                     "expectedRevision": view["schedule"]["revision"]}, token=TOKEN)
+check("Stage 5: the final moves to Ring B, two hours after the first bout's slot", status == 200, body)
+
 status, approved = call("POST", "/api/admin/tournaments/%d/schedule/approve" % TOURNAMENT,
                         token=SCHEDULER)
 check("the approver can", status == 200, approved)
@@ -339,10 +374,20 @@ check("and it is recorded against them",
       sql("select ScheduleApprovedBy from Tournaments where Id=?",
           (TOURNAMENT,))[0][0] == "brd.sched." + tag)
 
-status, _ = call("POST", "/api/admin/tournaments/%d/schedule/generate" % TOURNAMENT, {}, token=TOKEN)
-check("regenerating the order drops the approval", status == 200, status)
+# SCH-001 (approved change, supersedes "a regeneration undoes it"): an approved order is
+# locked; only an approver's explicit withdrawal, with a reason, reopens it (D3).
+status, refused = call("POST", "/api/admin/tournaments/%d/schedule/generate" % TOURNAMENT, {}, token=TOKEN)
+check("regenerating an approved order is refused (SCH-001)",
+      status == 409 and (refused or {}).get("code") == "schedule_approved", (status, refused))
+check("and the approval stands",
+      sql("select ScheduleApprovedAt from Tournaments where Id=?", (TOURNAMENT,))[0][0] is not None)
+status, _ = call("POST", "/api/admin/tournaments/%d/schedule/withdraw-approval" % TOURNAMENT,
+                 {"reason": "A ring change was requested."}, token=SCHEDULER)
+check("an approver withdraws the approval with a reason (D3)", status == 200, status)
 check("so it has to be signed off again",
       sql("select ScheduleApprovedAt from Tournaments where Id=?", (TOURNAMENT,))[0][0] is None)
+status, _ = call("POST", "/api/admin/tournaments/%d/schedule/generate" % TOURNAMENT, {}, token=TOKEN)
+check("after the withdrawal the order can be regenerated", status == 200, status)
 
 status, nothing = call("POST", "/api/admin/tournaments/999999/schedule/approve", token=SCHEDULER)
 check("a tournament that does not exist has no schedule to approve", status == 404, status)

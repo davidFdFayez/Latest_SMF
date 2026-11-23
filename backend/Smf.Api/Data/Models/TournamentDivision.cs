@@ -39,6 +39,28 @@ public class TournamentDivision
     /// </summary>
     public DateTime? DrawPublishedAt { get; set; }
 
+    /// <summary>
+    /// Stage 5 Division Schedule: when an administrator last explicitly saved
+    /// this division's complete schedule (Save Division Schedule), by whom and
+    /// at which schedule revision. A division is "Scheduled" only with this set
+    /// AND every bout to fight holding a valid saved slot — a published
+    /// bracket, opening a page or automatically initialised data never set it.
+    /// Existing databases receive these columns empty and are backfilled once
+    /// from explicit assignment history (see SeedData.BackfillDivisionScheduleSaves).
+    /// </summary>
+    public DateTime? ScheduleSavedAt { get; set; }
+    public string? ScheduleSavedBy { get; set; }
+    public int? ScheduleSavedRevision { get; set; }
+
+    /// <summary>
+    /// Where the saved marker came from: <c>division_page</c> — an administrator
+    /// saved the division on the Division Schedule page (the ONLY source that
+    /// makes a division "Scheduled"); <c>migration</c> — the Step 2 one-time
+    /// conversion inferred it from old assignment history. Migration markers are
+    /// kept for the audit trail but never count as a save.
+    /// </summary>
+    public string? ScheduleSavedSource { get; set; }
+
     public ICollection<TournamentEntry> Entries { get; set; } = [];
     public ICollection<Bout> Bouts { get; set; } = [];
 
@@ -67,14 +89,17 @@ public class TournamentDivision
             ? (Gender == "female" ? "إناث" : "ذكور")
             : (Gender == "female" ? "Female" : "Male");
 
-        var weight = IsOpenClass
-            ? $"+{WeightFloorKg:0.##} {(arabic ? "كجم" : "kg")}"
-            : $"{WeightLimitKg:0.##} {(arabic ? "كجم" : "kg")}";
+        var weight = WeightLabel(arabic);
 
         return arabic
             ? $"{gender} – {categoryAr} – {weight}"
             : $"{gender} – {categoryEn} – {weight}";
     }
+
+    /// <summary>The weight class alone, e.g. "45 kg", or "+91 kg" for the open class.</summary>
+    public string WeightLabel(bool arabic) => IsOpenClass
+        ? $"+{WeightFloorKg:0.##} {(arabic ? "كجم" : "kg")}"
+        : $"{WeightLimitKg:0.##} {(arabic ? "كجم" : "kg")}";
 
     /// <summary>Sort key for a schedule: lightest class first (REQ-11 rule 2).</summary>
     public decimal SortWeight => WeightLimitKg ?? (WeightFloorKg ?? 0) + 1000m;

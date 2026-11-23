@@ -41,13 +41,25 @@ public static class TournamentEligibility
         string LabelEn);
 
     /// <summary>What the athlete may do here.</summary>
+    /// <param name="TournamentYear">The year that drives age: the tournament's, never today's.</param>
+    /// <param name="CompetitionAge">Tournament year minus birth year, or null without a date of birth.</param>
+    /// <param name="Gender">From the athlete's own membership record; never from the request.</param>
+    /// <param name="AgeEligible">Every category the age admits, before looking at what the tournament runs.</param>
+    /// <param name="Options">Those categories the tournament runs in this gender, each with its classes.</param>
     public sealed record Verdict(
         bool CanEnter,
         IReadOnlyList<Barrier> Barriers,
         IReadOnlyList<string> Tracks,
         IReadOnlyList<Option> Options,
-        bool AlreadyEntered)
+        bool AlreadyEntered,
+        int TournamentYear,
+        int? CompetitionAge,
+        string? Gender,
+        IReadOnlyList<CompetitionCategories.Category> AgeEligible)
     {
+        /// <summary>True when nothing the tournament runs fits this athlete's age and gender.</summary>
+        public bool NoEligibleDivision => Options.Count == 0;
+
         /// <summary>
         /// REQ-02 rule 4 — more than one track open means the athlete has to
         /// choose, and the form has to ask rather than decide for them.
@@ -118,24 +130,41 @@ public static class TournamentEligibility
                 "This athlete is already entered in this tournament."));
         }
 
-        /* ── age (rules 4 and 5) ─────────────────────────────────────────── */
+        /* ── age (REQ-02 rules 1 and 2) ──────────────────────────────────────
+           Tournament year minus birth year, and every category that age
+           admits — overlapping ones included. */
         var dateOfBirth = DateOfBirthOf(athlete);
-        var year = tournament.StartDate.Year;
-        var eligible = CompetitionCategories.EligibleFor(dateOfBirth, year);
-        var gender = GenderOf(athlete);
+        var year = TournamentYear(tournament);
+        var age = CompetitionCategories.CompetitionAge(dateOfBirth, year);
+        var eligible = CompetitionCategories.EligibleForTournament(dateOfBirth, year);
 
-        // Only the categories this tournament actually runs, in this athlete's
-        // gender, that their age admits.
-        var running = divisions
-            .Where(d => gender is null || d.Gender == gender)
-            .Where(d => eligible.Any(c => c.Value == d.Category))
-            .ToList();
+        /* ── gender (REQ-02 rule 5) ──────────────────────────────────────────
+           From the approved membership record alone. A record without one
+           matches no division, rather than every division. */
+        var gender = GenderOf(athlete) is "male" or "female" ? GenderOf(athlete) : null;
+
+        // Only the divisions this tournament actually runs, in this athlete's
+        // gender, in a category their age admits, at an official weight class
+        // for that exact category and gender.
+        var running = gender is null
+            ? []
+            : divisions
+                .Where(d => d.Gender == gender)
+                .Where(d => eligible.Any(c => c.Value == d.Category))
+                .Where(d => WeightClasses.IsOfficial(d.Category, d.Gender, d.WeightLimitKg, d.WeightFloorKg))
+                .ToList();
 
         if (dateOfBirth is null)
         {
             barriers.Add(new Barrier("no_date_of_birth",
                 "لا يوجد تاريخ ميلاد في ملف اللاعب.",
                 "This athlete has no date of birth on file."));
+        }
+        else if (gender is null)
+        {
+            barriers.Add(new Barrier("no_gender",
+                "لا يوجد جنس محدد في ملف اللاعب.",
+                "This athlete has no gender on file."));
         }
         else if (running.Count == 0)
         {
@@ -163,14 +192,18 @@ public static class TournamentEligibility
                             d.Describe(arabic: false)))
                         .ToList());
             })
-            .OrderBy(o => o.Track)
-            .ThenBy(o => o.CategoryEn, StringComparer.Ordinal)
+            // Youngest category first, as the official list runs.
+            .OrderBy(o => CompetitionCategories.OrderOf(o.Category))
             .ToList();
 
         var tracks = options.Select(o => o.Track).Distinct().ToList();
 
-        return new Verdict(barriers.Count == 0, barriers, tracks, options, alreadyEntered);
+        return new Verdict(barriers.Count == 0, barriers, tracks, options, alreadyEntered,
+            year, age, gender, eligible);
     }
+
+    /// <summary>The year a tournament's eligibility is worked out for: the year it starts.</summary>
+    public static int TournamentYear(Tournament tournament) => tournament.StartDate.Year;
 
     /// <summary>The date of birth out of the stored membership payload.</summary>
     public static DateTime? DateOfBirthOf(Registration athlete)

@@ -1,5 +1,6 @@
 import client from './client'
 import { unwrapItem, unwrapList } from './utils'
+import { cropToField } from '../bannerCrop'
 
 /**
  * Generic REST CRUD helper for /api/admin/{resource} style endpoints.
@@ -151,10 +152,7 @@ export const registrationsApi = {
   async uploadAttachment(id, slot, file) {
     const body = new FormData()
     body.append('file', file)
-    const response = await client.post(
-      `/admin/registrations/${id}/attachments?slot=${encodeURIComponent(slot)}`,
-      body,
-    )
+    const response = await client.post(`/admin/registrations/${id}/attachments?slot=${encodeURIComponent(slot)}`, body)
     return unwrapItem(response.data)
   },
   /** BUG-11 — takes a document off the record. Returns the record. */
@@ -290,26 +288,31 @@ export const contactApi = {
   },
   async markRead(id, isRead = true) {
     const response = await tryRequests([
-      () => (isRead ? client.put(`/admin/contact-messages/${id}/read`) : client.put(`/admin/contact/${id}`, { isRead })),
+      () =>
+        isRead ? client.put(`/admin/contact-messages/${id}/read`) : client.put(`/admin/contact/${id}`, { isRead }),
       () => client.put(`/admin/contact/${id}`, { isRead }),
     ])
     return unwrapItem(response.data)
   },
   async remove(id) {
-    await tryRequests([() => client.delete(`/admin/contact-messages/${id}`), () => client.delete(`/admin/contact/${id}`)])
+    await tryRequests([
+      () => client.delete(`/admin/contact-messages/${id}`),
+      () => client.delete(`/admin/contact/${id}`),
+    ])
   },
 }
 
 export const whistleblowerApi = {
   async list(params) {
-    const response = await tryRequests([
-      () => client.get('/admin/whistleblower', { params }),
-    ])
+    const response = await tryRequests([() => client.get('/admin/whistleblower', { params })])
     return unwrapList(response.data)
   },
   async markReviewed(id, isReviewed = true) {
     const response = await tryRequests([
-      () => (isReviewed ? client.put(`/admin/whistleblower/${id}/review`) : client.put(`/admin/whistleblower/${id}`, { isReviewed })),
+      () =>
+        isReviewed
+          ? client.put(`/admin/whistleblower/${id}/review`)
+          : client.put(`/admin/whistleblower/${id}`, { isReviewed }),
       () => client.put(`/admin/whistleblower/${id}`, { isReviewed }),
     ])
     return unwrapItem(response.data)
@@ -405,6 +408,24 @@ export const tournamentsApi = {
     const response = await client.put(`/admin/tournaments/${id}`, body)
     return unwrapItem(response.data)
   },
+  /** The public page's banner: JPG, PNG or WebP up to 5 MB, checked again by the API. */
+  async uploadTournamentBanner(id, file, crop = null) {
+    const body = new FormData()
+    body.append('file', file)
+    // Optional "x y zoom": the position chosen for this image before it existed
+    // on the server. Without it the API starts the new image from the default.
+    const position = cropToField(crop)
+    if (position) body.append('crop', position)
+    // The client defaults to JSON; let the browser set the multipart boundary.
+    const response = await client.post(`/admin/tournaments/${id}/banner`, body, {
+      headers: { 'Content-Type': undefined },
+    })
+    return response.data
+  },
+  async removeTournamentBanner(id) {
+    const response = await client.delete(`/admin/tournaments/${id}/banner`)
+    return response.data
+  },
   async publish(id) {
     const response = await client.post(`/admin/tournaments/${id}/publish`)
     return unwrapItem(response.data)
@@ -431,6 +452,69 @@ export const tournamentsApi = {
     const response = await client.post(`/admin/tournaments/${id}/entries`, body)
     return unwrapItem(response.data)
   },
+  /** The Participants page: live entries with their Medical File status. */
+  async participants(id) {
+    const response = await client.get(`/admin/tournaments/${id}/participants`)
+    return response.data
+  },
+  /** Category and weight class of one entry — validated and audited by the API. */
+  async changeEntryCategory(entryId, body) {
+    const response = await client.put(`/admin/tournaments/entries/${entryId}/category`, body)
+    return response.data
+  },
+  /** Same blob-download pattern as the membership register's export. */
+  async exportParticipants(id) {
+    const response = await client.get(`/admin/tournaments/${id}/participants/export`, { responseType: 'blob' })
+    const url = URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `smf-participants-${id}-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+  },
+  /** The entry's athlete's Medical File — needs the technical team's permission. */
+  async entryMedical(entryId) {
+    const response = await client.get(`/admin/tournaments/entries/${entryId}/medical`)
+    return response.data
+  },
+  /**
+   * Opens a stored medical document in a new tab. Behind the bearer token, so
+   * it is fetched as a blob; the tab is opened first so the browser does not
+   * treat it as a pop-up.
+   */
+  async openEntryMedicalDocument(entryId, slot) {
+    const tab = window.open('', '_blank')
+    try {
+      const response = await client.get(`/admin/tournaments/entries/${entryId}/medical/documents/${slot}`, {
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(response.data)
+      if (tab) tab.location.href = url
+      else window.location.assign(url)
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (err) {
+      tab?.close()
+      throw err
+    }
+  },
+  /** The examination desk's edit of health answers, medication details and electronic declarations. */
+  async updateEntryMedicalAnswers(entryId, body) {
+    const response = await client.put(`/admin/tournaments/entries/${entryId}/medical/answers`, body)
+    return response.data
+  },
+  /** Uploads or replaces one document; approved by the API as it is stored. */
+  async uploadEntryMedicalDocument(entryId, slot, file, date) {
+    const body = new FormData()
+    body.append('file', file)
+    if (date) body.append('date', date)
+    // The client defaults to JSON; let the browser set the multipart boundary.
+    const response = await client.post(`/admin/tournaments/entries/${entryId}/medical/documents/${slot}`, body, {
+      headers: { 'Content-Type': undefined },
+    })
+    return response.data
+  },
   async amendEntry(entryId, body) {
     const response = await client.put(`/admin/tournaments/entries/${entryId}`, body)
     return unwrapItem(response.data)
@@ -441,8 +525,12 @@ export const tournamentsApi = {
   },
 
   /* readiness (REQ-08, REQ-09) */
-  async checkIn(entryId) {
-    const response = await client.post(`/admin/tournaments/entries/${entryId}/check-in`)
+  /** With a reason, corrects a No Show recorded at check-in. */
+  async checkIn(entryId, reason) {
+    const response = await client.post(
+      `/admin/tournaments/entries/${entryId}/check-in`,
+      reason ? { reason } : undefined,
+    )
     return unwrapItem(response.data)
   },
   async recordMedical(entryId, body) {
@@ -459,8 +547,61 @@ export const tournamentsApi = {
     const response = await client.post(`/admin/tournaments/entries/${entryId}/weigh-in`, body)
     return unwrapItem(response.data)
   },
-  async approveReadiness(entryId) {
-    const response = await client.post(`/admin/tournaments/entries/${entryId}/approve`)
+  /** The approver's refusal: all three steps passed, not released to the draw. Reason required. */
+  async rejectReadiness(entryId, reason) {
+    const response = await client.post(`/admin/tournaments/entries/${entryId}/reject`, { reason })
+    return response.data
+  },
+  /** Draw Management overview: divisions with Final-Draw-Approved counts and draw state (read-only). */
+  async drawOverview(id) {
+    const response = await client.get(`/admin/tournaments/${id}/draw-overview`)
+    return response.data
+  },
+  /** Draw Management, one division: its Final-Draw-Approved athletes and bracket numbers (read-only). */
+  async drawPreparation(divisionId) {
+    const response = await client.get(`/admin/tournaments/divisions/${divisionId}/draw-preparation`)
+    return response.data
+  },
+  /** Draw Management: generate a division's draw as a Draft (dryRun only checks). */
+  async generateDraw(divisionId, body) {
+    const response = await client.post(`/admin/tournaments/divisions/${divisionId}/draw/generate`, body)
+    return response.data
+  },
+  /** Draw Management: replace a changed Draft — reviewed lists, a reason and an explicit confirmation. */
+  async regenerateDraw(divisionId, body) {
+    const response = await client.post(`/admin/tournaments/divisions/${divisionId}/draw/regenerate`, body)
+    return response.data
+  },
+  /** Draw Management: a division's bracket, read-only. */
+  async drawBracket(divisionId) {
+    const response = await client.get(`/admin/tournaments/divisions/${divisionId}/draw-bracket`)
+    return response.data
+  },
+  /**
+   * An athlete's profile photo for the bracket, behind the bearer token, as a
+   * blob. `key` is the photo's version from the bracket, so a replaced photo
+   * is not served from the browser cache.
+   */
+  async drawBracketPhoto(divisionId, entryId, key) {
+    const response = await client.get(`/admin/tournaments/divisions/${divisionId}/draw-bracket/photos/${entryId}`, {
+      params: { v: key },
+      responseType: 'blob',
+    })
+    return response.data
+  },
+  /** Check-in & Medical: every live entry with where it stands in the three readiness steps. */
+  async readiness(id) {
+    const response = await client.get(`/admin/tournaments/${id}/readiness`)
+    return response.data
+  },
+  /** REQ-09 rule 4 — another class of the same category and gender, keeping the measured weight. */
+  async moveAtWeighIn(entryId, body) {
+    const response = await client.post(`/admin/tournaments/entries/${entryId}/weigh-in/move`, body)
+    return response.data
+  },
+  /** With a reason, changes a Rejected decision to Approved. */
+  async approveReadiness(entryId, reason) {
+    const response = await client.post(`/admin/tournaments/entries/${entryId}/approve`, reason ? { reason } : undefined)
     return unwrapItem(response.data)
   },
 
@@ -473,8 +614,9 @@ export const tournamentsApi = {
     const response = await client.post(`/admin/tournaments/divisions/${divisionId}/draw`, body)
     return response.data
   },
-  async publishDraw(divisionId) {
-    const response = await client.post(`/admin/tournaments/divisions/${divisionId}/draw/publish`)
+  /** Publish a Draft (Draw Approval). Draw Management sends the lists it showed; the legacy page sends none. */
+  async publishDraw(divisionId, body) {
+    const response = await client.post(`/admin/tournaments/divisions/${divisionId}/draw/publish`, body)
     return response.data
   },
   async setCorner(boutId, body) {
@@ -514,6 +656,96 @@ export const tournamentsApi = {
   async approveSchedule(id) {
     const response = await client.post(`/admin/tournaments/${id}/schedule/approve`)
     return response.data
+  },
+  /** D3: withdraw the schedule approval — an approver, with a reason; nothing in the schedule changes. */
+  async withdrawScheduleApproval(id, reason) {
+    const response = await client.post(`/admin/tournaments/${id}/schedule/withdraw-approval`, { reason })
+    return response.data
+  },
+}
+
+/** Stage 5 — REQ-11 Bout Schedule. Every change carries the revision the page shows. */
+/** Admin Notification Center — only the notifications the signed-in administrator's permissions grant. */
+export const notificationCenterApi = {
+  async list() {
+    return (await client.get('/admin/notification-center')).data
+  },
+  async unreadCount() {
+    return (await client.get('/admin/notification-center/unread-count')).data
+  },
+  async read(id) {
+    return (await client.post(`/admin/notification-center/${id}/read`)).data
+  },
+  async readAll() {
+    return (await client.post('/admin/notification-center/read-all')).data
+  },
+}
+
+export const boutScheduleApi = {
+  async view(id) {
+    return (await client.get(`/admin/tournaments/${id}/bout-schedule`)).data
+  },
+  /** Read-only: draw changes since the schedule was published, per affected division. */
+  async changes(id) {
+    return (await client.get(`/admin/tournaments/${id}/schedule/changes`)).data
+  },
+  async history(id) {
+    return (await client.get(`/admin/tournaments/${id}/bout-schedule/history`)).data
+  },
+  async create(id) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule`)).data
+  },
+  async addRing(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/rings`, body)).data
+  },
+  /** Step 3 — the single tournament-wide publication (assigns the official numbers) and its withdrawal. */
+  async publish(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/publish`, body)).data
+  },
+  async unpublish(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/unpublish`, body)).data
+  },
+  /** Save Division Schedule (dryRun: true = the same checks, rolled back, for the confirmation preview). */
+  async saveDivision(id, divisionId, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/divisions/${divisionId}/save`, body)).data
+  },
+  async updateRing(id, ringId, body) {
+    return (await client.put(`/admin/tournaments/${id}/bout-schedule/rings/${ringId}`, body)).data
+  },
+  async removeRing(id, ringId, expectedRevision) {
+    return (
+      await client.delete(`/admin/tournaments/${id}/bout-schedule/rings/${ringId}`, { params: { expectedRevision } })
+    ).data
+  },
+  async setRingDay(id, body) {
+    return (await client.put(`/admin/tournaments/${id}/bout-schedule/ring-days`, body)).data
+  },
+  async assign(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/assign`, body)).data
+  },
+  async move(id, boutId, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/bouts/${boutId}/move`, body)).data
+  },
+  async unassign(id, boutId, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/bouts/${boutId}/unassign`, body)).data
+  },
+  async submit(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/submit`, body)).data
+  },
+  async approve(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/approve`, body)).data
+  },
+  async withdraw(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/withdraw-approval`, body)).data
+  },
+  async acknowledgeSource(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/source/acknowledge`, body)).data
+  },
+  async grantException(id, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/exceptions`, body)).data
+  },
+  async revokeException(id, exceptionId, body) {
+    return (await client.post(`/admin/tournaments/${id}/bout-schedule/exceptions/${exceptionId}/revoke`, body)).data
   },
 }
 

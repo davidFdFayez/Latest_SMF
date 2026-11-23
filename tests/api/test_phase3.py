@@ -6,6 +6,13 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 API = os.environ.get("SMF_TEST_API", "http://127.0.0.1:5197")
 DB = os.environ["SMF_TEST_DB"]
 YEAR = datetime.date.today().year
+# The tournaments' dates follow today's, so the suite does not stop working on
+# the day a fixed closing date passes; ages "in the tournament year" follow
+# the tournament's own year. The gaps are kept short so the tournaments stay in
+# this year for all but the last week of December.
+_TODAY = datetime.date.today()
+START = _TODAY + datetime.timedelta(days=14)
+TOURNAMENT_YEAR = START.year
 failures, log = [], []
 
 
@@ -63,7 +70,7 @@ def make_athlete(age, gender="male", weight="60", club="Riyadh Club"):
         "firstNameEn": "Ali", "fatherNameEn": "Mohammed",
         "familyNameEn": "Al" + "".join(chr(97 + (b % 26)) for b in uuid.uuid4().bytes[:5]),
         "documentType": "national_id", "nationalId": "1" + str(uuid.uuid4().int)[:9],
-        "dateOfBirth": "%d-06-15" % (YEAR - age), "nationality": "SA", "gender": gender,
+        "dateOfBirth": "%d-06-15" % (TOURNAMENT_YEAR - age), "nationality": "SA", "gender": gender,
         "phone": "+966512345678", "email": "a%s@example.com" % uuid.uuid4().hex[:8],
         "region": "الرياض", "city": "الرياض",
         "paraAthlete": "no", "currentWeight": weight, "clubName": club,
@@ -91,7 +98,7 @@ setup = {
     "nameAr": "بطولة المملكة 2026", "nameEn": "Kingdom Championship 2026",
     "type": "kingdom", "competitionType": "muaythai_combat",
     "locationAr": "الرياض", "locationEn": "Riyadh",
-    "startDate": "%d-12-01" % YEAR, "endDate": "%d-12-02" % YEAR,
+    "startDate": START.isoformat(), "endDate": (START + datetime.timedelta(days=1)).isoformat(),
     "firstBoutTime": "17:00:00",
     "genders": ["male", "female"],
     "categories": ["u18", "elite"],
@@ -102,7 +109,7 @@ TID = tournament["id"]
 check("it starts as a draft", tournament["status"] == "draft", tournament["status"])
 check("entries are not open yet", tournament["registrationOpen"] is False)
 
-closes = datetime.date(YEAR, 12, 1) - datetime.timedelta(days=7)
+closes = START - datetime.timedelta(days=7)
 check("entries close 7 days before by default (rule 9)",
       tournament["registrationClosesAt"].startswith(closes.isoformat()),
       tournament["registrationClosesAt"])
@@ -203,20 +210,27 @@ for i in range(8):
 
 first = entries[0]
 status, _ = call("POST", "/api/admin/tournaments/entries/%d/medical" % first,
-                 {"result": "passed", "note": None, "documentsMissing": False}, token=TOKEN)
+                 {"result": "passed", "note": None, "documentsMissing": False,
+          "missingDocumentsReason": "Documents to be brought on the day."}, token=TOKEN)
 check("the examination is refused before check-in (rule order)", status == 409, status)
 
 status, _ = call("POST", "/api/admin/tournaments/entries/%d/check-in" % first, token=TOKEN)
 check("check-in is recorded (REQ-08 rule 4)", status == 200, status)
 
+# Confirmed rule: Failed needs the reason for the failure; Passed may be
+# given with documents missing, but only with the reason (REQ-08 rule 6).
 status, body = call("POST", "/api/admin/tournaments/entries/%d/medical" % first,
-                    {"result": "passed", "note": None, "documentsMissing": True}, token=TOKEN)
-check("passing with documents missing needs a reason (rule 6)", status == 400, status)
+                    {"result": "failed", "note": None, "documentsMissing": True}, token=TOKEN)
+check("Failed without a reason for the failure is refused", status == 400, status)
 
 status, body = call("POST", "/api/admin/tournaments/entries/%d/medical" % first,
-                    {"result": "passed", "note": "Certificate seen at the desk.",
-                     "documentsMissing": True}, token=TOKEN)
-check("with a reason it is allowed", status == 200, body)
+                    {"result": "passed", "note": None, "documentsMissing": True}, token=TOKEN)
+check("Passed with documents missing and no reason is refused (rule 6)", status == 400, body)
+
+status, body = call("POST", "/api/admin/tournaments/entries/%d/medical" % first,
+                    {"result": "passed", "note": None, "documentsMissing": True,
+                     "missingDocumentsReason": "Certificate to be brought on the day."}, token=TOKEN)
+check("Passed with documents missing and the reason is allowed (rule 6)", status == 200, body)
 
 status, preview = call("GET",
                        "/api/admin/tournaments/entries/%d/weigh-in/preview?weightKg=49.5" % first, token=TOKEN)
@@ -244,7 +258,8 @@ check("the director's approval qualifies them (rule 7)",
 for entry_id in entries[1:]:
     call("POST", "/api/admin/tournaments/entries/%d/check-in" % entry_id, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/medical" % entry_id,
-         {"result": "passed", "note": None, "documentsMissing": False}, token=TOKEN)
+         {"result": "passed", "note": None, "documentsMissing": False,
+          "missingDocumentsReason": "Documents to be brought on the day."}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/weigh-in" % entry_id,
          {"weightKg": 49.5, "result": "passed", "noShow": False}, token=TOKEN)
     call("POST", "/api/admin/tournaments/entries/%d/approve" % entry_id, token=TOKEN)
@@ -255,14 +270,13 @@ check("an athlete with no medical file reads as incomplete, not complete",
       all(e["medicalComplete"] is False and len(e["medicalMissing"]) > 0 for e in listing),
       [e["medicalComplete"] for e in listing][:4])
 
-# a no-show is a DSQ
+# a no-show is a DSQ — recorded at check-in, for an athlete who never arrived
 spare = make_athlete(16, "male", "50")
 st, extra = call("POST", "/api/admin/tournaments/%d/entries" % TID,
                  {"athleteRegistrationId": spare, "divisionId": division_id}, token=TOKEN)
-call("POST", "/api/admin/tournaments/entries/%d/check-in" % extra["id"], token=TOKEN)
 status, body = call("POST", "/api/admin/tournaments/entries/%d/weigh-in" % extra["id"],
                     {"noShow": True}, token=TOKEN)
-check("not appearing at the weigh-in is a DSQ (rule 6)",
+check("not appearing is a DSQ (rule 6)",
       body["status"] == "disqualified", body.get("status"))
 
 say("")
@@ -330,7 +344,7 @@ status, dup = call("POST", "/api/admin/tournaments/%d/rings" % TID, {"name": "Ri
 check("two rings cannot share a name", status == 409, status)
 
 status, body = call("PUT", "/api/admin/tournaments/divisions/%d/schedule" % division_id,
-                    {"ringId": ringA["id"], "date": "%d-12-01" % YEAR}, token=TOKEN)
+                    {"ringId": ringA["id"], "date": START.isoformat()}, token=TOKEN)
 check("a division is given a ring and a day", status == 200, body)
 
 status, schedule = call("GET", "/api/admin/tournaments/%d/schedule" % TID, token=TOKEN)
@@ -365,7 +379,11 @@ regenerated = [b for c in body["categories"] for d in c["divisions"] for b in d[
 still = next(b for b in regenerated if b["id"] == movable)
 check("regenerating leaves the pinned bout where it was", still["ringId"] == ringB["id"])
 
-check("no athlete clashes are reported", len(body["clashes"]) == 0,
+# Stage 5 (approved 2026-11-19): validation is progression-aware. Every round of this bracket is on the
+# same day, so athletes who could reach the later rounds have possible daily-limit clashes; they are
+# reported (and block approval) — and no clash involves an athlete who is certainly in two bouts.
+check("only possible-participant clashes are reported (all rounds on one day, progression-aware)",
+      len(body["clashes"]) > 0 and all(c.get("potential") for c in body["clashes"]),
       [c["messageEn"] for c in body["clashes"]])
 
 say("")

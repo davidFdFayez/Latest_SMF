@@ -65,6 +65,15 @@ public static class AdminPermissions
     public const string TournamentDrawApprove = "tournament.draw.approve";
     public const string TournamentScheduleApprove = "tournament.schedule.approve";
 
+    /* Stage 5 (REQ-11) — the competition authorities behind schedule changes.
+       Reordering within a ring is the schedule editor's (the Head Jury's own
+       ring, at permission level); moving a bout to another ring or another day
+       is the Technical Delegate's. Allowing an athlete more than one bout in a
+       day is a separate, explicit authority with a written reason. */
+    public const string TournamentScheduleCrossRing = "tournament.schedule.cross_ring";
+    public const string TournamentScheduleExceptions = "tournament.schedule.exceptions";
+    public const string TournamentSchedulePublish = "tournament.schedule.publish";
+
     public const string MembershipPrefix = "membership.";
 
     /// <summary>The permission key for a §6 action, e.g. "approve" → "membership.approve".</summary>
@@ -81,7 +90,10 @@ public static class AdminPermissions
         new("people", "الأندية والمنتسبون", "Clubs & people"),
         new("membership", "سجل العضويات (§6)", "Membership register (§6)"),
         new("operations", "الشؤون الإدارية", "Operations"),
-        new("tournaments", "تشغيل البطولات", "Tournament operation"),
+        // Setting a tournament up, and controlling it once it is public. Kept
+        // apart from the stage-by-stage grants below.
+        new("tournaments", "البطولات", "Tournaments"),
+        new("tournament_operation", "تشغيل البطولات", "Tournament operation"),
     ];
 
     public static readonly IReadOnlyList<Definition> Definitions = BuildDefinitions();
@@ -134,26 +146,32 @@ public static class AdminPermissions
             new(Whistleblower, "operations", "بلاغات النزاهة", "Whistleblower reports",
                 "Read and manage confidential whistleblower reports."),
 
-            new(TournamentManage, "tournaments", "إنشاء وتعديل البطولات", "Create & edit tournaments",
-                "Create a tournament and set its categories, genders and weight classes (REQ-01)."),
-            new(TournamentApprove, "tournaments", "اعتماد البطولة", "Approve tournament",
-                "Publish a tournament, which is what opens it for entries. Separate from creating it (REQ-01)."),
-            new(TournamentEntries, "tournaments", "تسجيل اللاعبين في البطولات", "Enter athletes",
+            new(TournamentManage, "tournaments", "إنشاء وتعديل البطولات قبل النشر", "Create & edit tournaments",
+                "Create a tournament and edit it — details, categories, genders and weight classes — while it is still a draft. Once it is published, editing needs the approval permission (REQ-01)."),
+            new(TournamentApprove, "tournaments", "اعتماد ونشر وتعديل البطولات بعد النشر", "Approve, publish & edit published tournaments",
+                "Approve and publish a tournament, which is what opens it for entries, and edit or change the status of a tournament once it is published (REQ-01)."),
+            new(TournamentEntries, "tournament_operation", "تسجيل اللاعبين في البطولات", "Enter athletes",
                 "Enter an athlete into a tournament on their behalf, and amend an entry's category, track or weight class (REQ-03)."),
-            new(TournamentEntriesApprove, "tournaments", "اعتماد تسجيل اللاعبين", "Approve athlete entries",
+            new(TournamentEntriesApprove, "tournament_operation", "اعتماد تسجيل اللاعبين", "Approve athlete entries",
                 "Sign off an entry. An entry stands without it (REQ-04 rule 4); this is the grant for reviewing one (REQ-03)."),
-            new(TournamentTechnical, "tournaments", "الحضور والفحص والوزن", "Check-in, examination & weigh-in",
+            new(TournamentTechnical, "tournament_operation", "الحضور والفحص والوزن", "Check-in, examination & weigh-in",
                 "Record check-in, the medical result and the weigh-in, and upload documents missing at the desk (REQ-08, REQ-09)."),
-            new(TournamentDirector, "tournaments", "اعتماد جاهزية اللاعبين", "Approve readiness",
+            new(TournamentDirector, "tournament_operation", "اعتماد جاهزية اللاعبين", "Approve readiness",
                 "The technical director's approval, which is what puts an athlete into the pool a draw is made from (REQ-09)."),
-            new(TournamentDraw, "tournaments", "إنشاء وتعديل القرعة", "Create & edit the draw",
+            new(TournamentDraw, "tournament_operation", "إنشاء وتعديل القرعة", "Create & edit the draw",
                 "The technical delegate's grant: make the draw and amend it afterwards with a reason (REQ-10)."),
-            new(TournamentDrawApprove, "tournaments", "اعتماد القرعة", "Approve the draw",
+            new(TournamentDrawApprove, "tournament_operation", "اعتماد القرعة", "Approve the draw",
                 "Publish a draw, which is what releases its bouts to the schedule (REQ-10)."),
-            new(TournamentSchedule, "tournaments", "جدولة النزالات والحلبات", "Create & edit the bout schedule",
+            new(TournamentSchedule, "tournament_operation", "جدولة النزالات والحلبات", "Create & edit the bout schedule",
                 "Add rings, distribute bouts across days and rings, and generate the running order (REQ-11)."),
-            new(TournamentScheduleApprove, "tournaments", "اعتماد جدول النزالات", "Approve the bout schedule",
+            new(TournamentScheduleApprove, "tournament_operation", "اعتماد جدول النزالات", "Approve the bout schedule",
                 "Sign off the running order. Nothing proceeds to the next stage until it is approved (REQ-11)."),
+            new(TournamentScheduleCrossRing, "tournament_operation", "نقل النزالات بين الحلبات والأيام", "Move bouts between rings & days",
+                "The Technical Delegate's authority across rings: move a scheduled bout to another ring or another tournament day, with a reason (REQ-11). Reordering within a ring needs only the schedule permission."),
+            new(TournamentScheduleExceptions, "tournament_operation", "استثناءات عدد النزالات اليومية", "Authorise daily bout exceptions",
+                "Allow an athlete up to three bouts on one day, with a written reason; the two-hour rest and no-overlap rules still apply (REQ-11)."),
+            new(TournamentSchedulePublish, "tournament_operation", "نشر جدول النزالات", "Publish the bout schedule",
+                "Publish the approved tournament schedule to the public website — this assigns the official bout numbers — and unpublish it, with a reason (REQ-11)."),
         ];
 
         var membershipDescriptions = new Dictionary<string, string>

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Smf.Api.Data.Models;
 using Smf.Api.Services;
@@ -13,7 +14,17 @@ public static class SeedData
         // EnsureCreated only ever builds the schema once, so databases created
         // before a model gained a column keep failing on insert. Add anything
         // missing before the app starts serving.
+        // Stage 5 Division Schedule: a division is "Scheduled" only after a save on the Division Schedule page.
+        // The Step 2 backfill from old assignment history no longer runs; markers it already wrote are kept but
+        // labelled as such (once, when the provenance column is added) so they never count as a save.
+        var needsSourceLabel = db.Database.IsSqlite() && !ColumnExists(db, "TournamentDivisions", "ScheduleSavedSource");
         SqliteSchemaGuard.EnsureColumns(db, logger);
+        if (needsSourceLabel) LabelDivisionSaveSources(db, logger);
+        // Stage 5 (REQ-11): a bout number is unique within a tournament day, a queue position within a ring's day.
+        EnsureScheduleIndexes(db, logger);
+        // The index that keeps one registration to an address (new rows only,
+        // so existing records are never rejected by it).
+        EmailReservations.EnsureIndex(db, logger);
 
         // Roles before users, so every seeded account can be given its roles.
         SeedRoles(db, logger);
@@ -794,5 +805,79 @@ public static class SeedData
         public string? ImageUrl { get; set; }
         public string? PublishedAt { get; set; }
         public string ExternalUrl { get; set; } = "";
+    }
+
+    /// <summary>
+    /// The two schedule integrity indexes on databases created before Stage 5
+    /// (new databases get them from the model). Idempotent; an existing file
+    /// whose data would break one is reported, never altered.
+    /// </summary>
+    private static bool ColumnExists(SmfDbContext db, string table, string column)
+    {
+        var connection = db.Database.GetDbConnection();
+        var openedHere = connection.State != System.Data.ConnectionState.Open;
+        if (openedHere) connection.Open();
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA table_info(\"{table}\")";
+            using var reader = command.ExecuteReader();
+            var any = false;
+            while (reader.Read())
+            {
+                any = true;
+                if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            // A missing table is created whole by the guard (no history to backfill).
+            return !any;
+        }
+        finally
+        {
+            if (openedHere) connection.Close();
+        }
+    }
+
+    /// <summary>
+    /// One-time provenance labelling (runs only on the startup that adds
+    /// <c>ScheduleSavedSource</c>). Markers written by the Step 2 backfill — their
+    /// actor reads "… (migrated from history)" — become <c>migration</c> and stop
+    /// counting as a save; any other existing marker came from a real Save
+    /// Division Schedule and becomes <c>division_page</c>. Nothing is deleted:
+    /// the time, actor and revision of every marker stay as they were.
+    /// </summary>
+    private static void LabelDivisionSaveSources(SmfDbContext db, ILogger? logger)
+    {
+        try
+        {
+            var migrated = db.Database.ExecuteSqlRaw("""
+                UPDATE "TournamentDivisions" SET "ScheduleSavedSource" = 'migration'
+                WHERE "ScheduleSavedAt" IS NOT NULL AND "ScheduleSavedSource" IS NULL AND "ScheduleSavedBy" LIKE '%(migrated from history)'
+                """);
+            var saved = db.Database.ExecuteSqlRaw("""
+                UPDATE "TournamentDivisions" SET "ScheduleSavedSource" = 'division_page'
+                WHERE "ScheduleSavedAt" IS NOT NULL AND "ScheduleSavedSource" IS NULL
+                """);
+            logger?.LogInformation("Division Schedule provenance: {Migrated} migrated marker(s) labelled (they do not count as saves), {Saved} page save(s).", migrated, saved);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Division Schedule provenance labelling did not run.");
+        }
+    }
+
+    private static void EnsureScheduleIndexes(SmfDbContext db, ILogger? logger)
+    {
+        if (!db.Database.IsSqlite()) return;
+        foreach (var sql in new[]
+        {
+            "CREATE UNIQUE INDEX IF NOT EXISTS \"UX_Bouts_DayNumber\" ON \"Bouts\" (\"TournamentId\", \"ScheduledDate\", \"BoutNumber\") WHERE \"BoutNumber\" IS NOT NULL",
+            "CREATE UNIQUE INDEX IF NOT EXISTS \"UX_Bouts_RingQueue\" ON \"Bouts\" (\"TournamentId\", \"ScheduledDate\", \"RingId\", \"OrderInRing\") WHERE \"OrderInRing\" IS NOT NULL",
+            // Step 3: one official number per bout across the whole tournament.
+            "CREATE UNIQUE INDEX IF NOT EXISTS \"UX_Bouts_OfficialNumber\" ON \"Bouts\" (\"TournamentId\", \"OfficialBoutNumber\") WHERE \"OfficialBoutNumber\" IS NOT NULL",
+        })
+        {
+            try { db.Database.ExecuteSqlRaw(sql); }
+            catch (Exception ex) { logger?.LogWarning(ex, "Schedule integrity index not created: existing data conflicts with it."); }
+        }
     }
 }

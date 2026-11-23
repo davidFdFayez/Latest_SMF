@@ -13,6 +13,15 @@ public class Registration
     public string Status { get; set; } = RegistrationStatuses.New;
 
     /// <summary>
+    /// The address the registration is known by, trimmed and lower-cased —
+    /// set on registrations made from the email-uniqueness change on, and
+    /// left empty on older ones (which are still checked, from their form).
+    /// A partial unique index keeps it to one registration that holds it.
+    /// See <see cref="Services.EmailReservations"/>.
+    /// </summary>
+    public string? NormalizedEmail { get; set; }
+
+    /// <summary>
     /// Shown to the applicant when the request is rejected, and used as the
     /// list of missing items when more data or attachments are requested.
     /// </summary>

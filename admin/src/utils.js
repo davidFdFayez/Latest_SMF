@@ -29,6 +29,47 @@ export function assetUrl(value) {
   return value.startsWith('/') ? siteUrl(value) : value
 }
 
+/**
+ * The permission that editing a tournament takes, mirroring the API: a draft
+ * that has never been published (or a new one) is "Create & edit
+ * tournaments"; from publication on it is "Approve, publish & edit published
+ * tournaments". Presentation only — the API enforces it.
+ */
+export function tournamentEditPermission(tournament) {
+  return !tournament || (tournament.status === 'draft' && !tournament.publishedAt)
+    ? 'tournament.manage'
+    : 'tournament.approve'
+}
+
+const GENDER_ORDER = { female: 0, male: 1 }
+
+/**
+ * Tournament divisions in display order: Female before Male, then category
+ * youngest to oldest, then weight lightest to heaviest.
+ *
+ * `categoryOrder` is the category values in their official order — the
+ * tournament options' `categories` list, U8 through Masters 45+ — so the
+ * order is never alphabetical (which would put U10 before U8). The weight
+ * key matches the API's SortWeight: an open "+" class has no upper limit and
+ * goes after every class that does.
+ */
+export function sortDivisions(divisions, categoryOrder) {
+  const rank = (category) => {
+    const index = categoryOrder.indexOf(category)
+    return index < 0 ? categoryOrder.length : index
+  }
+  const weight = (division) =>
+    division.weightLimitKg ?? (division.weightFloorKg ?? 0) + 1000
+
+  return [...divisions].sort(
+    (a, b) =>
+      (GENDER_ORDER[a.gender] ?? 2) - (GENDER_ORDER[b.gender] ?? 2) ||
+      rank(a.category) - rank(b.category) ||
+      weight(a) - weight(b) ||
+      a.id - b.id,
+  )
+}
+
 export function slugify(value) {
   return String(value || '')
     .trim()

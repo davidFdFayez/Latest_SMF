@@ -123,3 +123,21 @@ export async function submitContact(payload) {
   const { data } = await client.post('/api/contact', payload);
   return data;
 }
+
+/**
+ * A division's published draw for the tournament's Draw tab. The API answers 404 for a division whose draw is
+ * not published (a Draft included), so callers treat 404 as "not published yet".
+ */
+/**
+ * The tournament's PUBLISHED match schedule (Stage 5): the snapshot frozen at publication — official bout numbers,
+ * days, rings, times and participants. 404 until the federation publishes it.
+ */
+export async function fetchPublishedSchedule(tournamentId) {
+  const { data } = await client.get(`/api/events/tournament-${tournamentId}/schedule`);
+  return data;
+}
+
+export async function fetchPublishedDraw(tournamentId, divisionId) {
+  const { data } = await client.get(`/api/events/tournament-${tournamentId}/divisions/${divisionId}/draw`);
+  return data;
+}

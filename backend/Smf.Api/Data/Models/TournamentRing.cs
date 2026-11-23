@@ -24,8 +24,14 @@ public class TournamentRing
     /// <summary>Minutes from the start of one bout to the start of the next.</summary>
     public int? BoutIntervalMinutes { get; set; }
 
-    /// <summary>Ordering in the UI, so rings read A, B, C rather than by id.</summary>
+    /// <summary>
+    /// The ring's position. It orders the rings everywhere AND drives bout
+    /// numbering: each day numbers Ring 1's queue first, then Ring 2's, …
+    /// </summary>
     public int SortOrder { get; set; }
+
+    /// <summary>A deactivated ring takes no new bouts; it can only be deactivated while it holds none.</summary>
+    public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

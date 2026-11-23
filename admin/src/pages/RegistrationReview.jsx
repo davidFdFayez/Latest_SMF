@@ -303,7 +303,8 @@ const CATEGORY_KEYS = new Set(['athleteCategory', 'eligibleCategories'])
    put a negative number back into a field the portal refuses one in. These are
    the numeric answers, with the bounds the API enforces. */
 const NUMERIC_FIELDS = {
-  currentWeight: { min: 0, max: 250, step: '0.1' },
+  // REG-11: the API takes 12–150 kg overall, narrowed by age band (RegistrationValidator.CurrentWeightRange).
+  currentWeight: { min: 12, max: 150, step: '0.01' },
   height: { min: 0, max: 260, step: '1' },
   yearsExperience: { min: 0, max: 70, step: '1' },
   tournamentsCount: { min: 0, max: 2000, step: '1' },

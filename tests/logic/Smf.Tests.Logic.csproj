@@ -19,10 +19,28 @@
     <Compile Include="../../backend/Smf.Api/Services/BoutScheduler.cs" Link="BoutScheduler.cs" />
     <Compile Include="../../backend/Smf.Api/Data/Models/BoutRounds.cs" Link="BoutRounds.cs" />
     <Compile Include="../../backend/Smf.Api/Data/WeightClasses.cs" Link="WeightClasses.cs" />
+    <Compile Include="../../backend/Smf.Api/Data/CompetitionCategories.cs" Link="CompetitionCategories.cs" />
+    <Compile Include="../../backend/Smf.Api/Services/RichText.cs" Link="RichText.cs" />
+    <Compile Include="../../backend/Smf.Api/Services/DrawMath.cs" Link="DrawMath.cs" />
+    <Compile Include="../../backend/Smf.Api/Services/DrawIntegrity.cs" Link="DrawIntegrity.cs" />
+    <Compile Include="../../backend/Smf.Api/Data/BannerCrop.cs" Link="BannerCrop.cs" />
+    <Compile Include="../../backend/Smf.Api/Services/WeighInRange.cs" Link="WeighInRange.cs" />
+    <Compile Include="../../backend/Smf.Api/Services/RegistrationValidator.cs" Link="RegistrationValidator.cs" />
+    <Compile Include="../../backend/Smf.Api/Data/IsoCountries.cs" Link="IsoCountries.cs" />
 
     <Compile Include="DrawTests.cs" />
     <Compile Include="ScheduleTests.cs" />
+    <Compile Include="Stage5ScheduleTests.cs" />
     <Compile Include="WeightClassTests.cs" />
+    <Compile Include="Req02Tests.cs" />
+    <Compile Include="RichTextTests.cs" />
+    <Compile Include="DrawMathTests.cs" />
+    <Compile Include="DrawGenerationTests.cs" />
+    <Compile Include="BannerCropTests.cs" />
+    <Compile Include="WeighInRangeTests.cs" />
+    <Compile Include="BracketMatrixTests.cs" />
+    <Compile Include="MemberWeightTests.cs" />
+    <Compile Include="DrawRemediationTests.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>
 

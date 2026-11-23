@@ -23,7 +23,6 @@ import TournamentsList from './pages/TournamentsList'
 import TournamentEdit from './pages/TournamentEdit'
 import TournamentEntries from './pages/TournamentEntries'
 import TournamentDraw from './pages/TournamentDraw'
-import TournamentSchedule from './pages/TournamentSchedule'
 import MemberAccountsList from './pages/MemberAccountsList'
 import RegistrationReview from './pages/RegistrationReview'
 import ContactList from './pages/ContactList'
@@ -33,6 +32,15 @@ import UserEdit from './pages/UserEdit'
 import RolesList from './pages/RolesList'
 import RoleEdit from './pages/RoleEdit'
 import AuditLog from './pages/AuditLog'
+import TournamentParticipants from './pages/TournamentParticipants'
+import TournamentReadiness from './pages/TournamentReadiness'
+import DrawManagement from './pages/DrawManagement'
+import DrawDivision from './pages/DrawDivision'
+import DrawGenerate from './pages/DrawGenerate'
+import DrawBracket from './pages/DrawBracket'
+import BoutSchedule from './pages/BoutSchedule'
+import BoutScheduleDivision from './pages/BoutScheduleDivision'
+import LegacyScheduleRedirect from './pages/LegacyScheduleRedirect'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -99,11 +107,54 @@ export default function App() {
                 }
               >
                 <Route path="tournaments" element={<TournamentsList />} />
+                <Route
+                  element={
+                    <RequirePermission
+                      permission={[
+                        'tournament.manage',
+                        'tournament.entries',
+                        'tournament.technical',
+                        'tournament.draw',
+                      ]}
+                    />
+                  }
+                >
+                  <Route path="tournaments/participants" element={<TournamentParticipants />} />
+                </Route>
                 <Route path="tournaments/new" element={<TournamentEdit />} />
                 <Route path="tournaments/:id" element={<TournamentEdit />} />
                 <Route path="tournaments/:id/entries" element={<TournamentEntries />} />
                 <Route path="tournaments/:id/draw" element={<TournamentDraw />} />
-                <Route path="tournaments/:id/schedule" element={<TournamentSchedule />} />
+                {/* Stage 5: the schedule now lives on Bout Schedule; the old address keeps working. */}
+                <Route path="tournaments/:id/schedule" element={<LegacyScheduleRedirect />} />
+              </Route>
+              {/* Check-in & Medical — the technical team records, the director
+                  approves; either may open it. A sibling of the section above
+                  so a director-only user is not turned away by it. */}
+              <Route element={<RequirePermission permission={['tournament.technical', 'tournament.director']} />}>
+                <Route path="tournaments/readiness" element={<TournamentReadiness />} />
+              </Route>
+              {/* Draw Management — its own section; the same permissions as reading a draw. */}
+              <Route
+                element={
+                  <RequirePermission permission={['tournament.draw', 'tournament.schedule', 'tournament.manage']} />
+                }
+              >
+                <Route path="draw-management" element={<DrawManagement />} />
+                <Route path="draw-management/divisions/:divisionId" element={<DrawDivision />} />
+                <Route path="draw-management/divisions/:divisionId/generate" element={<DrawGenerate />} />
+                <Route path="draw-management/divisions/:divisionId/bracket" element={<DrawBracket />} />
+              </Route>
+              {/* Bout Schedule (Stage 5 — REQ-11) — its own section, right under Draw Management. */}
+              <Route
+                element={
+                  <RequirePermission
+                    permission={['tournament.schedule', 'tournament.schedule.approve', 'tournament.draw', 'tournament.manage']}
+                  />
+                }
+              >
+                <Route path="bout-schedule" element={<BoutSchedule />} />
+                <Route path="bout-schedule/divisions/:divisionId" element={<BoutScheduleDivision />} />
               </Route>
 
               <Route element={<RequirePermission permission={['users', 'tournament.entries']} />}>

@@ -70,7 +70,15 @@ export default function AccountPortal() {
 
     let cancelled = false;
     fetchMe()
-      .then((data) => !cancelled && setMe(data))
+      .then((data) => {
+        if (cancelled) return;
+        // A club, a coach and an athlete each have their own account page on the website.
+        if (data.kind === 'club' || data.kind === 'coach' || data.kind === 'athlete') {
+          navigate(`/account/${data.kind}`, { replace: true });
+          return;
+        }
+        setMe(data);
+      })
       .catch((err) => {
         if (cancelled) return;
         if (err?.response?.status === 401) {
@@ -461,7 +469,17 @@ function Medical({ ar, lang }) {
       {notice && <p className="acct-ok">{notice}</p>}
       {error && <p className="acct-error">{error}</p>}
 
+      {/* Final Approval in an active tournament: read-only until the federation changes it. */}
+      {file.medicalLock && (
+        <p className="portal__pending-note">
+          {ar
+            ? `ملفك الطبي مقفل لحصولك على الاعتماد النهائي في: ${file.medicalLock.tournaments.map((x) => x.nameAr || x.nameEn).join('، ')}. يمكنك الاطلاع عليه فقط؛ للتعديل تواصل مع الاتحاد.`
+            : `Your Medical File is locked because you have Final Approval in: ${file.medicalLock.tournaments.map((x) => x.nameEn || x.nameAr).join(', ')}. You can view it; to change it, contact the federation.`}
+        </p>
+      )}
+
       <form className="portal__form portal__form--wide" onSubmit={submit}>
+        <fieldset className="portal__fieldset" disabled={Boolean(file.medicalLock)}>
         <h2 className="portal__h2">{ar ? 'الأسئلة الصحية' : 'Health questions'}</h2>
         {file.questions.map((question) => (
           <div className="portal__question" key={question.key}>
@@ -500,7 +518,8 @@ function Medical({ ar, lang }) {
           </>
         )}
 
-        <button type="submit" className="btn btn--green">{ar ? 'حفظ' : 'Save'}</button>
+        </fieldset>
+        {!file.medicalLock && <button type="submit" className="btn btn--green">{ar ? 'حفظ' : 'Save'}</button>}
       </form>
     </div>
   );

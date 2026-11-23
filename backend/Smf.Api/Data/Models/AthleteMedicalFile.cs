@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Smf.Api.Data.Models;
 
 /// <summary>
@@ -37,7 +39,7 @@ public class AthleteMedicalFile
     /* ── 2. health questions (REQ-04 rule 2) ────────────────────────────── */
 
     /// <summary>
-    /// The nine yes/no answers, stored as JSON keyed by the question id so a
+    /// The eight yes/no answers, stored as JSON keyed by the question id so a
     /// question added later does not need a column. Null until answered.
     /// </summary>
     public string? HealthAnswersJson { get; set; }
@@ -55,10 +57,18 @@ public class AthleteMedicalFile
 
     /// <summary>
     /// Under-18s cannot tick anything: a guardian downloads the consent,
-    /// signs it and it is uploaded. For girls under 18 the same document
-    /// carries the pregnancy declaration.
+    /// signs it and it is uploaded.
     /// </summary>
     public string? GuardianConsentAttachmentId { get; set; }
+
+    /// <summary>
+    /// Girls under 18: the non-pregnancy declaration, as its own signed
+    /// document beside the guardian consent — a separate form, upload and
+    /// status. (Before the two were separated, the guardian consent form
+    /// carried this clause; such an upload still counts as the guardian
+    /// consent and is not taken as this declaration.)
+    /// </summary>
+    public string? PregnancyDeclarationAttachmentId { get; set; }
 
     /* ── provenance ─────────────────────────────────────────────────────── */
 
@@ -75,6 +85,103 @@ public class AthleteMedicalFile
 
     public DateTime? ApprovedAt { get; set; }
     public string? ApprovedBy { get; set; }
+
+    /// <summary>
+    /// Which of the documents now in use an authorised user has approved, by
+    /// slot (<see cref="MedicalDocumentSlots"/>): who and when. A document
+    /// uploaded by an administrator is approved as it is stored; an athlete's
+    /// replacement becomes approved when its pending change is. An athlete's
+    /// own first upload is in use but carries no approval, so its slot is
+    /// absent. Null when nothing has been approved.
+    /// </summary>
+    public string? DocumentApprovalsJson { get; set; }
+
+    public sealed record DocumentApproval(DateTime At, string By);
+
+    public Dictionary<string, DocumentApproval> Approvals()
+    {
+        if (string.IsNullOrWhiteSpace(DocumentApprovalsJson)) return [];
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, DocumentApproval>>(DocumentApprovalsJson, Json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    public void SetApproval(string slot, string by, DateTime at)
+    {
+        var approvals = Approvals();
+        approvals[slot] = new DocumentApproval(at, by);
+        DocumentApprovalsJson = JsonSerializer.Serialize(approvals, Json);
+    }
+
+    public void ClearApproval(string slot)
+    {
+        var approvals = Approvals();
+        if (!approvals.Remove(slot)) return;
+        DocumentApprovalsJson = approvals.Count == 0 ? null : JsonSerializer.Serialize(approvals, Json);
+    }
+
+    /// <summary>The attachment now in use in a document slot.</summary>
+    public string? AttachmentIn(string slot) => slot switch
+    {
+        MedicalDocumentSlots.Certificate => CertificateAttachmentId,
+        MedicalDocumentSlots.Screening => ScreeningAttachmentId,
+        MedicalDocumentSlots.GuardianConsent => GuardianConsentAttachmentId,
+        MedicalDocumentSlots.PregnancyDeclaration => PregnancyDeclarationAttachmentId,
+        _ => null,
+    };
+
+    /// <summary>The documents REQ-04 asks of an athlete of this competition age and gender.</summary>
+    public static IReadOnlyList<string> DocumentsFor(int? age, string? gender)
+    {
+        var slots = new List<string> { MedicalDocumentSlots.Certificate };
+        if (age is > 15) slots.Add(MedicalDocumentSlots.Screening);
+        if (age is not null and < 18)
+        {
+            slots.Add(MedicalDocumentSlots.GuardianConsent);
+            if (gender == "female") slots.Add(MedicalDocumentSlots.PregnancyDeclaration);
+        }
+        return slots;
+    }
+
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    /// <summary>The health answers given so far, question by question.</summary>
+    public Dictionary<string, bool> Answers() => ReadFlags(HealthAnswersJson);
+
+    /// <summary>The declarations accepted so far.</summary>
+    public Dictionary<string, bool> Declared() => ReadFlags(DeclarationsJson);
+
+    /// <summary>The questions not yet answered, in the document's order.</summary>
+    public IReadOnlyList<HealthQuestions.Question> Unanswered()
+    {
+        var answers = Answers();
+        return HealthQuestions.All.Where(q => !answers.ContainsKey(q.Key)).ToList();
+    }
+
+    /// <summary>The declarations not yet accepted, in the document's order.</summary>
+    public IReadOnlyList<AthleteDeclarations.Declaration> Undeclared()
+    {
+        var declared = Declared();
+        return AthleteDeclarations.All.Where(d => !(declared.TryGetValue(d.Key, out var yes) && yes)).ToList();
+    }
+
+    private static Dictionary<string, bool> ReadFlags(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, bool>>(json, Json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
 
     /// <summary>True when a certificate is on file at all.</summary>
     public bool HasCertificate => !string.IsNullOrWhiteSpace(CertificateAttachmentId);
@@ -99,11 +206,13 @@ public class AthleteMedicalFile
 
         if (!HasCertificate) gaps.Add(("الشهادة الطبية", "Medical certificate"));
         if (!ScreeningSatisfied(age)) gaps.Add(("تحليل HIV / HBV / HCV", "HIV / HBV / HCV screening"));
-        if (string.IsNullOrWhiteSpace(HealthAnswersJson)) gaps.Add(("الأسئلة الصحية", "Health questions"));
+        // Every question answered and every declaration accepted: one left
+        // blank is still missing.
+        if (Unanswered().Count > 0) gaps.Add(("الأسئلة الصحية", "Health questions"));
 
         if (age is >= 18)
         {
-            if (string.IsNullOrWhiteSpace(DeclarationsJson))
+            if (Undeclared().Count > 0)
                 gaps.Add(("الإقرارات والموافقات", "Declarations and consents"));
 
             if (gender == "female" && NotPregnantDeclared is not true)
@@ -113,14 +222,29 @@ public class AthleteMedicalFile
         {
             if (string.IsNullOrWhiteSpace(GuardianConsentAttachmentId))
                 gaps.Add(("موافقة ولي الأمر الموقعة", "Signed guardian consent"));
+
+            if (gender == "female" && string.IsNullOrWhiteSpace(PregnancyDeclarationAttachmentId))
+                gaps.Add(("إقرار عدم الحمل الموقّع", "Signed non-pregnancy declaration"));
         }
 
         return gaps;
     }
 }
 
+/// <summary>The four document slots of a Medical File, as the API names them.</summary>
+public static class MedicalDocumentSlots
+{
+    public const string Certificate = "certificate";
+    public const string Screening = "screening";
+    public const string GuardianConsent = "guardian_consent";
+    public const string PregnancyDeclaration = "pregnancy_declaration";
+
+    /// <summary>The two that carry a date — when the examination or test was done.</summary>
+    public static bool IsDated(string slot) => slot is Certificate or Screening;
+}
+
 /// <summary>
-/// The nine health questions of REQ-04 rule 2, in the document's own order.
+/// The eight health questions of REQ-04 rule 2, in the document's own order.
 ///
 /// Held in code rather than content because the examination desk reads the
 /// answers back by key: renaming one in a content editor would orphan every

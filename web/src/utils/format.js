@@ -52,3 +52,27 @@ export function formatNumber(value, lang = 'ar', options) {
     return toLatinDigits(value);
   }
 }
+
+/**
+ * A time of day on the 12-hour clock with its own marker: "5:00 م" / "5:00 PM",
+ * "12:00 ص" / "12:00 AM" at midnight and "12:00 م" / "12:00 PM" at noon.
+ * Built by hand so every browser writes it the same way. Accepts a Date or an
+ * "HH:mm" string; anything else gives ''.
+ */
+export function formatTime12(value, lang) {
+  let hours;
+  let minutes;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    hours = value.getHours();
+    minutes = value.getMinutes();
+  } else {
+    const match = /^(\d{1,2}):(\d{2})/.exec(toLatinDigits(String(value ?? '').trim()));
+    if (!match) return '';
+    hours = Number(match[1]);
+    minutes = Number(match[2]);
+    if (hours > 23 || minutes > 59) return '';
+  }
+  const marker = lang === 'ar' ? (hours < 12 ? 'ص' : 'م') : (hours < 12 ? 'AM' : 'PM');
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${marker}`;
+}

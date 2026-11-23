@@ -1,4 +1,5 @@
 using Smf.Api.Data;
+using Smf.Api.Services;
 
 namespace Smf.Tests;
 
@@ -95,34 +96,31 @@ public static class WeightClassTests
         }
 
         Console.WriteLine();
-        Console.WriteLine("=== REQ-09: where a measured weight lands ===");
+        Console.WriteLine("=== REQ-09: where a measured weight lands (WeighInRange, the one rule) ===");
         {
-            Check("45.0 is in the 45 kg class",
-                WeightClasses.ClassFor("u18", "male", 45m)?.LimitKg == 45);
-            Check("45.1 moves up to 48",
-                WeightClasses.ClassFor("u18", "male", 45.1m)?.LimitKg == 48);
-            Check("63.5 is its own class, not rounded",
-                WeightClasses.ClassFor("u18", "male", 63.5m)?.LimitKg == 63.5m);
-            Check("anything over 91 is the open class",
-                WeightClasses.ClassFor("u18", "male", 120m)?.IsOpen == true);
-            // The lightest class has no floor, so nobody is too light for it.
-            // Every heavier class is a band, which is why an athlete who
-            // registered at 48 but weighs 44 is moved down rather than passed.
-            Check("nobody is too light for the lightest class",
-                WeightClasses.ClassFor("u18", "male", 40m)?.LimitKg == 45);
+            // The classes of a list whose accepted weigh-in range a weight makes.
+            // (WeightClasses.ClassFor, which used an older boundary, was removed.)
+            static List<WeightClasses.WeightClass> Lands(string category, string gender, decimal kg) =>
+                WeightClasses.For(category, gender)
+                    .Where(c => WeighInRange.For(category, gender, c.LimitKg, c.FloorKg).Check(kg) == WeighInVerdict.Matches)
+                    .ToList();
+
+            Check("45.0 is in the 45 kg class", Lands("u18", "male", 45m) is [{ LimitKg: 45 }]);
+            Check("45.01 moves up to 48", Lands("u18", "male", 45.01m) is [{ LimitKg: 48 }]);
+            Check("63.5 is its own class, not rounded", Lands("u18", "male", 63.5m) is [{ LimitKg: 63.5m }]);
+            Check("anything over 91 is the open class", Lands("u18", "male", 120m) is [{ IsOpen: true }]);
+            // The lightest class now has a floor of its limit − 2 kg.
+            Check("43.0 is the lightest weight the 45 kg first class takes", Lands("u18", "male", 43m) is [{ LimitKg: 45 }]);
+            Check("42.99 is too light for every class", Lands("u18", "male", 42.99m).Count == 0);
             Check("46 kg is in the 48 band, above 45 and up to 48",
-                WeightClasses.ClassFor("u18", "male", 46m) is { LimitKg: 48, FloorKg: 45 });
+                Lands("u18", "male", 46m) is [{ LimitKg: 48, FloorKg: 45 }]);
 
             // U8 and U10 have no open class, so a child over the top of the
             // table fits nowhere and the weigh-in has to say so.
-            Check("a U10 child at 36 kg is in the heaviest class",
-                WeightClasses.ClassFor("u10", "male", 36m)?.LimitKg == 36);
-            Check("a U10 child over 36 kg is in no class",
-                WeightClasses.ClassFor("u10", "male", 37m) is null);
-            Check("a U8 girl over 26 kg is in no class",
-                WeightClasses.ClassFor("u8", "female", 27m) is null);
-            Check("though a U8 boy at 27 kg still has the 28 kg class",
-                WeightClasses.ClassFor("u8", "male", 27m)?.LimitKg == 28);
+            Check("a U10 child at 36 kg is in the heaviest class", Lands("u10", "male", 36m) is [{ LimitKg: 36 }]);
+            Check("a U10 child over 36 kg is in no class", Lands("u10", "male", 37m).Count == 0);
+            Check("a U8 girl over 26 kg is in no class", Lands("u8", "female", 27m).Count == 0);
+            Check("though a U8 boy at 27 kg still has the 28 kg class", Lands("u8", "male", 27m) is [{ LimitKg: 28 }]);
         }
 
         Console.WriteLine();

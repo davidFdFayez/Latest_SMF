@@ -4,6 +4,7 @@ import { useLang } from '../context/LanguageContext';
 import PageHero from '../components/PageHero';
 import { fetchEventById } from '../api/services';
 import { formatDateLong } from '../utils/format';
+import TournamentDetail from './TournamentDetail';
 
 const CATEGORY = {
   community: { ar: 'فعاليات مجتمعية', en: 'Community' },
@@ -55,6 +56,12 @@ export default function EventDetail() {
         </div>
       </section>
     );
+  }
+
+  // A tournament published from the admin's Tournaments brings its own
+  // details, and its own layout; every other activity continues below.
+  if (ev.tournament) {
+    return <TournamentDetail activity={ev.activity} tournament={ev.tournament} ar={ar} lang={lang} />;
   }
 
   const title = ev.title || (ar ? ev.titleAr : ev.titleEn);

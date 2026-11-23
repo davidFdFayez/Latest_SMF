@@ -50,12 +50,17 @@ public static class MedicalEndpoints
                 .FirstOrDefaultAsync(r => r.Id == athleteId, ct);
             if (athlete is null) return Results.NotFound();
 
+            // The same Final Approval lock as every other admin route.
+            var actor = AdminIdentity.Current(user);
+            var access = await service.AdminMayChangeAsync(athleteId, null, actor, mayBefore: true, ct);
+            if (!access.Ok) return Results.Json(new { message = access.Message, messageEn = access.Message }, statusCode: access.Status);
+
             var file = await service.GetOrCreateAsync(athleteId, ct);
 
             // An administrator filling this in is not a self-service change,
             // so it applies rather than queueing for their own approval.
             var result = await service.SubmitAsync(file, request.ToSubmission(),
-                selfService: false, AdminIdentity.Current(user), ct);
+                selfService: false, actor, ct);
 
             if (!result.Ok) return Problem(result);
 
@@ -64,32 +69,16 @@ public static class MedicalEndpoints
         }).RequirePermission(AdminPermissions.TournamentTechnical, AdminPermissions.TournamentEntries);
 
         /// The same consent form, for a desk that needs to hand one over.
-        group.MapGet("/{athleteId:int}/medical/guardian-consent", async (
-            int athleteId, SmfDbContext db, HttpContext http, CancellationToken ct) =>
-        {
-            var athlete = await db.Registrations.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Id == athleteId, ct);
-            if (athlete is null) return Results.NotFound();
+        group.MapGet("/{athleteId:int}/medical/guardian-consent", (
+            int athleteId, int? tournamentId, SmfDbContext db, HttpContext http, CancellationToken ct) =>
+            DeskFormAsync(athleteId, tournamentId, db, http, pregnancy: false, ct))
+            .RequirePermission(AdminPermissions.TournamentTechnical, AdminPermissions.TournamentEntries);
 
-            var (age, gender) = Describe(athlete);
-
-            var entry = await db.TournamentEntries.AsNoTracking()
-                .Include(e => e.Tournament)
-                .Where(e => e.AthleteRegistrationId == athleteId)
-                .OrderByDescending(e => e.CreatedAt)
-                .FirstOrDefaultAsync(ct);
-
-            var html = GuardianConsentForm.Render(
-                RegistrationPayload.DisplayName(
-                    System.Text.Json.JsonDocument.Parse(athlete.PayloadJson).RootElement, true)
-                    ?? athlete.ReferenceNumber,
-                athlete.MembershipNumber,
-                entry?.Tournament?.NameAr,
-                includePregnancyDeclaration: gender == "female" && age is < 18);
-
-            http.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
-            return Results.Content(html, "text/html; charset=utf-8");
-        }).RequirePermission(AdminPermissions.TournamentTechnical, AdminPermissions.TournamentEntries);
+        /// The separate non-pregnancy declaration, for a girl under 18.
+        group.MapGet("/{athleteId:int}/medical/pregnancy-declaration", (
+            int athleteId, int? tournamentId, SmfDbContext db, HttpContext http, CancellationToken ct) =>
+            DeskFormAsync(athleteId, tournamentId, db, http, pregnancy: true, ct))
+            .RequirePermission(AdminPermissions.TournamentTechnical, AdminPermissions.TournamentEntries);
 
         group.MapPost("/{athleteId:int}/medical/approve", async (
             int athleteId, ClaimsPrincipal user, SmfDbContext db,
@@ -98,6 +87,8 @@ public static class MedicalEndpoints
             var file = await db.AthleteMedicalFiles
                 .FirstOrDefaultAsync(f => f.AthleteRegistrationId == athleteId, ct);
             if (file is null) return Results.NotFound();
+            var access = await service.AdminMayChangeAsync(athleteId, null, AdminIdentity.Current(user), mayBefore: true, ct);
+            if (!access.Ok) return Results.Json(new { message = access.Message, messageEn = access.Message }, statusCode: access.Status);
 
             var result = await service.ApprovePendingAsync(file, AdminIdentity.Current(user), ct);
             return result.Ok ? Results.Ok(new { file.Id, file.ApprovedAt }) : Problem(result);
@@ -110,6 +101,8 @@ public static class MedicalEndpoints
             var file = await db.AthleteMedicalFiles
                 .FirstOrDefaultAsync(f => f.AthleteRegistrationId == athleteId, ct);
             if (file is null) return Results.NotFound();
+            var access = await service.AdminMayChangeAsync(athleteId, null, AdminIdentity.Current(user), mayBefore: true, ct);
+            if (!access.Ok) return Results.Json(new { message = access.Message, messageEn = access.Message }, statusCode: access.Status);
 
             var result = await service.RejectPendingAsync(file, request.Reason, AdminIdentity.Current(user), ct);
             return result.Ok ? Results.Ok(new { file.Id }) : Problem(result);
@@ -209,6 +202,36 @@ public static class MedicalEndpoints
         return (age, TournamentEligibility.GenderOf(athlete));
     }
 
+    /// <summary>One of the two forms an under-18's guardian signs, filled in for this athlete.</summary>
+    private static async Task<IResult> DeskFormAsync(
+        int athleteId, int? tournamentId, SmfDbContext db, HttpContext http, bool pregnancy, CancellationToken ct)
+    {
+        var athlete = await db.Registrations.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == athleteId, ct);
+        if (athlete is null) return Results.NotFound();
+
+        // The athlete's age for the tournament the form is for.
+        var tournament = await MemberEndpoints.FormTournamentAsync(db, athleteId, tournamentId, ct);
+        var (age, gender) = MemberEndpoints.MedicalAgeAndGender(athlete, tournament);
+        if (pregnancy && !(gender == "female" && age is < 18))
+        {
+            return Results.Json(new
+            {
+                message = "إقرار عدم الحمل الموقّع مطلوب للاعبات دون 18 سنة فقط. / "
+                          + "A signed non-pregnancy declaration is only needed for girls under 18.",
+            }, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var name = RegistrationPayload.DisplayName(
+            System.Text.Json.JsonDocument.Parse(athlete.PayloadJson).RootElement, true) ?? athlete.ReferenceNumber;
+        var html = pregnancy
+            ? GuardianConsentForm.RenderNonPregnancyDeclaration(name, athlete.MembershipNumber, tournament?.NameAr)
+            : GuardianConsentForm.Render(name, athlete.MembershipNumber, tournament?.NameAr);
+
+        http.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+        return Results.Content(html, "text/html; charset=utf-8");
+    }
+
     private static IResult Problem(TournamentService.Outcome outcome) => Results.Json(new
     {
         message = $"{outcome.MessageAr} / {outcome.MessageEn}",
@@ -226,11 +249,13 @@ public record MedicalSubmissionRequest(
     string? Medications,
     Dictionary<string, bool>? Declarations,
     bool? NotPregnantDeclared,
-    string? GuardianConsentAttachmentId)
+    string? GuardianConsentAttachmentId,
+    string? PregnancyDeclarationAttachmentId = null)
 {
     public MedicalFileService.Submission ToSubmission() => new(
         CertificateAttachmentId, CertificateDate, ScreeningAttachmentId, ScreeningDate,
-        HealthAnswers, Medications, Declarations, NotPregnantDeclared, GuardianConsentAttachmentId);
+        HealthAnswers, Medications, Declarations, NotPregnantDeclared, GuardianConsentAttachmentId,
+        PregnancyDeclarationAttachmentId);
 }
 
 public record SuspensionRequest(string Reason, DateTime StartsOn, DateTime? EndsOn, string? Notes);

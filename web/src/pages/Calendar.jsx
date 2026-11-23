@@ -5,6 +5,7 @@ import PageHero from '../components/PageHero';
 import { fetchEvents } from '../api/services';
 import { formatDateRange, toLatinDigits } from '../utils/format';
 import { usePageContent, useText } from '../content/useContent';
+import CardBanner from '../components/CardBanner';
 
 /* TXT-34/35/36 — the federation's own terminology: training rather than
    workshops, "internal" rather than "regional", "international championships"
@@ -42,6 +43,33 @@ const WEEKDAYS = [
 ];
 
 const yearOf = (event) => new Date(event.startDate).getFullYear();
+
+/** The yyyy-mm-dd part of a stored date, for comparing whole days. */
+const dayOf = (value) => String(value || '').slice(0, 10);
+
+const todayKey = () => {
+  const now = new Date();
+  return dayKey(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
+/* Finished: marked completed, or its last day is already behind us. The date
+   half keeps an item nobody got round to marking from sitting under a past
+   month as though it were still to come. */
+const isCompleted = (event, today) =>
+  event.status === 'completed' || dayOf(event.endDate || event.startDate) < today;
+
+/* "1 فعالية", "2 فعاليتان", "3 فعاليات"… — the count and its word belong
+   together, in each language's own plural forms. */
+const ACTIVITY_WORD = {
+  ar: { one: 'فعالية', two: 'فعاليتان', few: 'فعاليات', many: 'فعالية', other: 'فعالية', zero: 'فعالية' },
+  en: { one: 'Activity', other: 'Activities' },
+};
+
+function activityCount(count, lang) {
+  const forms = ACTIVITY_WORD[lang] || ACTIVITY_WORD.en;
+  const form = new Intl.PluralRules(lang === 'ar' ? 'ar' : 'en').select(count);
+  return `${toLatinDigits(count)} ${forms[form] || forms.other}`;
+}
 
 const titleOf = (event, ar) =>
   (ar ? event.titleAr || event.title : event.titleEn || event.title) || event.title || '';
@@ -105,15 +133,36 @@ export default function Calendar() {
     };
   }, [inYear]);
 
-  const byMonth = useMemo(() => {
+  /* The list view: what is still to come or under way, by month — only
+     months that hold something, nearest first — then everything finished in
+     one closing section rather than under the months it happened in. */
+  const { byMonth, completed } = useMemo(() => {
+    const today = todayKey();
+    const thisMonth = today.slice(0, 7);
     const map = new Map();
+    const done = [];
+
     for (const ev of filtered) {
-      const d = new Date(ev.startDate);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (isCompleted(ev, today)) {
+        done.push(ev);
+        continue;
+      }
+      // Something already under way belongs to this month, not to the month
+      // it started in.
+      const key = [dayOf(ev.startDate).slice(0, 7), thisMonth].sort()[1];
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(ev);
     }
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+    const byStart = (a, b) => dayOf(a.startDate).localeCompare(dayOf(b.startDate));
+    for (const list of map.values()) list.sort(byStart);
+    // Most recently finished first.
+    done.sort((a, b) => dayOf(b.endDate || b.startDate).localeCompare(dayOf(a.endDate || a.startDate)));
+
+    return {
+      byMonth: [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+      completed: done,
+    };
   }, [filtered]);
 
   /** Twelve buckets, used only by the "all years" fallback panel. */
@@ -256,26 +305,26 @@ export default function Calendar() {
           </div>
 
           {view === 'list' && (
-            byMonth.map(([key, monthEvents]) => {
-              const [monthYear, monthNumber] = key.split('-');
-              const monthIdx = Number(monthNumber) - 1;
-              const monthLabel = ar ? MONTHS_AR[monthIdx] : MONTHS_EN[monthIdx];
-              return (
-                <div key={key} style={{ marginBottom: '2.5rem' }}>
-                  <h2 className="s-heading" style={{ fontSize: '1.35rem', marginBottom: '1rem' }}>
-                    {monthLabel} {toLatinDigits(monthYear)}
-                    <span style={{ marginInlineStart: '0.75rem', fontSize: '0.95rem', color: '#64748b', fontWeight: 500 }}>
-                      {toLatinDigits(monthEvents.length)} {ar ? 'فعالية' : 'events'}
-                    </span>
-                  </h2>
-                  <div className="fed-hub__grid">
-                    {monthEvents.map((ev) => (
-                      <EventCard key={ev.id} ev={ev} ar={ar} lang={lang} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
+            <>
+              {byMonth.map(([key, monthEvents]) => {
+                const [monthYear, monthNumber] = key.split('-');
+                const monthIdx = Number(monthNumber) - 1;
+                const monthLabel = ar ? MONTHS_AR[monthIdx] : MONTHS_EN[monthIdx];
+                return (
+                  <ActivityGroup
+                    key={key}
+                    title={`${monthLabel} ${toLatinDigits(monthYear)}`}
+                    items={monthEvents}
+                    ar={ar}
+                    lang={lang}
+                  />
+                );
+              })}
+
+              {completed.length > 0 && (
+                <ActivityGroup title={ar ? 'منتهي' : 'Completed'} items={completed} ar={ar} lang={lang} />
+              )}
+            </>
           )}
 
           {/* A twelve-month day grid needs one year to draw. "All years" keeps the
@@ -489,6 +538,29 @@ function CalendarMonth({ year, month, monthLabel, eventsByDay, ar }) {
   );
 }
 
+/**
+ * One section of the list view — a month, or the closing Completed section —
+ * headed "January 2026 | 1 Activity". Each half is isolated so that in Arabic
+ * the year and the count, both runs of digits, cannot be read as one number
+ * and pull the count away from its word.
+ */
+function ActivityGroup({ title, items, ar, lang }) {
+  return (
+    <div className="cal-group">
+      <h2 className="s-heading cal-group__head">
+        <bdi className="cal-group__title">{title}</bdi>
+        <span className="cal-group__sep" aria-hidden="true">|</span>
+        <bdi className="cal-group__count">{activityCount(items.length, ar ? 'ar' : 'en')}</bdi>
+      </h2>
+      <div className="fed-hub__grid">
+        {items.map((ev) => (
+          <EventCard key={ev.id} ev={ev} ar={ar} lang={lang} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function EventCard({ ev, ar, lang }) {
   const st = STATUS[ev.status] || { ar: ev.status, en: ev.status };
   const cat = FILTERS.find((f) => f.key === ev.category);
@@ -497,7 +569,7 @@ function EventCard({ ev, ar, lang }) {
 
   return (
     <Link to={`/activities/event/${ev.id}`} className="fed-nav-card">
-      {banner && <img className="fed-nav-card__img" src={banner} alt="" loading="lazy" />}
+      {banner && <CardBanner src={banner} crop={ev.imageCrop} />}
       <div className="fed-nav-card__cat">
         {cat ? (ar ? cat.ar : cat.en) : ev.category} · {ar ? st.ar : st.en}
       </div>

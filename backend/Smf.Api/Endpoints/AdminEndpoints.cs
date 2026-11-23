@@ -25,6 +25,8 @@ public static class AdminEndpoints
         MapRegistrationsAdmin(admin);
         MapMembersAdmin(admin);
         admin.MapTournamentAdmin();
+        admin.MapTournamentParticipants();
+        admin.MapTournamentReadiness();
         admin.MapMedicalAdmin();
         admin.MapMemberAccountsAdmin();
         MapContactAdmin(admin);
@@ -32,6 +34,7 @@ public static class AdminEndpoints
         MapSettingsAdmin(admin);
         MapNotificationsAdmin(admin);
         admin.MapAccessAdmin();
+        admin.MapNotificationCenter();
     }
 
     private static void MapNotificationsAdmin(RouteGroupBuilder admin)

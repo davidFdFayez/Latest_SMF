@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
-import { activate, checkInvite, getToken, login, messageOf } from '../../api/member';
+import PageHero from '../../components/PageHero';
+import { activate, checkInvite, getToken, login, messageOf, safeReturnPath } from '../../api/member';
 
 /**
  * Signing in, and taking up an invitation — Phase 3 REQ-05 rule 2.
@@ -15,6 +16,11 @@ export function AccountLogin() {
   const { lang } = useLang();
   const ar = lang === 'ar';
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // Where the visitor was when sign-in was asked of them — a tournament's
+  // details page, say — so they land back there rather than losing it.
+  const next = safeReturnPath(params.get('next'));
+  const expired = params.get('expired') === '1';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,8 +28,8 @@ export function AccountLogin() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (getToken()) navigate('/account', { replace: true });
-  }, [navigate]);
+    if (getToken()) navigate(next, { replace: true });
+  }, [navigate, next]);
 
   async function submit(event) {
     event.preventDefault();
@@ -31,7 +37,7 @@ export function AccountLogin() {
     setBusy(true);
     try {
       await login(email.trim(), password);
-      navigate('/account', { replace: true });
+      navigate(next, { replace: true });
     } catch (err) {
       setError(messageOf(err, lang, ar ? 'تعذر تسجيل الدخول.' : 'Could not sign in.'));
     } finally {
@@ -40,36 +46,56 @@ export function AccountLogin() {
   }
 
   return (
-    <Shell title={ar ? 'دخول المنتسبين' : 'Member sign-in'}
-           subtitle={ar
-             ? 'للأندية والمدربين واللاعبين المسجلين لدى الاتحاد.'
-             : 'For clubs, coaches and athletes registered with the federation.'}>
-      <form className="acct-form" onSubmit={submit}>
-        {error && <p className="acct-error" role="alert">{error}</p>}
+    <>
+      {/* The same hero and white content area as the registration pages. */}
+      <PageHero
+        title={ar ? 'تسجيل الدخول' : 'Login'}
+        breadcrumb={[{ label: ar ? 'تسجيل الدخول' : 'Login' }]}
+      />
 
-        <label className="acct-field">
-          <span>{ar ? 'البريد الإلكتروني' : 'Email address'}</span>
-          <input type="email" dir="ltr" value={email} required
-                 onChange={(event) => setEmail(event.target.value)} />
-        </label>
+      <section className="section section--white">
+        <div className="container container--narrow">
+          {/* The registration form's own card — border, radius, shadow and
+              padding — at a width suited to two fields. */}
+          <div className="regw acct-login">
+            <div className="regw__body">
+            <h2 className="acct-login__title">{ar ? 'تسجيل الدخول' : 'Login'}</h2>
+            <form className="acct-form" onSubmit={submit}>
+              {expired && !error && (
+                <p className="acct-note acct-note--info" role="status">
+                  {ar ? 'انتهت جلستك. سجّل الدخول مرة أخرى للمتابعة.' : 'Your session has ended. Log in again to continue.'}
+                </p>
+              )}
+              {error && <p className="acct-error" role="alert">{error}</p>}
 
-        <label className="acct-field">
-          <span>{ar ? 'كلمة المرور' : 'Password'}</span>
-          <input type="password" value={password} required
-                 onChange={(event) => setPassword(event.target.value)} />
-        </label>
+              <label className="acct-field">
+                <span>{ar ? 'البريد الإلكتروني' : 'Email'}</span>
+                <input type="email" dir="ltr" value={email} required autoComplete="email"
+                       onChange={(event) => setEmail(event.target.value)} />
+              </label>
 
-        <button type="submit" className="btn btn--green acct-submit" disabled={busy}>
-          {busy ? (ar ? 'جارٍ الدخول…' : 'Signing in…') : (ar ? 'دخول' : 'Sign in')}
-        </button>
+              <label className="acct-field">
+                <span>{ar ? 'كلمة المرور' : 'Password'}</span>
+                <input type="password" value={password} required autoComplete="current-password"
+                       onChange={(event) => setPassword(event.target.value)} />
+              </label>
 
-        <p className="acct-note">
-          {ar
-            ? 'الحسابات تُنشأ بدعوة من الاتحاد أو من النادي. إن لم تصلك دعوة، راجع ناديك.'
-            : 'Accounts are created by invitation from the federation or your club. If you have not had one, ask your club.'}
-        </p>
-      </form>
-    </Shell>
+              <button type="submit" className="btn btn--green acct-submit" disabled={busy}>
+                {busy ? (ar ? 'جارٍ تسجيل الدخول…' : 'Logging in…') : (ar ? 'تسجيل الدخول' : 'Login')}
+              </button>
+
+              {/* The existing registration area, with its athlete, club, coach and
+                  referee choices — not a second way to register. */}
+              <p className="acct-note">
+                {ar ? 'ليس لديك حساب؟ ' : "Don't have an account? "}
+                <Link to="/registration">{ar ? 'سجل الآن' : 'Register now'}</Link>
+              </p>
+            </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
 

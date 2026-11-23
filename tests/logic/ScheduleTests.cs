@@ -69,9 +69,9 @@ public static class ScheduleTests
         }
 
         Console.WriteLine();
-        Console.WriteLine("=== rule 12: numbering follows the clock across the rings, day after day ===");
+        Console.WriteLine("=== approved numbering (Stage 5): grouped by ring, restarting every day (old rule 12 rejected) ===");
         {
-            // The document's own example: three bouts in each of two rings on day one.
+            // Three bouts in each of two rings on day one, two on day two (the old rule 12 fixture).
             var dayOne = Bouts(3, 10, "u18", 45, 100).Select(b => b with { Date = day1 }).ToList();
             var dayOneB = Bouts(3, 20, "u18", 48, 200).Select(b => b with { Date = day1 }).ToList();
             var dayTwo = Bouts(2, 30, "u18", 51, 300).Select(b => b with { Date = day2 }).ToList();
@@ -81,48 +81,27 @@ public static class ScheduleTests
                 new Dictionary<int, int> { [10] = 1, [20] = 2, [30] = 1 },
                 new Dictionary<int, DateTime>(), [day1, day2]);
 
-            var numbers = plan.Slots.OrderBy(s => s.BoutNumber)
-                .Select(s => $"{s.Date:dd} {(s.RingId == 1 ? "A" : "B")}#{s.BoutNumber}").ToList();
+            string Label(BoutScheduler.Slot s) => $"{(s.Date == day1 ? "D1" : "D2")} {(s.RingId == 1 ? "A" : "B")}#{s.BoutNumber}";
+            var numbers = plan.Slots.OrderBy(s => s.Date).ThenBy(s => s.BoutNumber).Select(Label).ToList();
 
-            // Both rings open at 17:00 and then draw apart: A every 15
-            // minutes, B every 20. The numbers follow the clock, so the rings
-            // interleave rather than running one after the other.
-            Check("day one is numbered by the clock, interleaving the two rings",
-                string.Join(" ", numbers.Take(6)) == "06 A#1 06 B#2 06 A#3 06 B#4 06 A#5 06 B#6",
+            Check("day one numbers Ring A first (1-3), then Ring B (4-6) — not interleaved by the clock",
+                string.Join(" ", numbers.Take(6)) == "D1 A#1 D1 A#2 D1 A#3 D1 B#4 D1 B#5 D1 B#6",
                 string.Join(" ", numbers.Take(6)));
-            Check("day two carries on from 7, it does not restart",
-                string.Join(" ", numbers.Skip(6)) == "07 A#7 07 A#8",
+            Check("day two restarts at 1 (it does not carry on from 7)",
+                string.Join(" ", numbers.Skip(6)) == "D2 A#1 D2 A#2",
                 string.Join(" ", numbers.Skip(6)));
 
-            Check("the numbers are in start-time order within a day",
-                plan.Slots.Where(x => x.Date == day1).OrderBy(x => x.BoutNumber)
-                    .Select(x => x.StartTime).SequenceEqual(
-                        plan.Slots.Where(x => x.Date == day1).Select(x => x.StartTime).Order()));
-
-            // The document's own example: a later ring that starts earlier
-            // takes the earlier number.
+            // A later ring that starts earlier is still numbered after the earlier ring.
             var early = RingOf(2, "Ring B", 2, 14, 30);
             var crossed = BoutScheduler.Build(
                 [.. Bouts(1, 10, "u18", 45, 100), .. Bouts(1, 20, "u18", 48, 200)],
                 [ringA, early],
                 new Dictionary<int, int> { [10] = 1, [20] = 2 },
                 new Dictionary<int, DateTime>(), [day1]);
-
             var first = crossed.Slots.Single(x => x.BoutNumber == 1);
-            Check("Ring B at 14:00 is numbered before Ring A at 17:00",
-                first.RingId == 2 && first.StartTime == new TimeSpan(14, 0, 0),
-                $"ring {first.RingId} at {first.StartTime}");
-
-            // A tie goes to the ring order, not to whichever was found first.
-            var together = BoutScheduler.Build(
-                [.. Bouts(1, 10, "u18", 45, 100), .. Bouts(1, 20, "u18", 48, 200)],
-                [ringA, RingOf(2, "Ring B", 2, 17, 15)],
-                new Dictionary<int, int> { [10] = 2, [20] = 1 },
-                new Dictionary<int, DateTime>(), [day1]);
-
-            Check("two bouts at the same moment are separated by the ring order",
-                together.Slots.Single(x => x.BoutNumber == 1).RingId == 1,
-                $"ring {together.Slots.Single(x => x.BoutNumber == 1).RingId} first");
+            Check("Ring B at 14:00 is still numbered after Ring A at 17:00 (start time does not decide numbers)",
+                first.RingId == 1 && crossed.Slots.Single(x => x.BoutNumber == 2).RingId == 2,
+                $"#1 is ring {first.RingId}");
         }
 
         Console.WriteLine();
@@ -187,14 +166,24 @@ public static class ScheduleTests
             Check("15 minutes apart is refused", tight.Clashes.Any(c => c.Kind == "rest"));
             Check("the daily limit is not also complained about", !tight.Clashes.Any(c => c.Kind == "daily_limit"));
 
-            // Three hours apart: allowed.
-            var roomy = BoutScheduler.Build(
+            // Rest is measured conservatively (a bout occupies its whole slot): with a 180-minute slot
+            // the next start is 0 minutes after the previous slot ends — refused, not "three hours of rest".
+            var slotLong = BoutScheduler.Build(
                 [bouts[0], bouts[1]],
                 [RingOf(1, "Ring A", 1, 17, 180)],
                 new Dictionary<int, int> { [10] = 1 }, new Dictionary<int, DateTime>(), [day1],
                 boutsPerAthletePerDay: 2);
-            Check("three hours apart is accepted", roomy.Clashes.Count == 0,
-                string.Join("; ", roomy.Clashes.Select(c => c.MessageEn)));
+            Check("starts three hours apart but a 180-minute slot leaves no rest: refused (conservative model)",
+                slotLong.Clashes.Any(c => c.Kind == "rest"), string.Join("; ", slotLong.Clashes.Select(c => c.Kind)));
+            // Starts 2 h 10 min apart with a 10-minute slot: exactly two hours of rest — accepted.
+            var roomy = BoutScheduler.CheckAthletes(
+                [new(bouts[0].BoutId, day1, 1, 1, new TimeSpan(15, 0, 0), 10, 1),
+                 new(bouts[1].BoutId, day1, 1, 14, new TimeSpan(17, 10, 0), 10, 14)],
+                new Dictionary<int, HashSet<int>> { [bouts[0].BoutId] = [100, 101], [bouts[1].BoutId] = [100, 103] },
+                new Dictionary<int, HashSet<int>> { [bouts[0].BoutId] = [100, 101], [bouts[1].BoutId] = [100, 103] },
+                e => e, (_, _) => 2);
+            Check("two hours of real rest after the slot ends is accepted", roomy.Count == 0,
+                string.Join("; ", roomy.Select(c => c.Kind)));
         }
 
         Console.WriteLine();
@@ -269,71 +258,18 @@ public static class ScheduleTests
 
 
         Console.WriteLine();
-        Console.WriteLine("=== rule 17: a division may run to its own time and interval ===");
+        Console.WriteLine("=== rule 17 superseded (Stage 5): ring/day timing decides every start time ===");
         {
-            var divisionRing = new Dictionary<int, int> { [10] = 1, [20] = 1 };
-            var noDates = new Dictionary<int, DateTime>();
-
-            // Its own interval, the ring's start time.
-            var ownInterval = BoutScheduler.Build(
-                Bouts(3), [ringA], divisionRing, noDates, [day1],
-                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
-                {
-                    [10] = new(null, 7),
-                });
-            Check("its own interval replaces the ring's",
-                string.Join(", ", ownInterval.Slots.OrderBy(s => s.OrderInRing)
-                    .Select(s => s.StartTime.ToString(@"hh\:mm"))) == "17:00, 17:07, 17:14",
-                string.Join(", ", ownInterval.Slots.OrderBy(s => s.OrderInRing)
-                    .Select(s => s.StartTime.ToString(@"hh\:mm"))));
-
-            // Its own start time, later than the ring's.
-            var ownStart = BoutScheduler.Build(
-                Bouts(2), [ringA], divisionRing, noDates, [day1],
-                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
-                {
-                    [10] = new(new TimeSpan(19, 30, 0), 7),
-                });
-            Check("its own start time replaces the ring's",
-                string.Join(", ", ownStart.Slots.OrderBy(s => s.OrderInRing)
-                    .Select(s => s.StartTime.ToString(@"hh\:mm"))) == "19:30, 19:37",
-                string.Join(", ", ownStart.Slots.OrderBy(s => s.OrderInRing)
-                    .Select(s => s.StartTime.ToString(@"hh\:mm"))));
-
-            // Two divisions in one ring: the second waits for its own time.
-            var pair = Bouts(2, 10, "u18", 45).Concat(Bouts(2, 20, "u18", 48, 200)).ToList();
-            var both = BoutScheduler.Build(
-                pair, [ringA], divisionRing, noDates, [day1],
-                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
-                {
-                    [20] = new(new TimeSpan(20, 0, 0), 10),
-                });
-            var ordered = both.Slots.OrderBy(s => s.OrderInRing)
-                .Select(s => s.StartTime.ToString(@"hh\:mm")).ToList();
-            Check("the lighter division runs on the ring's settings and the second on its own",
-                string.Join(", ", ordered) == "17:00, 17:15, 20:00, 20:10",
-                string.Join(", ", ordered));
-
-            // A start time already past is ignored rather than doubling bouts up.
-            var tooEarly = BoutScheduler.Build(
-                pair, [ringA], divisionRing, noDates, [day1],
-                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>
-                {
-                    [20] = new(new TimeSpan(16, 0, 0), 15),
-                });
-            var times = tooEarly.Slots.OrderBy(s => s.OrderInRing).Select(s => s.StartTime).ToList();
-            Check("a start time earlier than the ring has already reached cannot overlap",
-                times.Zip(times.Skip(1)).All(p => p.Second > p.First),
-                string.Join(", ", times.Select(t => t.ToString(@"hh\:mm"))));
-
-            // Nothing given means nothing changes.
-            var plain = BoutScheduler.Build(
-                Bouts(3), [ringA], divisionRing, noDates, [day1],
-                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming>());
-            Check("a division with nothing of its own still runs on the ring's",
-                string.Join(", ", plain.Slots.OrderBy(s => s.OrderInRing)
-                    .Select(s => s.StartTime.ToString(@"hh\:mm"))) == "17:00, 17:15, 17:30");
+            var divisionRing = new Dictionary<int, int> { [10] = 1 };
+            var own = BoutScheduler.Build(
+                Bouts(3), [ringA], divisionRing, new Dictionary<int, DateTime>(), [day1],
+                divisionTiming: new Dictionary<int, BoutScheduler.DivisionTiming> { [10] = new(new TimeSpan(19, 30, 0), 7) });
+            Check("a division's own start/interval no longer overrides the ring's (approved: per-ring, per-day timing)",
+                string.Join(", ", own.Slots.OrderBy(s => s.OrderInRing).Select(s => s.StartTime.ToString(@"hh\:mm"))) == "17:00, 17:15, 17:30",
+                string.Join(", ", own.Slots.OrderBy(s => s.OrderInRing).Select(s => s.StartTime.ToString(@"hh\:mm"))));
         }
+
+        failures.AddRange(Stage5ScheduleTests.Run());
 
         Console.WriteLine();
         Console.WriteLine(failures.Count == 0 ? "FAILED: none" : "FAILED: " + string.Join(", ", failures));

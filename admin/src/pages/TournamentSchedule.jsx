@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { tournamentsApi } from '../api/resources'
 import { extractErrorMessage, formatDate } from '../api/utils'
+import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
 import Alert from '../components/Alert'
@@ -21,6 +22,11 @@ import EmptyState from '../components/EmptyState'
  */
 export default function TournamentSchedule() {
   const { id } = useParams()
+  const { hasPermission } = useAuth()
+  // Presentation only — the API decides (403) regardless.
+  const canReadDraw = hasPermission('tournament.draw', 'tournament.schedule', 'tournament.manage')
+  const canApprove = hasPermission('tournament.schedule.approve')
+  const [withdrawReason, setWithdrawReason] = useState('')
 
   const [view, setView] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -64,6 +70,12 @@ export default function TournamentSchedule() {
   if (!view) return <Alert type="error">{error || 'No schedule.'}</Alert>
 
   const days = view.tournament.days || []
+  // SCH-001 — an approved schedule is locked: nothing that changes it is offered
+  // until an approver withdraws the approval (the API refuses with 409 regardless).
+  const locked = Boolean(view.tournament.scheduleApprovedAt)
+  const lockedTitle = locked
+    ? 'The schedule is approved. Withdraw the approval (with a reason) to change it.'
+    : undefined
   const anyBouts = view.categories.some((c) => c.divisions.some((d) => d.bouts.length > 0))
 
   return (
@@ -73,13 +85,16 @@ export default function TournamentSchedule() {
         description="Distribute the drawn bouts across the days and the rings; the times are generated."
         actions={
           <div className="chip-list">
-            <Link to={`/tournaments/${id}/draw`} className="btn btn--ghost">
-              Draw
-            </Link>
+            {canReadDraw && (
+              <Link to={`/tournaments/${id}/draw`} className="btn btn--ghost">
+                Draw
+              </Link>
+            )}
             <button
               type="button"
               className="btn btn--primary"
-              disabled={working}
+              disabled={working || locked}
+              title={lockedTitle}
               onClick={() => act(() => tournamentsApi.generateSchedule(id), 'Schedule regenerated.')}
             >
               Regenerate
@@ -110,9 +125,35 @@ export default function TournamentSchedule() {
         {view.tournament.scheduleApprovedAt
           ? `Approved${
               view.tournament.scheduleApprovedBy ? ` by ${view.tournament.scheduleApprovedBy}` : ''
-            } on ${formatDate(view.tournament.scheduleApprovedAt)}. Regenerating it will need a new approval.`
+            } on ${formatDate(view.tournament.scheduleApprovedAt)}. The schedule is locked: to change it, a schedule approver withdraws the approval with a reason.`
           : 'Not approved yet. The stage after this one has nothing to work from until it is.'}
       </Alert>
+
+      {/* D3 — the controlled way back from an approved schedule: an approver, with a reason. */}
+      {view.tournament.scheduleApprovedAt && canApprove && (
+        <div className="chip-list">
+          <input
+            type="text"
+            className="draw-reason"
+            placeholder="Reason for withdrawing the approval — required"
+            value={withdrawReason}
+            onChange={(event) => setWithdrawReason(event.target.value)}
+          />
+          <button
+            type="button"
+            className="btn btn--small"
+            disabled={working || !withdrawReason.trim()}
+            onClick={() =>
+              act(
+                () => tournamentsApi.withdrawScheduleApproval(id, withdrawReason.trim()),
+                'Schedule approval withdrawn. Nothing in the schedule was changed.',
+              ).then(() => setWithdrawReason(''))
+            }
+          >
+            Withdraw approval
+          </button>
+        </div>
+      )}
 
       <Alert type="error" onDismiss={() => setError('')}>
         {error}
@@ -163,7 +204,8 @@ export default function TournamentSchedule() {
                       <button
                         type="button"
                         className="btn btn--small btn--danger-ghost"
-                        disabled={working}
+                        disabled={working || locked}
+                        title={lockedTitle}
                         onClick={() => act(() => tournamentsApi.removeRing(ring.id), 'Ring removed.')}
                       >
                         Remove
@@ -202,7 +244,8 @@ export default function TournamentSchedule() {
           <button
             type="button"
             className="btn btn--secondary"
-            disabled={working || !ringName.trim()}
+            disabled={working || locked || !ringName.trim()}
+            title={lockedTitle}
             onClick={() =>
               act(
                 () =>
@@ -240,7 +283,7 @@ export default function TournamentSchedule() {
                       <span>Ring</span>
                       <select
                         value={division.defaultRingId || ''}
-                        disabled={working || view.rings.length === 0}
+                        disabled={working || locked || view.rings.length === 0}
                         onChange={(event) =>
                           act(
                             () =>
@@ -264,11 +307,10 @@ export default function TournamentSchedule() {
                       <span>Day</span>
                       <select
                         value={division.scheduledDate ? String(division.scheduledDate).slice(0, 10) : ''}
-                        disabled={working || days.length === 0}
+                        disabled={working || locked || days.length === 0}
                         onChange={(event) =>
                           act(
-                            () =>
-                              tournamentsApi.setDivisionSchedule(division.id, { date: event.target.value }),
+                            () => tournamentsApi.setDivisionSchedule(division.id, { date: event.target.value }),
                             'Day applied to the division.',
                           )
                         }
@@ -289,10 +331,8 @@ export default function TournamentSchedule() {
                       <span>First bout</span>
                       <input
                         type="time"
-                        defaultValue={
-                          division.firstBoutTime ? String(division.firstBoutTime).slice(0, 5) : ''
-                        }
-                        disabled={working}
+                        defaultValue={division.firstBoutTime ? String(division.firstBoutTime).slice(0, 5) : ''}
+                        disabled={working || locked}
                         onBlur={(event) =>
                           event.target.value &&
                           act(
@@ -312,7 +352,7 @@ export default function TournamentSchedule() {
                         type="number"
                         min="1"
                         defaultValue={division.boutIntervalMinutes || ''}
-                        disabled={working}
+                        disabled={working || locked}
                         onBlur={(event) =>
                           event.target.value &&
                           act(
@@ -349,6 +389,8 @@ export default function TournamentSchedule() {
                         </div>
 
                         <div className="bout__when">
+                          {/* D5 — a withdrawal after scheduling keeps the slot; the bout is shown as a walkover. */}
+                          {bout.isWalkover && <Badge tone="neutral">Walkover</Badge>}
                           <span>{bout.scheduledDate ? formatDate(bout.scheduledDate) : '—'}</span>
                           <span>
                             {bout.ringName || '—'}
@@ -360,12 +402,12 @@ export default function TournamentSchedule() {
                         <select
                           className="bout__move"
                           value={bout.ringId || ''}
-                          disabled={working}
+                          disabled={working || locked}
+                          title={lockedTitle}
                           aria-label="Move this bout to another ring"
                           onChange={(event) =>
                             act(
-                              () =>
-                                tournamentsApi.moveBout(bout.id, { ringId: Number(event.target.value) }),
+                              () => tournamentsApi.moveBout(bout.id, { ringId: Number(event.target.value) }),
                               'Bout moved.',
                             )
                           }

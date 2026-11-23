@@ -84,9 +84,19 @@ public static class RegistrationsEndpoints
                 });
             }
 
+            // One email address, one registration identity, whatever the type:
+            // checked and saved under one write lock, so two submissions with
+            // the same address cannot both get through (EmailReservations).
+            var addresses = EmailReservations.AddressesIn(payload);
+            await using var reservation = await EmailReservations.BeginExclusiveAsync(db, cancellationToken);
+            var taken = await EmailReservations.ReservedAsync(db, addresses.Select(a => a.Email), null, cancellationToken);
+            if (taken.Count > 0)
+                return EmailTaken(addresses.Where(a => taken.Contains(a.Email)).Select(a => a.Field));
+
             var registration = new Registration
             {
                 Type = type,
+                NormalizedEmail = EmailReservations.PrimaryAddress(addresses),
                 // Items 00/BUG-15 — an athlete's competition category is derived
                 // here from the date of birth; whatever the client sent for it is
                 // not trusted.
@@ -101,12 +111,21 @@ public static class RegistrationsEndpoints
             registration.SupersedesId = await FindSupersededAsync(db, type, payload, cancellationToken);
 
             db.Registrations.Add(registration);
-            await db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
 
-            // Assigned after the insert so the sequence never collides.
-            var prefix = ReferencePrefixes[type];
-            registration.ReferenceNumber = $"SMF-{prefix}-{registration.CreatedAt:yyyy}-{registration.Id:D5}";
-            await db.SaveChangesAsync(cancellationToken);
+                // Assigned after the insert so the sequence never collides.
+                var prefix = ReferencePrefixes[type];
+                registration.ReferenceNumber = $"SMF-{prefix}-{registration.CreatedAt:yyyy}-{registration.Id:D5}";
+                await db.SaveChangesAsync(cancellationToken);
+                await reservation.CommitAsync(cancellationToken);
+            }
+            catch (DbUpdateException error) when (EmailReservations.IsReservationConflict(error))
+            {
+                // The index's second line of defence: the address was taken after all.
+                return EmailTaken(addresses.Where(a => a.Email == registration.NormalizedEmail).Select(a => a.Field));
+            }
 
             await SendConfirmationAsync(registration, payload, type, notifications, cancellationToken);
 
@@ -197,6 +216,24 @@ public static class RegistrationsEndpoints
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The address is already registered: a field-level error against each
+    /// email field that holds it, in the shape the form shows by its fields.
+    /// </summary>
+    private static IResult EmailTaken(IEnumerable<string> fields)
+    {
+        const string ar = "هذا البريد الإلكتروني مسجل مسبقًا. يرجى استخدام بريد إلكتروني آخر.";
+        const string en = "This email address is already registered. Please use a different email address.";
+        var keys = fields.Distinct().DefaultIfEmpty("email");
+        return Results.BadRequest(new
+        {
+            message = $"{ar} / {en}",
+            messageAr = ar,
+            messageEn = en,
+            errors = keys.ToDictionary(key => key, _ => new { ar, en }),
+        });
     }
 
     /// <summary>Bilingual 400, in the shape the portal knows how to display.</summary>

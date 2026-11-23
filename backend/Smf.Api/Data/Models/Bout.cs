@@ -71,11 +71,30 @@ public class Bout
     public TimeSpan? StartTime { get; set; }
 
     /// <summary>
-    /// Sequential across the whole tournament, following the clock across all
-    /// of a day's rings and continuing into the next day rather than
-    /// restarting (REQ-11 rule 12). Byes never get one.
+    /// An exact start time an administrator entered for this bout on the Division Schedule page (one-minute
+    /// precision). When set, it is the bout's start time; otherwise the time follows from the ring/day first-bout
+    /// time and interval and the bout's place in the ring queue. Cleared whenever the bout is moved by any other
+    /// tool, and by Apply to All Bouts.
+    /// </summary>
+    public TimeSpan? ManualStartTime { get; set; }
+
+    /// <summary>
+    /// INTERNAL day-queue key kept by the scheduling engine: 1..n per tournament
+    /// day, Ring A's queue first, then Ring B… It drives the slot-integrity index,
+    /// athlete-safety checks and the results lock, and it is never shown as a
+    /// bout number. The official number is <see cref="OfficialBoutNumber"/>.
+    /// Byes never get one.
     /// </summary>
     public int? BoutNumber { get; set; }
+
+    /// <summary>
+    /// Stage 5 Step 3 — the OFFICIAL bout number, assigned only by the
+    /// tournament-wide Publish Schedule: one sequence for the whole tournament,
+    /// ordered by day, then configured ring order, then the bout's place in that
+    /// ring's day queue (bout id breaks any tie). Null until published and again
+    /// after an authorised unpublication. Byes never get one.
+    /// </summary>
+    public int? OfficialBoutNumber { get; set; }
 
     /// <summary>True when a person set the ring by hand, so a regeneration leaves it alone (REQ-11 rule 13).</summary>
     public bool RingPinned { get; set; }
